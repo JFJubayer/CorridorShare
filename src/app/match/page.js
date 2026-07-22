@@ -11,11 +11,20 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'motion/react';
+import AuthGuard from '@/components/AuthGuard';
 
 export default function MatchPage() {
+  return (
+    <AuthGuard title="Live Highway Route Matching">
+      <MatchPageContent />
+    </AuthGuard>
+  );
+}
+
+function MatchPageContent() {
   const router = useRouter();
   const { profile } = useUser();
+
   const [activeTab, setActiveTab] = useState('list'); // 'map' or 'list' on mobile
   const [startPoint, setStartPoint] = useState('Dhaka North');
   const [startRadius, setStartRadius] = useState('5');

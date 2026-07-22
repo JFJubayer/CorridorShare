@@ -6,10 +6,19 @@ import { supabase, DEFAULT_DEMO_PROFILES } from '@/config/supabaseClient';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { ShieldCheck, ShieldAlert, Phone, DollarSign, Calendar, RefreshCw, ZoomIn, Ban, RotateCcw, Plus, CheckCircle2 } from 'lucide-react';
-import Link from 'next/link';
+import AuthGuard from '@/components/AuthGuard';
 
 export default function AdminVerifyPage() {
+  return (
+    <AuthGuard title="Admin Compliance & Identity Verification Portal">
+      <AdminVerifyPageContent />
+    </AuthGuard>
+  );
+}
+
+function AdminVerifyPageContent() {
   const [profiles, setProfiles] = useState(DEFAULT_DEMO_PROFILES);
+
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'pending', 'verified', 'suspended'

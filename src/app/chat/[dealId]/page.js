@@ -12,8 +12,19 @@ const MapCorridor = dynamic(
   { ssr: false }
 );
 
+import AuthGuard from '@/components/AuthGuard';
+
 export default function ChatPage({ params }) {
+  return (
+    <AuthGuard title="Live Deal Negotiation & Inspection">
+      <ChatPageContent params={params} />
+    </AuthGuard>
+  );
+}
+
+function ChatPageContent({ params }) {
   // Resolve params using React.use() for Next.js App Router compatibility
+
   const resolvedParams = use(params);
   const dealId = resolvedParams.dealId;
 

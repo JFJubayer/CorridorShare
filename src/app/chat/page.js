@@ -6,10 +6,19 @@ import { supabase } from '@/config/supabaseClient';
 import Card from '@/components/ui/Card';
 import { useUser } from '@/context/UserContext';
 import { Search, ShieldCheck, ShieldAlert, MessageSquare, Clock, MapPin, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import AuthGuard from '@/components/AuthGuard';
 
 export default function ChatsListPage() {
+  return (
+    <AuthGuard title="Live Deal Conversations & Inbox">
+      <ChatsListPageContent />
+    </AuthGuard>
+  );
+}
+
+function ChatsListPageContent() {
   const { userId } = useUser();
+
   const [chats, setChats] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);

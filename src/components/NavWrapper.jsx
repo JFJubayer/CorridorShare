@@ -6,10 +6,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import { Bell, ShieldCheck, Home, Compass, MessageSquare, User, ShieldAlert, Sun, Moon, LogOut } from 'lucide-react';
+import AuthModal from './AuthModal';
 
 export default function NavWrapper({ children }) {
   const pathname = usePathname();
   const { profile, role, toggleRole, theme, toggleTheme, logout, isAuthenticated } = useUser();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
 
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -136,7 +139,7 @@ export default function NavWrapper({ children }) {
             )}
           </div>
           
-          {isAuthenticated && profile && (
+          {isAuthenticated && profile ? (
             <div className="relative flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-800">
               <div className="text-right hidden sm:block">
                 <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
@@ -173,9 +176,22 @@ export default function NavWrapper({ children }) {
                 </div>
               </div>
             </div>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="bg-gradient-to-r from-orange-600 to-amber-500 text-white text-xs font-black px-4 py-2 rounded-full shadow-md hover:from-orange-500 hover:to-amber-400 transition-all cursor-pointer"
+            >
+              Sign In / Register
+            </button>
           )}
         </div>
       </nav>
+
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)}
+        title="Sign in with your mobile number to start matching routes and chatting."
+      />
 
       {/* Main Content Layout */}
       <main className="flex-grow pt-16 pb-20 md:pb-8">
