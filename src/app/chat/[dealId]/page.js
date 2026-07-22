@@ -6,13 +6,13 @@ import LiveChatBox from '@/components/LiveChatBox';
 import { ArrowLeft, MoreVertical, ShieldCheck, Stars, Truck } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import AuthGuard from '@/components/AuthGuard';
+import { supabase } from '@/config/supabaseClient';
 
 const MapCorridor = dynamic(
   () => import('@/components/MapCorridor'),
   { ssr: false }
 );
-
-import AuthGuard from '@/components/AuthGuard';
 
 export default function ChatPage({ params }) {
   return (
@@ -23,29 +23,44 @@ export default function ChatPage({ params }) {
 }
 
 function ChatPageContent({ params }) {
-  // Resolve params using React.use() for Next.js App Router compatibility
-
   const resolvedParams = use(params);
   const dealId = resolvedParams.dealId;
 
-  // Set coordinate anchors based on selected deal
-  const isDeal2 = dealId === 'deal-2';
-  const partnerName = isDeal2 ? "Marcus Chen" : "Tanvir Ahmed";
-  const partnerAvatar = isDeal2 
-    ? "https://lh3.googleusercontent.com/aida-public/AB6AXuAlPEMJ6UcShlvZYxtqqubWwP3G2F_VOkL4s3orzkJPbXNVQgTik-SMuAq9s3WichpIKsbb4nBBjJYREs9PCdC8tHgGQN6zBD0ZG3lgJT1oNMBz1VKHiw7QYOS1QfxwleEjF0aXnLwAo4kfMRFwiJ9yZhdFtHxWcp1AwgI3J1AoTBMGwi06ucNKxC5Sj70xi8Zakzf6oSOWIA38cXB19_uPqh8zxGSJUiIHxJZBn35jB_MiVS4_TBNpOA"
-    : "https://lh3.googleusercontent.com/aida-public/AB6AXuCLxmng_obr4k3FqHdEZL7QpQ0aYzmx9gyl08cFpHNR_f-KvdHQBHPXaq6J30H9dbYwBSzsRlgH2pan2aipO2fIEtExIs8SBksxWrdZRQz2nejAzvpkMGcgVzyeXoW00ErgZvkD5mECUEGzvIybDNcnygax5pTQsdedZTeD_CNu-QNk_J2eydf4c-L5hCpOPgYvHKGy3_1JAZ8kblgIl5ESAOLxdJM6w8Diq7A9R9AjMtZm-Ar7p4cysA";
-  
-  const routeStart = "Dhaka";
-  const routeEnd = isDeal2 ? "Gazipur" : "Mymensingh";
-  const details = isDeal2 ? "Tomorrow Morning • Document Cargo" : "Tonight 8 PM • Express Corridor Delivery";
-  const reward = isDeal2 ? "120 BDT" : "250 BDT";
+  const [dealMeta, setDealMeta] = useState({
+    partnerName: "Corridor Partner",
+    partnerAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&h=250&q=80",
+    routeStart: "Dhaka",
+    routeEnd: "Mymensingh",
+    details: "Tonight 8:30 PM • Express Delivery",
+    reward: "250 BDT"
+  });
 
-  const [actualRoute, setActualRoute] = useState([[23.822349, 90.414349], isDeal2 ? [23.999941, 90.420021] : [24.747149, 90.420273]]);
-  const [activeChatTab, setActiveChatTab] = useState('chat'); // 'chat' or 'map' on mobile/tablet
+  const [actualRoute, setActualRoute] = useState([[23.822349, 90.414349], [24.747149, 90.420273]]);
+  const [activeChatTab, setActiveChatTab] = useState('chat');
 
   useEffect(() => {
-    const startLatLng = [23.822349, 90.414349]; // Dhaka Airport area
-    const endLatLng = isDeal2 ? [23.999941, 90.420021] : [24.747149, 90.420273]; // Gazipur or Mymensingh
+    const fetchDeal = async () => {
+      const { data } = await supabase.from('chats').select('*').eq('id', dealId);
+      if (data && data.length > 0) {
+        const d = data[0];
+        const isDeal2 = dealId === 'deal-2';
+        setDealMeta({
+          partnerName: isDeal2 ? "Tanvir Ahmed" : "Aminul Islam",
+          partnerAvatar: isDeal2
+            ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&h=250&q=80"
+            : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&h=250&q=80",
+          routeStart: "Dhaka",
+          routeEnd: isDeal2 ? "Gazipur" : "Mymensingh",
+          details: isDeal2 ? "Tomorrow Morning • Document Cargo" : "Tonight 8:30 PM • Express Corridor Delivery",
+          reward: `${d.final_agreed_price || (isDeal2 ? 150 : 250)} BDT`
+        });
+      }
+    };
+
+    fetchDeal();
+
+    const startLatLng = [23.822349, 90.414349];
+    const endLatLng = dealId === 'deal-2' ? [23.999941, 90.420021] : [24.747149, 90.420273];
 
     const fetchSnappedRoute = async () => {
       try {
@@ -63,7 +78,7 @@ function ChatPageContent({ params }) {
     };
 
     fetchSnappedRoute();
-  }, [isDeal2]);
+  }, [dealId]);
 
   return (
     <div className="min-h-screen bg-background md:pl-48 transition-colors duration-300">
@@ -78,16 +93,16 @@ function ChatPageContent({ params }) {
             <div className="relative">
               <img 
                 className="w-10 h-10 rounded-full border border-outline-variant object-cover" 
-                src={partnerAvatar}
-                alt={partnerName} 
+                src={dealMeta.partnerAvatar}
+                alt={dealMeta.partnerName} 
               />
               <div className="absolute -bottom-0.5 -right-0.5 bg-secondary text-white rounded-full p-0.5 border border-white dark:border-slate-950">
                 <ShieldCheck className="w-2.5 h-2.5" />
               </div>
             </div>
             <div>
-              <h1 className="text-sm font-bold text-on-surface leading-tight flex items-center gap-1.5">
-                {partnerName}
+              <h1 className="text-sm font-bold text-on-surface leading-tight flex items-center gap-1.5 font-display">
+                {dealMeta.partnerName}
                 <span className="text-[9px] bg-secondary-container text-on-secondary-container px-1 py-0.2 rounded font-bold uppercase">NID VERIFIED</span>
               </h1>
               <p className="text-[10px] text-on-surface-variant font-bold flex items-center gap-0.5">
@@ -101,60 +116,57 @@ function ChatPageContent({ params }) {
         </button>
       </div>
 
-      {/* Mobile/Tablet Tab Swapper (Visible on screens smaller than lg) */}
-      <div className="flex lg:hidden border-b border-outline-variant bg-surface-container-lowest transition-colors duration-300">
+      {/* Main Workspace Layout */}
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-130px)]">
+        
+        {/* Deal Map Preview */}
+        <div className={`lg:w-1/2 h-full relative border-r border-outline-variant ${
+          activeChatTab === 'map' ? 'block' : 'hidden lg:block'
+        }`}>
+          <MapCorridor route={actualRoute} />
+          
+          <div className="absolute top-4 left-4 right-4 bg-surface/90 backdrop-blur-md p-3.5 rounded-2xl border border-orange-500/25 shadow-lg z-10">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-[10px] uppercase font-black text-orange-600 dark:text-orange-400 tracking-wider">ACTIVE CORRIDOR MATCH</span>
+                <h3 className="text-sm font-black text-on-surface leading-tight font-display">{dealMeta.routeStart} ↔ {dealMeta.routeEnd}</h3>
+                <p className="text-[11px] text-on-surface-variant font-bold mt-0.5">{dealMeta.details}</p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-on-surface-variant block font-bold">Agreed Reward</span>
+                <span className="text-base font-black text-orange-600 dark:text-orange-400 font-display">{dealMeta.reward}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Chat & Inspection Box */}
+        <div className={`lg:w-1/2 h-full flex flex-col ${
+          activeChatTab === 'chat' ? 'block' : 'hidden lg:block'
+        }`}>
+          <LiveChatBox dealId={dealId} />
+        </div>
+
+      </div>
+
+      {/* Mobile Tab Toggle */}
+      <div className="lg:hidden fixed bottom-0 left-0 w-full z-40 bg-surface border-t border-outline-variant flex">
         <button 
           onClick={() => setActiveChatTab('chat')}
-          className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all ${
-            activeChatTab === 'chat' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant'
+          className={`flex-1 py-3 text-xs font-black text-center border-b-2 transition-all ${
+            activeChatTab === 'chat' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-on-surface-variant'
           }`}
         >
-          Chat Conversation
+          Deal Conversation
         </button>
         <button 
           onClick={() => setActiveChatTab('map')}
-          className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-all ${
-            activeChatTab === 'map' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant'
+          className={`flex-1 py-3 text-xs font-black text-center border-b-2 transition-all ${
+            activeChatTab === 'map' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-on-surface-variant'
           }`}
         >
-          Route Map
+          Live Highway Map
         </button>
-      </div>
-
-      {/* Grid Layout containing Snapped Route Map and Conversation Panel */}
-      <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-7xl mx-auto">
-        {/* Route Details and Snap Map (Left Column) */}
-        <div className={`space-y-4 flex flex-col ${activeChatTab === 'map' ? 'block' : 'hidden lg:flex'}`}>
-          {/* Deal status overview panel */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-colors duration-300">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-primary text-xs font-bold uppercase">
-                <Truck className="w-4 h-4 text-primary" />
-                <span>Active Journey Anchor</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-base font-bold text-on-surface">
-                <span>{routeStart}</span>
-                <span className="text-outline">→</span>
-                <span>{routeEnd}</span>
-              </div>
-              <p className="text-xs text-primary font-bold">{details}</p>
-            </div>
-            <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-outline-variant w-full sm:w-auto">
-              <p className="text-[10px] uppercase font-bold text-on-surface-variant">Estimated Surcharge</p>
-              <p className="text-lg font-bold text-on-surface">{reward}</p>
-            </div>
-          </div>
-
-          {/* Actual Snapped Map Container */}
-          <div className="h-[300px] lg:h-[480px] rounded-xl overflow-hidden border border-outline-variant shadow-sm relative">
-            <MapCorridor route={actualRoute} packages={[]} />
-          </div>
-        </div>
-
-        {/* Live Chat component (Right Column) */}
-        <div className={activeChatTab === 'chat' ? 'block' : 'hidden lg:block'}>
-          <LiveChatBox dealId={dealId} />
-        </div>
       </div>
 
     </div>

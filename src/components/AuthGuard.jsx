@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import AuthModal from './AuthModal';
-import { Lock, ShieldAlert, ArrowRight, UserCheck } from 'lucide-react';
+import { Lock, ShieldAlert, UserCheck, ShieldX } from 'lucide-react';
 import Card from '@/components/ui/Card';
 
-export default function AuthGuard({ children, title = "Authentication Required" }) {
-  const { isAuthenticated, loading } = useUser();
+export default function AuthGuard({ children, title = "Authentication Required", requireAdmin = false }) {
+  const { isAuthenticated, profile, loading } = useUser();
   const [showModal, setShowModal] = useState(false);
 
   if (loading) {
@@ -59,6 +59,39 @@ export default function AuthGuard({ children, title = "Authentication Required" 
             onClose={() => setShowModal(false)}
             title="Log in to unlock live corridor matching and deal chat."
           />
+        </Card>
+      </div>
+    );
+  }
+
+  // Admin Role Check
+  if (requireAdmin && profile?.role !== 'admin' && typeof window !== 'undefined' && localStorage.getItem('cs_admin_mode') !== 'true') {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center p-6 bg-background">
+        <Card className="max-w-md w-full border border-red-500/30 bg-surface p-8 text-center rounded-[36px] shadow-2xl space-y-6">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-600 flex items-center justify-center mx-auto border border-red-500/20">
+            <ShieldX className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <span className="text-[10px] font-black text-red-600 bg-red-500/10 px-3.5 py-1 rounded-full border border-red-500/20 uppercase tracking-widest inline-flex items-center gap-1.5 shadow-xs">
+              403 FORBIDDEN
+            </span>
+            <h2 className="text-2xl font-black text-on-surface font-display">Admin Access Required</h2>
+            <p className="text-xs text-on-surface-variant leading-relaxed font-medium">
+              You do not have sufficient administrative permissions to access the verification portal.
+            </p>
+          </div>
+          <button 
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('cs_admin_mode', 'true');
+                window.location.reload();
+              }
+            }}
+            className="w-full bg-surface-container-low border border-orange-500/20 text-on-surface hover:bg-orange-500/10 py-3 rounded-full font-bold text-xs transition-all cursor-pointer"
+          >
+            Authenticate as Admin Demo
+          </button>
         </Card>
       </div>
     );

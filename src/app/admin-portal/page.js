@@ -10,7 +10,7 @@ import AuthGuard from '@/components/AuthGuard';
 
 export default function AdminPortalPage() {
   return (
-    <AuthGuard title="Admin Compliance & Identity Verification Portal">
+    <AuthGuard title="Admin Compliance & Identity Verification Portal" requireAdmin={true}>
       <AdminPortalPageContent />
     </AuthGuard>
   );
