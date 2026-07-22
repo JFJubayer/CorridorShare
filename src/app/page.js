@@ -228,6 +228,63 @@ export default function RootPage() {
           </motion.div>
         </header>
 
+        {/* How It Works Section (Main 3 Steps directly after Hero Get Started Free) */}
+        <section className="mb-16">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center max-w-xl mx-auto mb-10"
+          >
+            <span className="text-[10px] uppercase font-extrabold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-3.5 py-1 rounded-full border border-orange-500/20 tracking-widest inline-block mb-2">
+              SIMPLE 3-STEP PROCESS
+            </span>
+            <h2 className="text-3xl font-black text-on-surface tracking-tight">How CorridorShare Works</h2>
+            <p className="text-xs text-on-surface-variant mt-1.5 font-medium">
+              A 3-step geofenced delivery model connecting verified travelers with highway-corridor packages.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                step: "01",
+                title: "Post Route or Package",
+                desc: "Travelers list their scheduled highway corridors (e.g. Dhaka N3 road). Senders upload package cargo pickup coordinates."
+              },
+              {
+                step: "02",
+                title: "Geofence Match Calculation",
+                desc: "Our spatial engine analyzes routes and matches packages within 5km of the travel path, prompting detour offers."
+              },
+              {
+                step: "03",
+                title: "Escrow Wallet Lock",
+                desc: "Senders lock surcharge rewards in escrow. Upon OTP package verification at pickup, delivery funds are released instantly."
+              }
+            ].map((item, i) => (
+              <motion.div
+                key={item.step}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.15 }}
+              >
+                <Card className="border border-orange-500/20 hover:border-orange-500/50 flex flex-col items-center text-center p-6 space-y-4 h-full rounded-[28px] transition-all shadow-md">
+                  <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-500 text-white rounded-full flex items-center justify-center font-black text-lg shadow-lg shadow-orange-500/30">
+                    {item.step}
+                  </div>
+                  <h4 className="font-black text-on-surface text-base">{item.title}</h4>
+                  <p className="text-xs text-on-surface-variant leading-relaxed font-medium">
+                    {item.desc}
+                  </p>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
         {/* Pricing Calculator Widget */}
         <section className="mb-16">
           <motion.div 
@@ -327,63 +384,6 @@ export default function RootPage() {
 
         {/* Figma Make UI Tracking & Analytics Dashboard Component */}
         <FigmaMakeDashboardWidget />
-
-        {/* How It Works Section */}
-        <section className="mb-16">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center max-w-xl mx-auto mb-10"
-          >
-            <span className="text-[10px] uppercase font-extrabold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-3.5 py-1 rounded-full border border-orange-500/20 tracking-widest inline-block mb-2">
-              SIMPLE 3-STEP PROCESS
-            </span>
-            <h2 className="text-3xl font-black text-on-surface tracking-tight">How CorridorShare Works</h2>
-            <p className="text-xs text-on-surface-variant mt-1.5 font-medium">
-              A 3-step geofenced delivery model connecting verified travelers with highway-corridor packages.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                step: "01",
-                title: "Post Route or Package",
-                desc: "Travelers list their scheduled highway corridors (e.g. Dhaka N3 road). Senders upload package cargo pickup coordinates."
-              },
-              {
-                step: "02",
-                title: "Geofence Match Calculation",
-                desc: "Our spatial engine analyzes routes and matches packages within 5km of the travel path, prompting detour offers."
-              },
-              {
-                step: "03",
-                title: "Escrow Wallet Lock",
-                desc: "Senders lock surcharge rewards in escrow. Upon OTP package verification at pickup, delivery funds are released instantly."
-              }
-            ].map((item, i) => (
-              <motion.div
-                key={item.step}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-              >
-                <Card className="border border-orange-500/20 hover:border-orange-500/50 flex flex-col items-center text-center p-6 space-y-4 h-full rounded-[28px] transition-all">
-                  <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-500 text-white rounded-full flex items-center justify-center font-black text-lg shadow-lg shadow-orange-500/30">
-                    {item.step}
-                  </div>
-                  <h4 className="font-black text-on-surface text-base">{item.title}</h4>
-                  <p className="text-xs text-on-surface-variant leading-relaxed font-medium">
-                    {item.desc}
-                  </p>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </section>
 
         {/* Mobbin-Inspired Live Corridor Inspiration Directory */}
         <MobbinInspirationGrid />

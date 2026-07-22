@@ -44,8 +44,9 @@ export default function NavWrapper({ children }) {
   ]);
 
   // Hide default navigation if we are on the admin portal
-  const isAdmin = pathname.startsWith('/admin');
+  const isAdmin = pathname.startsWith('/admin') || pathname.startsWith('/admin-portal');
   const hasUnread = notifications.some(n => !n.read);
+
 
   return (
     <div className="flex flex-col min-h-screen transition-colors duration-300 bg-background text-on-surface">
@@ -236,18 +237,6 @@ export default function NavWrapper({ children }) {
             <MessageSquare className="w-5 h-5" />
             <span className="text-[10px] font-bold mt-0.5">Messages</span>
           </Link>
-
-          <Link 
-            href="/admin/verify"
-            className={`flex flex-col items-center justify-center transition-all ${
-              pathname.startsWith('/admin') 
-                ? 'text-primary scale-105' 
-                : 'text-on-surface-variant hover:text-primary'
-            }`}
-          >
-            <User className="w-5 h-5" />
-            <span className="text-[10px] font-bold mt-0.5">Admin</span>
-          </Link>
         </nav>
       )}
 
@@ -288,18 +277,6 @@ export default function NavWrapper({ children }) {
           >
             <MessageSquare className="w-4 h-4 text-orange-500" />
             Messages
-          </Link>
-
-          <Link 
-            href="/admin/verify"
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs font-black transition-all ${
-              pathname.startsWith('/admin') 
-                ? 'bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 shadow-xs' 
-                : 'text-on-surface-variant hover:bg-orange-500/10'
-            }`}
-          >
-            <User className="w-4 h-4 text-orange-500" />
-            Admin Panel
           </Link>
         </div>
       )}
