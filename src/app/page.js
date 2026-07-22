@@ -228,25 +228,28 @@ export default function RootPage() {
           </motion.div>
         </header>
 
-        {/* How It Works Section (Main 3 Steps directly after Hero Get Started Free) */}
-        <section className="mb-16">
+        {/* How It Works Section (Prominent, High-Readability 3 Steps directly after Hero) */}
+        <section className="mb-20">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-center max-w-xl mx-auto mb-10"
+            className="text-center max-w-3xl mx-auto mb-12 space-y-3"
           >
-            <span className="text-[10px] uppercase font-extrabold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-3.5 py-1 rounded-full border border-orange-500/20 tracking-widest inline-block mb-2">
+            <span className="text-xs md:text-sm font-black uppercase text-orange-600 dark:text-orange-400 bg-orange-500/15 px-5 py-2 rounded-full border border-orange-500/30 tracking-widest inline-flex items-center gap-2 shadow-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-ping" />
               SIMPLE 3-STEP PROCESS
             </span>
-            <h2 className="text-3xl font-black text-on-surface tracking-tight">How CorridorShare Works</h2>
-            <p className="text-xs text-on-surface-variant mt-1.5 font-medium">
+            <h2 className="text-4xl md:text-5xl font-black text-on-surface tracking-tight font-display">
+              How CorridorShare Works
+            </h2>
+            <p className="text-base md:text-lg text-on-surface-variant leading-relaxed font-semibold max-w-2xl mx-auto">
               A 3-step geofenced delivery model connecting verified travelers with highway-corridor packages.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[
               {
                 step: "01",
@@ -266,17 +269,23 @@ export default function RootPage() {
             ].map((item, i) => (
               <motion.div
                 key={item.step}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 35 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.15 }}
               >
-                <Card className="border border-orange-500/20 hover:border-orange-500/50 flex flex-col items-center text-center p-6 space-y-4 h-full rounded-[28px] transition-all shadow-md">
-                  <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-500 text-white rounded-full flex items-center justify-center font-black text-lg shadow-lg shadow-orange-500/30">
+                <Card className="border-2 border-orange-500/25 hover:border-orange-500/60 bg-surface flex flex-col items-center text-center p-8 md:p-10 space-y-6 h-full rounded-[36px] transition-all shadow-xl hover:shadow-2xl hover:-translate-y-2 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-orange-500/15 to-amber-500/5 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+
+                  <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-orange-600 via-orange-500 to-amber-500 text-white rounded-full flex items-center justify-center font-black text-2xl md:text-3xl shadow-xl shadow-orange-500/35 border-4 border-white/20 group-hover:scale-110 transition-transform duration-300">
                     {item.step}
                   </div>
-                  <h4 className="font-black text-on-surface text-base">{item.title}</h4>
-                  <p className="text-xs text-on-surface-variant leading-relaxed font-medium">
+
+                  <h3 className="font-black text-on-surface text-xl md:text-2xl tracking-tight font-display leading-tight">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-sm md:text-base text-on-surface-variant leading-relaxed font-medium">
                     {item.desc}
                   </p>
                 </Card>
