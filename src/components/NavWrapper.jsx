@@ -19,34 +19,50 @@ export default function NavWrapper({ children }) {
   React.useEffect(() => { setMounted(true); }, []);
 
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      text: "New traveler match found along N3 corridor for package CS-9821.",
-      time: "10 mins ago",
-      link: "/match",
-      read: false
-    },
-    {
-      id: 2,
-      text: "Deal lock proposal requested by traveler Tanvir Ahmed.",
-      time: "25 mins ago",
-      link: "/chat/deal-1",
-      read: false
-    },
-    {
-      id: 3,
-      text: "Profile NID Verification successfully approved by Administrator.",
-      time: "1 hr ago",
-      link: "/",
-      read: false
+  const notificationRef = React.useRef(null);
+
+  // Load notifications from LocalStorage or default to empty for clean user experience
+  const [notifications, setNotifications] = useState([]);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('cs_notifications');
+      if (stored) {
+        try {
+          setNotifications(JSON.parse(stored));
+        } catch {
+          setNotifications([]);
+        }
+      }
     }
-  ]);
+  }, []);
+
+  // Update LocalStorage whenever notifications change
+  const updateNotifications = (newNotifs) => {
+    setNotifications(newNotifs);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cs_notifications', JSON.stringify(newNotifs));
+    }
+  };
+
+  // Close notifications dropdown reliably whenever clicking anywhere outside
+  React.useEffect(() => {
+    function handleClickOutside(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   // Hide default navigation if we are on the admin portal
   const isAdmin = pathname.startsWith('/admin') || pathname.startsWith('/admin-portal');
   const hasUnread = notifications.some(n => !n.read);
-
 
   return (
     <div className="flex flex-col min-h-screen transition-colors duration-300 bg-background text-on-surface">
@@ -63,7 +79,7 @@ export default function NavWrapper({ children }) {
           {/* Theme Toggler */}
           <button 
             onClick={toggleTheme}
-            className="p-2 text-on-surface-variant hover:bg-slate-50 dark:hover:bg-slate-900 rounded-full transition-colors"
+            className="p-2 text-on-surface-variant hover:bg-slate-50 dark:hover:bg-slate-900 rounded-full transition-colors cursor-pointer"
             title="Toggle Theme"
             aria-label="Toggle light and dark theme"
           >
@@ -77,66 +93,59 @@ export default function NavWrapper({ children }) {
           </button>
 
           {/* Bell Notification Dropdown System */}
-          <div className="relative">
+          <div className="relative" ref={notificationRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 text-on-surface-variant hover:bg-slate-50 dark:hover:bg-slate-900 rounded-full transition-colors relative"
+              className="p-2 text-on-surface-variant hover:bg-slate-50 dark:hover:bg-slate-900 rounded-full transition-colors relative cursor-pointer"
               title="Notifications"
             >
               <Bell className="w-5 h-5" />
               {hasUnread && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full animate-ping"></span>
               )}
             </button>
 
             {showNotifications && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40 cursor-default" 
-                  onClick={() => setShowNotifications(false)}
-                />
-                
-                <div className="absolute right-0 mt-2 w-80 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-lg py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-4 py-2 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
-                    <span className="font-bold text-xs text-on-surface uppercase tracking-wider">Notifications</span>
-                    {hasUnread && (
-                      <button 
-                        onClick={() => {
-                          setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-                        }}
-                        className="text-[10px] font-bold text-primary hover:underline outline-none"
-                      >
-                        Mark all as read
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className="max-h-64 overflow-y-auto divide-y divide-outline-variant/30 custom-scrollbar bg-surface-container-lowest">
-                    {notifications.length === 0 ? (
-                      <div className="text-center py-8 text-xs text-on-surface-variant">
-                        No notifications found
-                      </div>
-                    ) : (
-                      notifications.map(n => (
-                        <Link 
-                          key={n.id} 
-                          href={n.link}
-                          onClick={() => {
-                            setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item));
-                            setShowNotifications(false);
-                          }}
-                          className={`block px-4 py-3 hover:bg-surface-container-low transition-colors text-left ${
-                            !n.read ? 'bg-primary/5 dark:bg-primary/10' : ''
-                          }`}
-                        >
-                          <p className="text-xs text-on-surface leading-normal font-medium">{n.text}</p>
-                          <span className="text-[11px] text-on-surface-variant mt-1 block font-medium">{n.time}</span>
-                        </Link>
-                      ))
-                    )}
-                  </div>
+              <div className="absolute right-0 mt-2 w-80 bg-surface border border-orange-500/25 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-4 py-2.5 border-b border-outline-variant/60 flex justify-between items-center">
+                  <span className="font-black text-xs text-on-surface uppercase tracking-wider font-display">Notifications</span>
+                  {notifications.length > 0 && (
+                    <button 
+                      onClick={() => updateNotifications([])}
+                      className="text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:underline outline-none cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  )}
                 </div>
-              </>
+                
+                <div className="max-h-64 overflow-y-auto divide-y divide-outline-variant/30 custom-scrollbar">
+                  {notifications.length === 0 ? (
+                    <div className="text-center py-8 px-4 space-y-1">
+                      <Bell className="w-6 h-6 text-on-surface-variant/40 mx-auto" />
+                      <p className="text-xs font-bold text-on-surface-variant">No new notifications</p>
+                      <p className="text-[10px] text-on-surface-variant/70">Matching requests & system alerts will appear here.</p>
+                    </div>
+                  ) : (
+                    notifications.map(n => (
+                      <Link 
+                        key={n.id} 
+                        href={n.link || '#'}
+                        onClick={() => {
+                          updateNotifications(notifications.map(item => item.id === n.id ? { ...item, read: true } : item));
+                          setShowNotifications(false);
+                        }}
+                        className={`block px-4 py-3 hover:bg-orange-500/10 transition-colors text-left ${
+                          !n.read ? 'bg-orange-500/5' : ''
+                        }`}
+                      >
+                        <p className="text-xs text-on-surface leading-normal font-bold">{n.text}</p>
+                        <span className="text-[10px] text-on-surface-variant/80 mt-1 block font-medium">{n.time}</span>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </div>
             )}
           </div>
           
