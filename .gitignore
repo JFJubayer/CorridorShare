@@ -32,7 +32,8 @@ yarn-error.log*
 .vscode/
 
 # Mobile specific
-/CorridorShare App/android/app/debug
-/CorridorShare App/android/app/profile
-/CorridorShare App/android/app/release
-/CorridorShare App/ios/Flutter/.last_build_id
+/corridorshare-app/android/app/debug
+/corridorshare-app/android/app/profile
+/corridorshare-app/android/app/release
+/corridorshare-app/ios/Flutter/.last_build_id
+.vercel

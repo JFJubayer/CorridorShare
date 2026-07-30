@@ -10,21 +10,21 @@
 
 ```
 CorridorShare/
-├── CorridorShare Website/   # Next.js 16 Web Application (React 19, TailwindCSS, Supabase)
-└── CorridorShare App/       # Flutter Mobile Application (iOS & Android)
+├── corridorshare-website/   # Next.js 16 Web Application (React 19, TailwindCSS, Supabase)
+└── corridorshare-app/       # Flutter Mobile Application (iOS & Android)
 ```
 
 ---
 
 ## 🚀 Projects Overview
 
-### 1. 🌐 CorridorShare Website (`/CorridorShare Website`)
+### 1. 🌐 CorridorShare Website (`/corridorshare-website`)
 - **Framework**: Next.js 16 (App Router, React 19)
 - **Styling**: TailwindCSS v4 with dynamic dark/light design system
 - **Mapping**: Leaflet & OpenStreetMap with OSRM snapped highway route calculations
 - **Backend**: Supabase Auth, PostgreSQL, and storage integration with LocalStorage mock fallbacks
 
-### 2. 📱 CorridorShare App (`/CorridorShare App`)
+### 2. 📱 CorridorShare App (`/corridorshare-app`)
 - **Framework**: Flutter (Dart)
 - **Platforms**: Android & iOS
 
@@ -34,14 +34,14 @@ CorridorShare/
 
 ### Website:
 ```bash
-cd "CorridorShare Website"
+cd corridorshare-website
 npm install
 npm run dev
 ```
 
 ### App:
 ```bash
-cd "CorridorShare App"
+cd corridorshare-app
 flutter pub get
 flutter run
 ```
