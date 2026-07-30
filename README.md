@@ -2,7 +2,7 @@
 
 **CorridorShare** is a peer-to-peer crowd-shipping and highway corridor parcel delivery platform connecting travelers with senders across Bangladesh.
 
-[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-success?style=flat-square&logo=vercel)](https://corridorshare.vercel.app)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-success?style=flat-square&logo=vercel)](https://corridorshare.vercel.app) ![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square)
 
 ---
 
