@@ -1,0 +1,30 @@
+name: Database CI
+
+on:
+  push:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/database-ci.yml'
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/database-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Migrations and security contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.98.2
+      - run: supabase start
+      - run: supabase db reset
+      - run: supabase test db
+      - run: supabase db lint --local --fail-on error
+      - if: always()
+        run: supabase stop --no-backup

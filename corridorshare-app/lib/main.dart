@@ -19,7 +19,7 @@ Future<void> main() async {
     if (config.dataMode == AppDataMode.supabase) {
       await Supabase.initialize(
         url: config.supabaseUrl!,
-        anonKey: config.supabaseAnonKey!,
+        publishableKey: config.supabaseAnonKey!,
       );
     }
     runApp(CorridorShareApp(config: config));

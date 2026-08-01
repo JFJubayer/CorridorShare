@@ -12,6 +12,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "audit:prod": "node scripts/audit-production.mjs",
     "types:db": "supabase gen types typescript --local > src/infrastructure/supabase/database.types.ts"
   },
   "dependencies": {

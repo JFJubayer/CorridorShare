@@ -14,7 +14,6 @@ extension DealStatusWire on DealStatus {
   static DealStatus fromWire(String value) => switch (value.toLowerCase()) {
         'negotiating' => DealStatus.negotiating,
         'locked' => DealStatus.escrowLocked,
-        'locked' => DealStatus.escrowLocked,
         'escrow_locked' => DealStatus.escrowLocked,
         'completed' => DealStatus.completed,
         'refunded' => DealStatus.refunded,
