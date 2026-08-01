@@ -618,14 +618,15 @@ begin
 end;
 $$;
 
-revoke all on function public.current_user_is_admin() from public;
-revoke all on function public.admin_set_nid_status(uuid, public.profile_nid_status) from public;
-revoke all on function public.match_packages_within_corridor(uuid, double precision) from public;
-revoke all on function public.lock_deal_with_inspection(uuid, bigint, text, text) from public;
-revoke all on function public.wallet_release(uuid, text, text) from public;
-revoke all on function public.issue_delivery_otp(uuid) from public;
-revoke all on function public.wallet_refund(uuid, text) from public;
-revoke all on function public.wallet_credit_from_provider(uuid, bigint, text, text) from public;
+revoke all on function public.current_user_is_admin() from public, anon;
+revoke all on function public.admin_set_nid_status(uuid, public.profile_nid_status) from public, anon;
+revoke all on function public.match_packages_within_corridor(uuid, double precision) from public, anon;
+revoke all on function public.lock_deal_with_inspection(uuid, bigint, text, text) from public, anon;
+revoke all on function public.wallet_release(uuid, text, text) from public, anon;
+revoke all on function public.issue_delivery_otp(uuid) from public, anon;
+revoke all on function public.wallet_refund(uuid, text) from public, anon;
+revoke all on function public.wallet_credit_from_provider(uuid, bigint, text, text)
+from public, anon, authenticated;
 
 grant execute on function public.current_user_is_admin() to authenticated;
 grant execute on function public.admin_set_nid_status(uuid, public.profile_nid_status) to authenticated;

@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap;
-select plan(6);
+select plan(7);
 
 insert into auth.users (
   id, instance_id, aud, role, phone, encrypted_password,
@@ -53,6 +53,15 @@ select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
 select is(public.current_user_is_admin(), false, 'ordinary users are not administrators');
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.lock_deal_with_inspection(uuid,bigint,text,text)',
+    'EXECUTE'
+  ),
+  'anonymous clients cannot execute authenticated deal RPCs'
+);
 
 select throws_ok(
   $$update public.profiles set role = 'admin' where id = auth.uid()$$,
