@@ -7,7 +7,7 @@ import { Lock, ShieldAlert, UserCheck, ShieldX } from 'lucide-react';
 import Card from '@/components/ui/Card';
 
 export default function AuthGuard({ children, title = "Authentication Required", requireAdmin = false }) {
-  const { isAuthenticated, profile, loading } = useUser();
+  const { isAuthenticated, profile, loading, authError } = useUser();
   const [showModal, setShowModal] = useState(false);
 
   if (loading) {
@@ -40,11 +40,11 @@ export default function AuthGuard({ children, title = "Authentication Required",
               {title}
             </h2>
             <p className="text-xs md:text-sm text-on-surface-variant leading-relaxed font-medium">
-              Please sign up or log in with your phone number to access highway corridor matching, deal negotiations, and identity verification.
+              {authError || 'Please sign up or log in with your phone number to access highway corridor matching, deal negotiations, and identity verification.'}
             </p>
           </div>
 
-          <div className="pt-2">
+          {!authError && <div className="pt-2">
             <button
               onClick={() => setShowModal(true)}
               className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white py-4 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer tactile-btn"
@@ -52,7 +52,7 @@ export default function AuthGuard({ children, title = "Authentication Required",
               <UserCheck className="w-4 h-4" />
               Log In / Register Now
             </button>
-          </div>
+          </div>}
 
           <AuthModal 
             isOpen={showModal} 
@@ -65,7 +65,7 @@ export default function AuthGuard({ children, title = "Authentication Required",
   }
 
   // Admin Role Check
-  if (requireAdmin && profile?.role !== 'admin' && typeof window !== 'undefined' && localStorage.getItem('cs_admin_mode') !== 'true') {
+  if (requireAdmin && profile?.role !== 'admin') {
     return (
       <div className="min-h-[75vh] flex items-center justify-center p-6 bg-background">
         <Card className="max-w-md w-full border border-red-500/30 bg-surface p-8 text-center rounded-[36px] shadow-2xl space-y-6">
@@ -81,17 +81,6 @@ export default function AuthGuard({ children, title = "Authentication Required",
               You do not have sufficient administrative permissions to access the verification portal.
             </p>
           </div>
-          <button 
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('cs_admin_mode', 'true');
-                window.location.reload();
-              }
-            }}
-            className="w-full bg-surface-container-low border border-orange-500/20 text-on-surface hover:bg-orange-500/10 py-3 rounded-full font-bold text-xs transition-all cursor-pointer"
-          >
-            Authenticate as Admin Demo
-          </button>
         </Card>
       </div>
     );

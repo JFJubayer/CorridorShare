@@ -10,36 +10,77 @@ class AuthModal extends StatefulWidget {
 }
 
 class _AuthModalState extends State<AuthModal> {
-  final TextEditingController _phoneController = TextEditingController(text: '+8801712345678');
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
   bool _otpSent = false;
   bool _isLoading = false;
 
-  void _sendOtp() {
+  Future<void> _sendOtp() async {
     if (_phoneController.text.isEmpty) return;
     setState(() {
       _isLoading = true;
     });
-    Future.delayed(const Duration(milliseconds: 600), () {
+    try {
+      await Provider.of<UserProvider>(context, listen: false)
+          .requestOtp(_phoneController.text);
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _otpSent = true;
-        _otpController.text = '123456'; // Pre-filled for sandbox test
       });
-    });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
+      );
+    }
   }
 
-  void _verifyOtp() {
+  Future<void> _verifyOtp() async {
     if (_otpController.text.length < 6) return;
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userProvider.login(_phoneController.text);
+    setState(() => _isLoading = true);
+    try {
+      await userProvider.verifyOtp(
+        phone: _phoneController.text,
+        otp: _otpController.text,
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+    if (!mounted) return;
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Successfully authenticated! NID Verified status granted.'),
+        content: Text('Successfully authenticated. NID status will be loaded from your profile.'),
         backgroundColor: Color(0xFF059669),
       ),
     );
+  }
+
+  void _startDemoSession() {
+    try {
+      Provider.of<UserProvider>(context, listen: false)
+          .startDemoSession(_phoneController.text);
+      Navigator.of(context).pop();
+    } on Object catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _otpController.dispose();
+    super.dispose();
   }
 
   @override
@@ -104,7 +145,7 @@ class _AuthModalState extends State<AuthModal> {
                 ),
               ),
             ] else ...[
-              const Text('Enter 6-digit SMS OTP code (Sandbox pre-filled):', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              const Text('Enter the 6-digit SMS OTP code:', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               TextField(
                 controller: _otpController,
@@ -128,9 +169,19 @@ class _AuthModalState extends State<AuthModal> {
                 width: double.infinity,
                 height: 46,
                 child: ElevatedButton(
-                  onPressed: _verifyOtp,
+                  onPressed: _isLoading ? null : _verifyOtp,
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
                   child: const Text('VERIFY & LOG IN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+            if (Provider.of<UserProvider>(context).dataMode.name == 'demo') ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : _startDemoSession,
+                  child: const Text('CONTINUE IN DEMO MODE'),
                 ),
               ),
             ],

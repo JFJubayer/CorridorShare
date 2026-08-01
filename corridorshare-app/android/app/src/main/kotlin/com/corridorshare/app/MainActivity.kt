@@ -1,4 +1,4 @@
-package com.example.corridorshare_app
+package com.corridorshare.app
 
 import io.flutter.embedding.android.FlutterActivity
 

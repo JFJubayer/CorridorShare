@@ -1,70 +1,128 @@
-class DealModel {
-  final String id;
-  final String tripId;
-  final String packageId;
-  final String travelerId;
-  final String senderId;
-  double agreedPrice;
-  bool dealLocked;
-  bool openBoxVerified;
-  String status;
-  final String packageItem;
-  final String routeInfo;
-  final String otpSecret;
-  final List<ChatMessageModel> chatMessages;
+import '../core/money/money.dart';
 
-  DealModel({
+enum DealStatus { negotiating, escrowLocked, completed, refunded, cancelled }
+
+extension DealStatusWire on DealStatus {
+  String get label => switch (this) {
+        DealStatus.negotiating => 'Negotiating',
+        DealStatus.escrowLocked => 'Escrow Locked',
+        DealStatus.completed => 'Completed',
+        DealStatus.refunded => 'Refunded',
+        DealStatus.cancelled => 'Cancelled',
+      };
+
+  static DealStatus fromWire(String value) => switch (value.toLowerCase()) {
+        'negotiating' => DealStatus.negotiating,
+        'locked' => DealStatus.escrowLocked,
+        'locked' => DealStatus.escrowLocked,
+        'escrow_locked' => DealStatus.escrowLocked,
+        'completed' => DealStatus.completed,
+        'refunded' => DealStatus.refunded,
+        'cancelled' => DealStatus.cancelled,
+        _ => throw FormatException('Unknown deal status: $value'),
+      };
+}
+
+class DealModel {
+  const DealModel({
     required this.id,
     required this.tripId,
     required this.packageId,
     required this.travelerId,
     required this.senderId,
     required this.agreedPrice,
+    required this.status,
+    required this.packageItem,
+    required this.routeInfo,
     this.dealLocked = false,
     this.openBoxVerified = false,
-    this.status = 'Negotiating',
-    this.packageItem = 'Documents & Electronics',
-    this.routeInfo = 'Dhaka to Mymensingh N3 Road',
-    this.otpSecret = '8821',
-    List<ChatMessageModel>? chatMessages,
-  }) : chatMessages = chatMessages ?? [];
+  }) : assert(dealLocked == (status == DealStatus.escrowLocked || status == DealStatus.completed)),
+       assert(!openBoxVerified || status == DealStatus.completed);
+
+  final String id;
+  final String tripId;
+  final String packageId;
+  final String travelerId;
+  final String senderId;
+  final Money agreedPrice;
+  final bool dealLocked;
+  final bool openBoxVerified;
+  final DealStatus status;
+  final String packageItem;
+  final String routeInfo;
+
+  DealModel copyWith({
+    Money? agreedPrice,
+    bool? dealLocked,
+    bool? openBoxVerified,
+    DealStatus? status,
+  }) =>
+      DealModel(
+        id: id,
+        tripId: tripId,
+        packageId: packageId,
+        travelerId: travelerId,
+        senderId: senderId,
+        agreedPrice: agreedPrice ?? this.agreedPrice,
+        dealLocked: dealLocked ?? this.dealLocked,
+        openBoxVerified: openBoxVerified ?? this.openBoxVerified,
+        status: status ?? this.status,
+        packageItem: packageItem,
+        routeInfo: routeInfo,
+      );
 
   factory DealModel.fromJson(Map<String, dynamic> json) {
+    final amount = json['final_agreed_price'];
+    if (amount is! num) {
+      throw const FormatException('Deal price is required.');
+    }
+    final status = DealStatusWire.fromWire(_requiredString(json, 'status'));
+    final locked = (json['deal_locked'] as bool?) ??
+        (status == DealStatus.escrowLocked || status == DealStatus.completed);
+    final verified = (json['open_box_verified'] as bool?) ??
+        status == DealStatus.completed;
     return DealModel(
-      id: json['id'] ?? '',
-      tripId: json['trip_id'] ?? '',
-      packageId: json['package_id'] ?? '',
-      travelerId: json['traveler_id'] ?? 't-101',
-      senderId: json['sender_id'] ?? 's-201',
-      agreedPrice: (json['final_agreed_price'] as num?)?.toDouble() ?? 250.0,
-      dealLocked: json['deal_locked'] ?? false,
-      openBoxVerified: json['open_box_verified'] ?? false,
-      status: json['status'] ?? 'Negotiating',
-      packageItem: json['package_item'] ?? 'Documents & Electronics',
-      routeInfo: json['route_info'] ?? 'Dhaka to Mymensingh N3 Road',
-      otpSecret: json['otp_secret'] ?? '8821',
+      id: _requiredString(json, 'id'),
+      tripId: _requiredString(json, 'trip_id'),
+      packageId: _requiredString(json, 'package_id'),
+      travelerId: _requiredString(json, 'traveler_id'),
+      senderId: _requiredString(json, 'sender_id'),
+      agreedPrice: Money.fromBdt(amount),
+      dealLocked: locked,
+      openBoxVerified: verified,
+      status: status,
+      packageItem: _requiredString(json, 'package_item'),
+      routeInfo: _requiredString(json, 'route_info'),
     );
   }
 }
 
 class ChatMessageModel {
-  final String id;
-  final String dealId;
-  final String senderId;
-  final String senderName;
-  final String text;
-  final bool isMe;
-  final String timestamp;
-  final String? imageUrl;
-
-  ChatMessageModel({
+  const ChatMessageModel({
     required this.id,
     required this.dealId,
     required this.senderId,
     required this.senderName,
     required this.text,
-    required this.isMe,
-    required this.timestamp,
+    required this.createdAt,
     this.imageUrl,
-  });
+  }) : assert(text != '');
+
+  final String id;
+  final String dealId;
+  final String senderId;
+  final String senderName;
+  final String text;
+  final DateTime createdAt;
+  final String? imageUrl;
+
+  String get timestamp => '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
+}
+
+String _requiredString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is! String || value.trim().isEmpty) {
+    throw FormatException('Missing required field: $key');
+  }
+  return value;
 }

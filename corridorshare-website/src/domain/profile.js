@@ -1,7 +1,7 @@
 export const DEFAULT_PROFILE = Object.freeze({
   nid_status: 'unverified',
   nid_photo_url: '',
-  wallet_balance: 40,
+  wallet_balance: 0,
 });
 
 export function createFallbackProfile(id, phoneNumber) {

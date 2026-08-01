@@ -18,7 +18,7 @@ class _MatchScreenState extends State<MatchScreen> {
   void _showDetourDialog(PackageModel pkg) {
     final offerController = TextEditingController(text: (pkg.proposedReward + 100).toStringAsFixed(0));
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) {
         return AlertDialog(
@@ -60,6 +60,11 @@ class _MatchScreenState extends State<MatchScreen> {
             ),
             ElevatedButton(
               onPressed: () {
+                final offer = double.tryParse(offerController.text);
+                if (offer == null || offer <= 0) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Offer must be a positive amount.')));
+                  return;
+                }
                 Navigator.of(ctx).pop();
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -73,7 +78,7 @@ class _MatchScreenState extends State<MatchScreen> {
           ],
         );
       },
-    );
+    ).whenComplete(offerController.dispose);
   }
 
   @override
@@ -171,7 +176,7 @@ class _MatchScreenState extends State<MatchScreen> {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text('Route: ${pkg.routeInfo} • ${pkg.eta}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                        Text('Route: ${pkg.routeInfo} • ${pkg.etaLabel}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
                         const SizedBox(height: 12),
 
                         Row(
