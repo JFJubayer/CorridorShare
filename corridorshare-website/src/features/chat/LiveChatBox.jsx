@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/config/supabaseClient';
 import { useUser } from '@/context/UserContext';
+import { chatRepository } from '@/repositories/chatRepository';
 import { Camera, CheckSquare, Square, Lock, Unlock, Send, Sparkles, AlertCircle } from 'lucide-react';
 
 export default function LiveChatBox({ dealId }) {
@@ -15,36 +15,34 @@ export default function LiveChatBox({ dealId }) {
   const [inspectionPhoto, setInspectionPhoto] = useState('');
   const [checkedContraband, setCheckedContraband] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
+  const [actionError, setActionError] = useState('');
   const chatEndRef = useRef(null);
 
   // Load deal details and messages
   useEffect(() => {
+    let active = true;
     const loadDealData = async () => {
-      const { data: dealData } = await supabase
-        .from('chats')
-        .select('*')
-        .eq('id', dealId);
-
-      if (dealData && dealData.length > 0) {
-        const activeDeal = dealData[0];
+      try {
+        const activeDeal = await chatRepository.findById(dealId);
+        if (!active || !activeDeal) return;
         setDeal(activeDeal);
         setMessages(activeDeal.messages || []);
         setInspectionPhoto(activeDeal.inspection_photo_url || '');
         setCheckedContraband(activeDeal.open_box_verified || false);
+      } catch (error) {
+        if (active) setActionError(error.message || 'Unable to load this deal.');
       }
     };
 
     loadDealData();
-
-    const channel = supabase
-      .channel(`chat-${dealId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-        setMessages(prev => [...prev, payload.new]);
-      })
-      .subscribe();
+    const unsubscribe = chatRepository.subscribeToMessages(dealId, (message) => {
+      if (!active) return;
+      setMessages((previous) => previous.some((item) => item.id === message.id) ? previous : [...previous, message]);
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      active = false;
+      unsubscribe();
     };
   }, [dealId]);
 
@@ -56,29 +54,19 @@ export default function LiveChatBox({ dealId }) {
     e.preventDefault();
     if (!newMsg.trim() && !inspectionPhoto) return;
 
-    const messageObj = {
-      id: `msg-${Date.now()}`,
-      deal_id: dealId,
-      sender_id: userId,
-      message_text: newMsg,
-      image_verification_url: inspectionPhoto || null,
-      created_at: new Date().toISOString()
-    };
-
-    const currentChats = JSON.parse(localStorage.getItem('cs_chats') || '[]');
-    const updatedChats = currentChats.map(c => {
-      if (c.id === dealId) {
-        return {
-          ...c,
-          messages: [...(c.messages || []), messageObj]
-        };
-      }
-      return c;
-    });
-    localStorage.setItem('cs_chats', JSON.stringify(updatedChats));
-
-    setMessages(prev => [...prev, messageObj]);
-    setNewMsg('');
+    try {
+      setActionError('');
+      const message = await chatRepository.createMessage({
+        dealId,
+        senderId: userId,
+        messageText: newMsg.trim(),
+        imageVerificationUrl: inspectionPhoto || null,
+      });
+      if (message) setMessages((previous) => previous.some((item) => item.id === message.id) ? previous : [...previous, message]);
+      setNewMsg('');
+    } catch (error) {
+      setActionError(error.message || 'Unable to send the message.');
+    }
   };
 
   const handlePhotoUpload = async (e) => {
@@ -87,32 +75,10 @@ export default function LiveChatBox({ dealId }) {
 
     setIsUploading(true);
     
-    setTimeout(async () => {
+    setTimeout(() => {
       const mockUrl = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80";
-      
-      const currentChats = JSON.parse(localStorage.getItem('cs_chats') || '[]');
-      const updatedChats = currentChats.map(c => {
-        if (c.id === dealId) {
-          return {
-            ...c,
-            inspection_photo_url: mockUrl
-          };
-        }
-        return c;
-      });
-      localStorage.setItem('cs_chats', JSON.stringify(updatedChats));
-
       setInspectionPhoto(mockUrl);
       setIsUploading(false);
-
-      const systemMsg = {
-        id: `sys-${Date.now()}`,
-        deal_id: dealId,
-        sender_id: 'system',
-        message_text: "Inspection photo uploaded successfully.",
-        created_at: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, systemMsg]);
     }, 1500);
   };
 
@@ -120,32 +86,20 @@ export default function LiveChatBox({ dealId }) {
     if (!inspectionPhoto || !checkedContraband) return;
 
     setIsLocking(true);
-    setTimeout(() => {
-      const currentChats = JSON.parse(localStorage.getItem('cs_chats') || '[]');
-      const updatedChats = currentChats.map(c => {
-        if (c.id === dealId) {
-          return {
-            ...c,
-            deal_locked: true,
-            open_box_verified: true
-          };
-        }
-        return c;
+    try {
+      const lockedDeal = await chatRepository.lockDeal({
+        dealId,
+        amountMinor: deal?.final_agreed_price_minor || 25000,
+        inspectionPhotoUrl: inspectionPhoto,
+        idempotencyKey: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${dealId}-${Date.now()}`,
       });
-      localStorage.setItem('cs_chats', JSON.stringify(updatedChats));
-
-      setDeal(prev => ({ ...prev, deal_locked: true }));
+      setDeal((previous) => ({ ...previous, ...(lockedDeal || {}), deal_locked: true, open_box_verified: true }));
+      setActionError('');
+    } catch (error) {
+      setActionError(error.message || 'Unable to lock this deal.');
+    } finally {
       setIsLocking(false);
-
-      const systemMsg = {
-        id: `sys-lock-${Date.now()}`,
-        deal_id: dealId,
-        sender_id: 'system',
-        message_text: "DEAL LOCKED & SECURED: Safety Deposit and Route Handover parameters locked by platform.",
-        created_at: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, systemMsg]);
-    }, 1500);
+    }
   };
 
   const dealLocked = deal?.deal_locked;
@@ -155,6 +109,7 @@ export default function LiveChatBox({ dealId }) {
     <div className="flex flex-col h-[calc(100vh-140px)] max-w-2xl mx-auto bg-surface rounded-[28px] shadow-xl border border-orange-500/25 overflow-hidden transition-colors duration-300">
       
       {/* Safety Compliance Banner */}
+      {actionError && <p role="alert" className="m-4 mb-0 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400">{actionError}</p>}
       <div className="bg-orange-500/10 border-b border-orange-500/20 p-4 space-y-3">
         <div className="flex items-start gap-3">
           <AlertCircle className="text-orange-600 dark:text-orange-400 w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -254,7 +209,7 @@ export default function LiveChatBox({ dealId }) {
           {dealLocked ? (
             <div className="w-full bg-orange-500/15 border border-orange-500/40 text-orange-600 dark:text-orange-400 py-3.5 px-4 rounded-full flex items-center justify-center gap-2 font-black text-xs uppercase tracking-wider shadow-sm">
               <Lock className="w-4 h-4 animate-pulse text-orange-500" />
-              DEAL LOCKED & ENFORCED (250 BDT)
+              DEAL LOCKED & ENFORCED ({((deal?.final_agreed_price_minor || 0) / 100).toFixed(2)} BDT)
             </div>
           ) : (
             <>
@@ -318,4 +273,3 @@ export default function LiveChatBox({ dealId }) {
     </div>
   );
 }
-

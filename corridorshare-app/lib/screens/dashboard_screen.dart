@@ -16,7 +16,7 @@ class DashboardScreen extends StatelessWidget {
     final rewardController = TextEditingController(text: '450');
     final weightController = TextEditingController(text: '5.0');
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF0F172A),
@@ -103,22 +103,39 @@ class DashboardScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (isTraveler) {
-                      provider.addTrip(
+                  onPressed: () async {
+                    final capacity = double.tryParse(weightController.text);
+                    final reward = double.tryParse(rewardController.text);
+                    if (isTraveler && (capacity == null || capacity <= 0)) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Capacity must be a positive number.')));
+                      return;
+                    }
+                    if (!isTraveler && (reward == null || reward <= 0)) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Reward must be a positive amount.')));
+                      return;
+                    }
+                    try {
+                      if (isTraveler) {
+                      await provider.addTrip(
                         departure: depController.text,
                         destination: destController.text,
                         date: '4:30 PM',
-                        capacity: double.tryParse(weightController.text) ?? 5.0,
+                        capacity: capacity!,
                       );
                     } else {
-                      provider.addPackage(
+                      await provider.addPackage(
                         desc: descController.text,
-                        weight: double.tryParse(weightController.text) ?? 2.0,
-                        reward: double.tryParse(rewardController.text) ?? 450.0,
+                        weight: 2.0,
+                        reward: reward!,
                         location: 'Dhaka Corridor',
                       );
                     }
+                    } on Object catch (error) {
+                      if (!ctx.mounted) return;
+                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('$error')));
+                      return;
+                    }
+                    if (!ctx.mounted || !context.mounted) return;
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -138,14 +155,20 @@ class DashboardScreen extends StatelessWidget {
           ),
         );
       },
-    );
+    ).whenComplete(() {
+      depController.dispose();
+      destController.dispose();
+      descController.dispose();
+      rewardController.dispose();
+      weightController.dispose();
+    });
   }
 
   void _showTopUpDialog(BuildContext context, String providerName, Color themeColor) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final amountController = TextEditingController(text: '500');
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) {
         return AlertDialog(
@@ -186,13 +209,24 @@ class DashboardScreen extends StatelessWidget {
               child: const Text('CANCEL', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
-              onPressed: () {
-                final amt = double.tryParse(amountController.text) ?? 500.0;
-                if (providerName == 'bKash') {
-                  userProvider.topUpBkash(amt);
-                } else {
-                  userProvider.topUpNagad(amt);
+              onPressed: () async {
+                final amt = double.tryParse(amountController.text);
+                if (amt == null || amt <= 0) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Top-up amount must be positive.')));
+                  return;
                 }
+                try {
+                  if (providerName == 'bKash') {
+                    await userProvider.topUpBkash(amt);
+                  } else {
+                    await userProvider.topUpNagad(amt);
+                  }
+                } on Object catch (error) {
+                  if (!ctx.mounted) return;
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('$error')));
+                  return;
+                }
+                if (!ctx.mounted || !context.mounted) return;
                 Navigator.of(ctx).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -207,7 +241,7 @@ class DashboardScreen extends StatelessWidget {
           ],
         );
       },
-    );
+    ).whenComplete(amountController.dispose);
   }
 
   @override
@@ -395,7 +429,9 @@ class DashboardScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () => _showTopUpDialog(context, 'bKash', Colors.pinkAccent),
+                            onPressed: userProvider.dataMode.name == 'demo'
+                                ? () => _showTopUpDialog(context, 'bKash', Colors.pinkAccent)
+                                : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -407,7 +443,9 @@ class DashboardScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () => _showTopUpDialog(context, 'Nagad', Colors.deepOrangeAccent),
+                            onPressed: userProvider.dataMode.name == 'demo'
+                                ? () => _showTopUpDialog(context, 'Nagad', Colors.deepOrangeAccent)
+                                : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFF97316),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -480,7 +518,7 @@ class DashboardScreen extends StatelessWidget {
                                               children: [
                                                 const Icon(Icons.star, color: Color(0xFF68DBA9), size: 10),
                                                 const SizedBox(width: 2),
-                                                Text(trip.travelerRating, style: const TextStyle(color: Color(0xFF68DBA9), fontSize: 9, fontWeight: FontWeight.bold)),
+                                                Text(trip.travelerRatingLabel, style: const TextStyle(color: Color(0xFF68DBA9), fontSize: 9, fontWeight: FontWeight.bold)),
                                               ],
                                             ),
                                           ),
@@ -493,7 +531,7 @@ class DashboardScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(color: const Color(0xFFF97316).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
-                                child: Text(trip.travelTime, style: const TextStyle(color: Color(0xFFFFB690), fontSize: 9, fontWeight: FontWeight.bold)),
+                                child: Text(trip.travelTimeLabel, style: const TextStyle(color: Color(0xFFFFB690), fontSize: 9, fontWeight: FontWeight.bold)),
                               ),
                             ],
                           ),

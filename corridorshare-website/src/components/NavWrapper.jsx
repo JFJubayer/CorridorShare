@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import { Bell, ShieldCheck, Home, Compass, MessageSquare, User, ShieldAlert, Sun, Moon, LogOut } from 'lucide-react';
-import AuthModal from './AuthModal';
+import AuthModal from '@/features/auth/AuthModal';
 
 export default function NavWrapper({ children }) {
   const pathname = usePathname();
@@ -22,20 +22,16 @@ export default function NavWrapper({ children }) {
   const notificationRef = React.useRef(null);
 
   // Load notifications from LocalStorage or default to empty for clean user experience
-  const [notifications, setNotifications] = useState([]);
-
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('cs_notifications');
-      if (stored) {
-        try {
-          setNotifications(JSON.parse(stored));
-        } catch {
-          setNotifications([]);
-        }
-      }
+  const [notifications, setNotifications] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem('cs_notifications');
+    if (!stored) return [];
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return [];
     }
-  }, []);
+  });
 
   // Update LocalStorage whenever notifications change
   const updateNotifications = (newNotifs) => {

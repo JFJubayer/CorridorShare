@@ -1,0 +1,6 @@
+# Copy this file to key.properties locally or inject equivalent Gradle signing
+# properties in CI. Never commit the copied file or the referenced keystore.
+storeFile=/absolute/path/to/release.keystore
+storePassword=replace-in-secret-store
+keyAlias=corridorshare
+keyPassword=replace-in-secret-store

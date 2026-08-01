@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import { useUser } from '@/context/UserContext';
+import { isMockDataSource } from '@/config/supabaseClient';
 import { 
   ShieldCheck, Phone, KeyRound, ArrowRight, X, Lock, User, Mail, 
   Car, Package, CheckCircle2, Sparkles, Compass, UploadCloud, ChevronLeft 
 } from 'lucide-react';
 
 export default function AuthModal({ isOpen, onClose, title = "Welcome to CorridorShare" }) {
-  const { login, signup } = useUser();
+  const { requestOtp, verifyOtp } = useUser();
   const [isSignUp, setIsSignUp] = useState(true);
   const [step, setStep] = useState(1); // Steps 1 to 4 for progressive onboarding
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,9 +18,10 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [userRole, setUserRole] = useState('traveler'); // 'traveler' or 'sender'
-  const [phoneNumber, setPhoneNumber] = useState('01712345678');
-  const [otpCode, setOtpCode] = useState('123456');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [selectedCorridors, setSelectedCorridors] = useState(['N3 Dhaka ↔ Mymensingh']);
   const [nidUploaded, setNidUploaded] = useState(false);
 
@@ -43,24 +45,36 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
     setStep(2);
   };
 
-  const handleSendOTP = (e) => {
+  const fullPhoneNumber = () => phoneNumber.startsWith('+880') ? phoneNumber : `+88${phoneNumber}`;
+
+  const handleSendOTP = async (e) => {
     e.preventDefault();
     if (!phoneNumber || phoneNumber.length < 8) return;
     setIsSubmitting(true);
-    setTimeout(() => {
+    setAuthError('');
+    try {
+      await requestOtp(fullPhoneNumber());
       setIsSubmitting(false);
       setOtpSent(true);
-    }, 700);
+    } catch (error) {
+      setAuthError(error.message || 'Unable to send the verification code.');
+      setIsSubmitting(false);
+    }
   };
 
-  const handleVerifyOTP = (e) => {
+  const handleVerifyOTP = async (e) => {
     e.preventDefault();
     if (!otpCode || otpCode.length < 6) return;
     setIsSubmitting(true);
-    setTimeout(() => {
+    setAuthError('');
+    try {
+      await verifyOtp(fullPhoneNumber(), otpCode);
       setIsSubmitting(false);
       setStep(3);
-    }, 700);
+    } catch (error) {
+      setAuthError(error.message || 'The verification code is invalid or expired.');
+      setIsSubmitting(false);
+    }
   };
 
   const handleStep3Next = (e) => {
@@ -71,9 +85,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
   const handleCompleteRegistration = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(async () => {
-      const fullPhone = phoneNumber.startsWith('+880') ? phoneNumber : `+88${phoneNumber}`;
-      await signup(fullPhone);
+    setTimeout(() => {
       setIsSubmitting(false);
       if (onClose) onClose();
     }, 1000);
@@ -82,12 +94,20 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
   const handleQuickLogin = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(async () => {
-      const fullPhone = phoneNumber.startsWith('+880') ? phoneNumber : `+88${phoneNumber}`;
-      await login(fullPhone);
+    setAuthError('');
+    try {
+      if (!otpSent) {
+        await requestOtp(fullPhoneNumber());
+        setOtpSent(true);
+      } else {
+        await verifyOtp(fullPhoneNumber(), otpCode);
+        if (onClose) onClose();
+      }
       setIsSubmitting(false);
-      if (onClose) onClose();
-    }, 900);
+    } catch (error) {
+      setAuthError(error.message || 'Unable to sign in.');
+      setIsSubmitting(false);
+    }
   };
 
   const toggleCorridor = (name) => {
@@ -154,6 +174,12 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
             </div>
           )}
         </div>
+
+        {authError && (
+          <p role="alert" className="mb-4 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-xs font-bold text-red-600 dark:text-red-400">
+            {authError}
+          </p>
+        )}
 
         {/* ---------------------------------------------------- */}
         {/* SIGN UP FLOW (PROGRESSIVE 4-STEP ONBOARDING) */}
@@ -333,9 +359,11 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                           className="bg-transparent border-none p-0 text-sm font-black w-full text-center tracking-widest focus:ring-0 text-on-surface outline-none"
                         />
                       </div>
-                      <p className="text-[10px] text-on-surface-variant mt-1.5 text-center font-medium">
-                        Demo code preset: <strong className="text-orange-600 dark:text-orange-400">123456</strong>
-                      </p>
+                      {isMockDataSource && (
+                        <p className="text-[10px] text-on-surface-variant mt-1.5 text-center font-medium">
+                          Demo code: <strong className="text-orange-600 dark:text-orange-400">123456</strong>
+                        </p>
+                      )}
                     </div>
 
                     <button
@@ -496,7 +524,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
               </div>
             </div>
 
-            <div>
+            {otpSent && <div>
               <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-1">
                 6-Digit Login Code
               </label>
@@ -512,14 +540,14 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   className="bg-transparent border-none p-0 text-sm font-black w-full text-center tracking-widest focus:ring-0 text-on-surface outline-none"
                 />
               </div>
-            </div>
+            </div>}
 
             <button
               type="submit"
               disabled={isSubmitting}
               className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white py-4 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
-              {isSubmitting ? 'Authenticating...' : 'Sign In & Access Platform'}
+              {isSubmitting ? 'Authenticating...' : otpSent ? 'Sign In & Access Platform' : 'Send Login Code'}
             </button>
 
             <div className="text-center pt-2">

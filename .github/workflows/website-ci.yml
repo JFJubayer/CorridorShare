@@ -1,0 +1,37 @@
+name: Website CI
+
+on:
+  push:
+    paths:
+      - 'corridorshare-website/**'
+      - 'supabase/**'
+      - '.github/workflows/website-ci.yml'
+  pull_request:
+    paths:
+      - 'corridorshare-website/**'
+      - 'supabase/**'
+      - '.github/workflows/website-ci.yml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: corridorshare-website
+    env:
+      NEXT_PUBLIC_DATA_MODE: supabase
+      NEXT_PUBLIC_SUPABASE_URL: https://corridorshare-ci.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-public-anon-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: corridorshare-website/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --omit=dev
+

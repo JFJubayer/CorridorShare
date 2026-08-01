@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:corridorshare_app/core/config/app_config.dart';
 import 'package:corridorshare_app/providers/user_provider.dart';
 import 'package:corridorshare_app/screens/dashboard_screen.dart';
 
@@ -11,7 +12,9 @@ void main() {
 
     await tester.pumpWidget(
       ChangeNotifierProvider(
-        create: (_) => UserProvider(),
+        create: (_) => UserProvider(
+          config: const AppConfig(dataMode: AppDataMode.demo),
+        ),
         child: const MaterialApp(
           home: DashboardScreen(),
         ),
