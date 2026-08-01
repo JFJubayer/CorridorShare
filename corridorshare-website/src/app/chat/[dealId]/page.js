@@ -2,12 +2,12 @@
 'use client';
 
 import React, { use, useState, useEffect } from 'react';
-import LiveChatBox from '@/components/LiveChatBox';
+import LiveChatBox from '@/features/chat/LiveChatBox';
 import { ArrowLeft, MoreVertical, ShieldCheck, Stars, Truck } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import AuthGuard from '@/components/AuthGuard';
-import { supabase } from '@/config/supabaseClient';
+import AuthGuard from '@/features/auth/AuthGuard';
+import { chatRepository } from '@/repositories/chatRepository';
 
 const MapCorridor = dynamic(
   () => import('@/components/MapCorridor'),
@@ -40,7 +40,8 @@ function ChatPageContent({ params }) {
 
   useEffect(() => {
     const fetchDeal = async () => {
-      const { data } = await supabase.from('chats').select('*').eq('id', dealId);
+      const deal = await chatRepository.findById(dealId);
+      const data = deal ? [deal] : [];
       if (data && data.length > 0) {
         const d = data[0];
         const isDeal2 = dealId === 'deal-2';

@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/config/supabaseClient';
+import { createFallbackProfile, calculateWalletBalance } from '@/domain/profile';
+import { profileRepository } from '@/repositories/profileRepository';
 
 const UserContext = createContext();
 
@@ -21,23 +23,8 @@ export function UserProvider({ children }) {
   // Fetch current user & profile
   const fetchProfile = async (uid, phone = '+8801700000000') => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', uid);
-      
-      if (data && data.length > 0) {
-        setProfile(data[0]);
-      } else {
-        // Fallback for new profiles
-        setProfile({
-          id: uid,
-          phone_number: phone,
-          nid_status: 'unverified',
-          nid_photo_url: '',
-          wallet_balance: 40.00 // Default balance for testing
-        });
-      }
+      const storedProfile = await profileRepository.findById(uid);
+      setProfile(storedProfile ?? createFallbackProfile(uid, phone));
     } catch (err) {
       console.error("Error loading profile:", err);
     } finally {
@@ -138,59 +125,53 @@ export function UserProvider({ children }) {
 
   const topUp = async (amount) => {
     if (!profile) return;
-    const newBalance = parseFloat(profile.wallet_balance) + parseFloat(amount);
+    const newBalance = calculateWalletBalance(profile.wallet_balance, amount);
     
     // Update db
-    const { error } = await supabase
-      .from('profiles')
-      .update({ wallet_balance: newBalance })
-      .eq('id', profile.id);
+    try {
+      await profileRepository.update(profile.id, { wallet_balance: newBalance });
 
-    if (!error) {
       setProfile((prev) => ({
         ...prev,
         wallet_balance: newBalance
       }));
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const deductWallet = async (amount) => {
     if (!profile) return;
-    const newBalance = parseFloat(profile.wallet_balance) - parseFloat(amount);
+    const newBalance = calculateWalletBalance(profile.wallet_balance, amount, 'subtract');
     
-    const { error } = await supabase
-      .from('profiles')
-      .update({ wallet_balance: newBalance })
-      .eq('id', profile.id);
+    try {
+      await profileRepository.update(profile.id, { wallet_balance: newBalance });
 
-    if (!error) {
       setProfile((prev) => ({
         ...prev,
         wallet_balance: newBalance
       }));
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const updateNIDStatus = async (status, photoUrl) => {
     if (!profile) return;
-    const { error } = await supabase
-      .from('profiles')
-      .update({ nid_status: status, nid_photo_url: photoUrl })
-      .eq('id', profile.id);
+    try {
+      await profileRepository.update(profile.id, { nid_status: status, nid_photo_url: photoUrl });
 
-    if (!error) {
       setProfile((prev) => ({
         ...prev,
         nid_status: status,
         nid_photo_url: photoUrl
       }));
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   return (

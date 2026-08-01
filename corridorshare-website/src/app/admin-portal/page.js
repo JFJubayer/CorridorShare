@@ -6,7 +6,7 @@ import { supabase, DEFAULT_DEMO_PROFILES } from '@/config/supabaseClient';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { ShieldCheck, ShieldAlert, Phone, DollarSign, Calendar, RefreshCw, ZoomIn, Ban, RotateCcw, Plus, CheckCircle2 } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
+import AuthGuard from '@/features/auth/AuthGuard';
 
 export default function AdminPortalPage() {
   return (

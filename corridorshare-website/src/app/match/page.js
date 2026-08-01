@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/config/supabaseClient';
+import { matchingRepository } from '@/repositories/matchingRepository';
 import MapCorridor from '@/components/MapCorridor';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -12,7 +12,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
-import AuthGuard from '@/components/AuthGuard';
+import AuthGuard from '@/features/auth/AuthGuard';
 
 export default function MatchPage() {
   return (
@@ -58,10 +58,7 @@ function MatchPageContent() {
       }
 
       // 2. Fetch matches
-      const { data } = await supabase.rpc('match_packages_within_corridor', {
-        traveler_trip_id: 'trip-1',
-        buffer_distance_meters: 5000.0
-      });
+      const data = await matchingRepository.findPackages('trip-1', 5000.0);
       if (data) {
         setMatches(data);
       }

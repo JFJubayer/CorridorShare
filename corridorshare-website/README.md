@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# CorridorShare Website
 
-## Getting Started
+Next.js website for CorridorShare's highway peer-to-peer delivery experience.
 
-First, run the development server:
+## Development
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The website uses Supabase when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set. Without them it uses the browser LocalStorage demo adapter.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/app`: route entry points and layouts
+- `src/features`: feature UI for auth, chat, landing, and matching flows
+- `src/domain`: pure business rules and data contracts
+- `src/repositories`: feature-facing data access interfaces
+- `src/infrastructure`: Supabase and LocalStorage mock adapters
+- `src/components`: shared presentation components
+- `src/shared`: cross-feature utilities and errors
 
-## Learn More
+Route components should use repositories instead of importing an infrastructure adapter directly.
 
-To learn more about Next.js, take a look at the following resources:
+## Verification
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run lint
+npm test
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+GitHub Actions runs the same checks for website changes.

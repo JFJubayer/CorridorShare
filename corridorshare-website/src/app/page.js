@@ -5,10 +5,10 @@ import { useUser } from '@/context/UserContext';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import FigmaMakeDashboardWidget from '@/components/FigmaMakeDashboardWidget';
-import SafetyTrustMatrix from '@/components/SafetyTrustMatrix';
-import MobbinInspirationGrid from '@/components/MobbinInspirationGrid';
-import WalletGuard from '@/components/WalletGuard';
-import HeroBubbleShowcase from '@/components/HeroBubbleShowcase';
+import SafetyTrustMatrix from '@/features/landing/SafetyTrustMatrix';
+import MobbinInspirationGrid from '@/features/landing/MobbinInspirationGrid';
+import WalletGuard from '@/features/auth/WalletGuard';
+import HeroBubbleShowcase from '@/features/landing/HeroBubbleShowcase';
 import { 
   Wallet, Plus, Navigation, ChevronRight, Package, Calendar, 
   MapPin, Clock, Weight, BadgeDollarSign, ShieldAlert, Sparkles, CheckCircle2,

@@ -2,11 +2,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase, DEFAULT_DEMO_PROFILES } from '@/config/supabaseClient';
+import { DEFAULT_DEMO_PROFILES } from '@/config/supabaseClient';
+import { chatRepository } from '@/repositories/chatRepository';
 import Card from '@/components/ui/Card';
 import { useUser } from '@/context/UserContext';
 import { Search, ShieldCheck, ShieldAlert, MessageSquare, Clock, MapPin, ChevronRight, User } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
+import AuthGuard from '@/features/auth/AuthGuard';
 import Link from 'next/link';
 
 export default function ChatsListPage() {
@@ -27,7 +28,7 @@ function ChatsListPageContent() {
   useEffect(() => {
     const loadChats = async () => {
       setLoading(true);
-      const { data } = await supabase.from('chats').select('*');
+      const data = await chatRepository.list();
       
       if (data) {
         const decorated = data.map((chat, idx) => {
