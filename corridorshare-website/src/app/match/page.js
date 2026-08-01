@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
 import AuthGuard from '@/components/AuthGuard';
 
 export default function MatchPage() {
