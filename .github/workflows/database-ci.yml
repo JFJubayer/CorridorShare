@@ -25,6 +25,6 @@ jobs:
       - run: supabase start
       - run: supabase db reset
       - run: supabase test db
-      - run: supabase db lint --local --fail-on error
+      - run: supabase db lint --local --schema public --fail-on error
       - if: always()
         run: supabase stop --no-backup

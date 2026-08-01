@@ -1,5 +1,6 @@
-create extension if not exists postgis;
-create extension if not exists pgcrypto;
+create schema if not exists extensions;
+create extension if not exists postgis with schema extensions;
+create extension if not exists pgcrypto with schema extensions;
 
 create type public.profile_role as enum ('member', 'admin');
 create type public.profile_nid_status as enum ('unverified', 'pending', 'verified', 'suspended');
@@ -32,7 +33,7 @@ create table public.trips (
   traveler_id uuid not null references public.profiles(id) on delete cascade,
   departure_city text not null,
   destination_city text not null,
-  route_path geometry(LineString, 4326) not null,
+  route_path extensions.geometry(LineString, 4326) not null,
   travel_time timestamptz not null,
   weight_capacity_kg numeric(7, 2) not null check (weight_capacity_kg > 0),
   status public.trip_status not null default 'scheduled',
@@ -43,8 +44,8 @@ create table public.trips (
 create table public.packages (
   id uuid primary key default gen_random_uuid(),
   sender_id uuid not null references public.profiles(id) on delete cascade,
-  pickup_location geometry(Point, 4326) not null,
-  dropoff_location geometry(Point, 4326) not null,
+  pickup_location extensions.geometry(Point, 4326) not null,
+  dropoff_location extensions.geometry(Point, 4326) not null,
   pickup_radius_meters integer not null default 2000 check (pickup_radius_meters between 100 and 50000),
   item_description text not null,
   item_type text,
@@ -287,7 +288,7 @@ security definer
 set search_path = pg_catalog, public
 as $$
 declare
-  traveler_route geometry;
+  traveler_route extensions.geometry;
 begin
   if buffer_distance_meters < 100 or buffer_distance_meters > 50000 then
     raise exception 'Buffer distance must be between 100 and 50000 meters' using errcode = '22023';
@@ -309,16 +310,29 @@ begin
     p.item_type,
     p.proposed_reward_minor,
     p.is_premium,
-    st_distance(p.pickup_location::geography, traveler_route::geography),
-    st_distance(p.pickup_location::geography, traveler_route::geography) > p.pickup_radius_meters,
-    st_y(p.pickup_location),
-    st_x(p.pickup_location),
+    extensions.st_distance(
+      p.pickup_location::extensions.geography,
+      traveler_route::extensions.geography
+    ),
+    extensions.st_distance(
+      p.pickup_location::extensions.geography,
+      traveler_route::extensions.geography
+    ) > p.pickup_radius_meters,
+    extensions.st_y(p.pickup_location),
+    extensions.st_x(p.pickup_location),
     p.pickup_radius_meters
   from public.packages p
   where p.status = 'pending'
     and p.sender_id <> auth.uid()
-    and st_dwithin(p.pickup_location::geography, traveler_route::geography, buffer_distance_meters)
-  order by p.is_premium desc, st_distance(p.pickup_location::geography, traveler_route::geography);
+    and extensions.st_dwithin(
+      p.pickup_location::extensions.geography,
+      traveler_route::extensions.geography,
+      buffer_distance_meters
+    )
+  order by p.is_premium desc, extensions.st_distance(
+    p.pickup_location::extensions.geography,
+    traveler_route::extensions.geography
+  );
 end;
 $$;
 
@@ -450,7 +464,7 @@ begin
     raise exception 'Deal is not locked' using errcode = '22023';
   end if;
   if deal_record.delivery_otp_hash is null
-     or crypt(p_delivery_otp, deal_record.delivery_otp_hash) <> deal_record.delivery_otp_hash then
+     or extensions.crypt(p_delivery_otp, deal_record.delivery_otp_hash) <> deal_record.delivery_otp_hash then
     raise exception 'Invalid delivery OTP' using errcode = '28P01';
   end if;
   if exists (
@@ -506,7 +520,7 @@ begin
     raise exception 'Locked deal not found or caller is not the sender' using errcode = '42501';
   end if;
 
-  random_bytes := gen_random_bytes(4);
+  random_bytes := extensions.gen_random_bytes(4);
   random_number := get_byte(random_bytes, 0)::bigint * 16777216
     + get_byte(random_bytes, 1)::bigint * 65536
     + get_byte(random_bytes, 2)::bigint * 256
@@ -514,7 +528,7 @@ begin
   generated_otp := lpad((random_number % 1000000)::text, 6, '0');
 
   update public.chats_and_deals
-  set delivery_otp_hash = crypt(generated_otp, gen_salt('bf'))
+  set delivery_otp_hash = extensions.crypt(generated_otp, extensions.gen_salt('bf'))
   where id = p_deal_id;
   return generated_otp;
 end;

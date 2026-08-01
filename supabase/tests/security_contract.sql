@@ -10,13 +10,15 @@ insert into auth.users (
   (
     '10000000-0000-0000-0000-000000000001',
     '00000000-0000-0000-0000-000000000000',
-    'authenticated', 'authenticated', '+8801700000001', crypt('test-password', gen_salt('bf')),
+    'authenticated', 'authenticated', '+8801700000001',
+    extensions.crypt('test-password', extensions.gen_salt('bf')),
     '{}', '{"full_name":"Contract User A"}', now(), now()
   ),
   (
     '10000000-0000-0000-0000-000000000002',
     '00000000-0000-0000-0000-000000000000',
-    'authenticated', 'authenticated', '+8801700000002', crypt('test-password', gen_salt('bf')),
+    'authenticated', 'authenticated', '+8801700000002',
+    extensions.crypt('test-password', extensions.gen_salt('bf')),
     '{}', '{"full_name":"Contract User B"}', now(), now()
   );
 
@@ -26,7 +28,7 @@ insert into public.trips (
   '20000000-0000-0000-0000-000000000002',
   '10000000-0000-0000-0000-000000000002',
   'Dhaka', 'Mymensingh',
-  st_geomfromtext('LINESTRING(90.399452 23.777176, 90.407438 24.757082)', 4326),
+  extensions.st_geomfromtext('LINESTRING(90.399452 23.777176, 90.407438 24.757082)', 4326),
   now() + interval '1 day', 10
 );
 
@@ -36,8 +38,8 @@ insert into public.packages (
 ) values (
   '30000000-0000-0000-0000-000000000002',
   '10000000-0000-0000-0000-000000000002',
-  st_geomfromtext('POINT(90.425539 24.002284)', 4326),
-  st_geomfromtext('POINT(90.407438 24.757082)', 4326),
+  extensions.st_geomfromtext('POINT(90.425539 24.002284)', 4326),
+  extensions.st_geomfromtext('POINT(90.407438 24.757082)', 4326),
   'Contract test parcel', 25000, 2
 );
 
