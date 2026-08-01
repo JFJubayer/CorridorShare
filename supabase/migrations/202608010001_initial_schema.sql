@@ -335,6 +335,7 @@ set search_path = pg_catalog, public
 as $$
 declare
   deal_record public.chats_and_deals;
+  deal_lookup record;
   package_sender_id uuid;
   trip_traveler_id uuid;
 begin
@@ -348,14 +349,23 @@ begin
     raise exception 'Idempotency key is required' using errcode = '22023';
   end if;
 
-  select d, p.sender_id, t.traveler_id into deal_record, package_sender_id, trip_traveler_id
+  select d as deal, p.sender_id as sender_id, t.traveler_id
+  into deal_lookup
   from public.chats_and_deals d
   join public.packages p on p.id = d.package_id
   join public.trips t on t.id = d.trip_id
   where d.id = p_deal_id
   for update of d;
 
-  if deal_record.id is null or trip_traveler_id <> auth.uid() then
+  if not found then
+    raise exception 'Deal not found or caller is not the traveler' using errcode = '42501';
+  end if;
+
+  deal_record := deal_lookup.deal;
+  package_sender_id := deal_lookup.sender_id;
+  trip_traveler_id := deal_lookup.traveler_id;
+
+  if trip_traveler_id <> auth.uid() then
     raise exception 'Deal not found or caller is not the traveler' using errcode = '42501';
   end if;
 
@@ -410,19 +420,30 @@ set search_path = pg_catalog, public
 as $$
 declare
   deal_record public.chats_and_deals;
+  deal_lookup record;
   package_sender_id uuid;
   trip_traveler_id uuid;
   agreed_amount bigint;
 begin
-  select d, p.sender_id, t.traveler_id, d.final_agreed_price_minor
-  into deal_record, package_sender_id, trip_traveler_id, agreed_amount
+  select d as deal, p.sender_id as sender_id, t.traveler_id,
+         d.final_agreed_price_minor as agreed_amount
+  into deal_lookup
   from public.chats_and_deals d
   join public.packages p on p.id = d.package_id
   join public.trips t on t.id = d.trip_id
   where d.id = p_deal_id
   for update of d;
 
-  if deal_record.id is null or trip_traveler_id <> auth.uid() then
+  if not found then
+    raise exception 'Deal not found or caller is not the traveler' using errcode = '42501';
+  end if;
+
+  deal_record := deal_lookup.deal;
+  package_sender_id := deal_lookup.sender_id;
+  trip_traveler_id := deal_lookup.traveler_id;
+  agreed_amount := deal_lookup.agreed_amount;
+
+  if trip_traveler_id <> auth.uid() then
     raise exception 'Deal not found or caller is not the traveler' using errcode = '42501';
   end if;
   if not deal_record.deal_locked or agreed_amount is null then
@@ -510,18 +531,27 @@ set search_path = pg_catalog, public
 as $$
 declare
   deal_record public.chats_and_deals;
+  deal_lookup record;
   package_sender_id uuid;
   agreed_amount bigint;
 begin
-  select d, p.sender_id, d.final_agreed_price_minor
-  into deal_record, package_sender_id, agreed_amount
+  select d as deal, p.sender_id as sender_id,
+         d.final_agreed_price_minor as agreed_amount
+  into deal_lookup
   from public.chats_and_deals d
   join public.packages p on p.id = d.package_id
   where d.id = p_deal_id
   for update of d;
 
-  if deal_record.id is null
-     or (package_sender_id <> auth.uid() and not public.current_user_is_admin()) then
+  if not found then
+    raise exception 'Deal not found or caller is unauthorized' using errcode = '42501';
+  end if;
+
+  deal_record := deal_lookup.deal;
+  package_sender_id := deal_lookup.sender_id;
+  agreed_amount := deal_lookup.agreed_amount;
+
+  if package_sender_id <> auth.uid() and not public.current_user_is_admin() then
     raise exception 'Deal not found or caller is unauthorized' using errcode = '42501';
   end if;
   if deal_record.status = 'completed' then
