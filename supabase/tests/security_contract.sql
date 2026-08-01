@@ -56,26 +56,38 @@ select is(public.current_user_is_admin(), false, 'ordinary users are not adminis
 
 select throws_ok(
   $$update public.profiles set role = 'admin' where id = auth.uid()$$,
+  '42501',
+  'permission denied for table profiles',
   'ordinary users cannot assign themselves an admin role'
 );
 
 select throws_ok(
   $$update public.wallet_accounts set available_balance_minor = 999999 where profile_id = auth.uid()$$,
+  '42501',
+  'permission denied for table wallet_accounts',
   'authenticated clients cannot directly update wallets'
 );
 
 select throws_ok(
   $$select * from public.match_packages_within_corridor('20000000-0000-0000-0000-000000000002', 5000)$$,
+  '42501',
+  'Trip not found or not owned by caller',
   'users cannot match against another traveler trip'
 );
 
 select throws_ok(
   $$insert into public.messages (deal_id, sender_id, message_text) values ('40000000-0000-0000-0000-000000000002', auth.uid(), 'not a participant')$$,
+  '42501',
+  'new row violates row-level security policy for table "messages"',
   'messages are limited to deal participants'
 );
 
-select throws_ok(
-  $$select public.wallet_credit_from_provider(auth.uid(), 10000, 'forged-credit', 'forged')$$,
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.wallet_credit_from_provider(uuid,bigint,text,text)',
+    'EXECUTE'
+  ),
   'wallet credit is not executable by authenticated clients'
 );
 
