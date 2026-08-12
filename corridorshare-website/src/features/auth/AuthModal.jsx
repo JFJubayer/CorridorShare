@@ -69,7 +69,10 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    if (!otpCode || otpCode.length < 6) return;
+    if (!otpCode || otpCode.length < 6) {
+      setAuthError('Enter the full 6-digit code (friends beta: 123456).');
+      return;
+    }
     setIsSubmitting(true);
     setAuthError('');
     try {
@@ -399,11 +402,9 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                           className="bg-transparent border-none p-0 text-sm font-semibold w-full text-center tracking-widest focus:ring-0 text-on-surface outline-none"
                         />
                       </div>
-                      {isMockDataSource && (
-                        <p className="text-[10px] text-on-surface-variant mt-1.5 text-center font-medium">
-                          Demo code: <strong className="text-primary">123456</strong>
-                        </p>
-                      )}
+                      <p className="text-[10px] text-on-surface-variant mt-1.5 text-center font-medium">
+                        Friends beta code: <strong className="text-primary">123456</strong> (all 6 digits)
+                      </p>
                     </div>
 
                     <button
