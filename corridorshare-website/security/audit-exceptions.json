@@ -24,6 +24,18 @@
       "advisory": "GHSA-f88m-g3jw-g9cj",
       "expires": "2026-09-15",
       "reason": "Next.js 16.2.12 permits Sharp 0.34.x; no fixed stable Next.js release was available on 2026-08-01."
+    },
+    {
+      "package": "nanoid",
+      "advisory": "GHSA-2v37-7h3g-55p8",
+      "expires": "2026-09-15",
+      "reason": "Next.js 16.2.12 pins a transitive nanoid via PostCSS tooling; no fixed stable Next.js release was available on 2026-08-12."
+    },
+    {
+      "package": "postcss",
+      "advisory": "GHSA-fxqj-rqcc-2cmp",
+      "expires": "2026-09-15",
+      "reason": "Next.js 16.2.12 pins PostCSS 8.4.31; no fixed stable Next.js release was available on 2026-08-12."
     }
   ]
 }
