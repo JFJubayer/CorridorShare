@@ -1,13 +1,16 @@
 import '../core/money/money.dart';
 
-enum DealStatus { negotiating, escrowLocked, completed, refunded, cancelled }
+/// Wire statuses mirror `public.deal_status`:
+/// negotiating | locked | in_transit | completed | cancelled.
+/// `escrowLocked` is the app-facing name for DB `locked`.
+enum DealStatus { negotiating, escrowLocked, inTransit, completed, cancelled }
 
 extension DealStatusWire on DealStatus {
   String get label => switch (this) {
         DealStatus.negotiating => 'Negotiating',
         DealStatus.escrowLocked => 'Escrow Locked',
+        DealStatus.inTransit => 'In Transit',
         DealStatus.completed => 'Completed',
-        DealStatus.refunded => 'Refunded',
         DealStatus.cancelled => 'Cancelled',
       };
 
@@ -15,8 +18,10 @@ extension DealStatusWire on DealStatus {
         'negotiating' => DealStatus.negotiating,
         'locked' => DealStatus.escrowLocked,
         'escrow_locked' => DealStatus.escrowLocked,
+        'in_transit' => DealStatus.inTransit,
         'completed' => DealStatus.completed,
-        'refunded' => DealStatus.refunded,
+        // Historical client alias; refunds cancel the deal in the DB.
+        'refunded' => DealStatus.cancelled,
         'cancelled' => DealStatus.cancelled,
         _ => throw FormatException('Unknown deal status: $value'),
       };
@@ -35,8 +40,13 @@ class DealModel {
     required this.routeInfo,
     this.dealLocked = false,
     this.openBoxVerified = false,
-  }) : assert(dealLocked == (status == DealStatus.escrowLocked || status == DealStatus.completed)),
-       assert(!openBoxVerified || status == DealStatus.completed);
+  // open_box_verified is set at lock time by lock_deal_with_inspection.
+  }) : assert(
+          !openBoxVerified ||
+              status == DealStatus.escrowLocked ||
+              status == DealStatus.inTransit ||
+              status == DealStatus.completed,
+        );
 
   final String id;
   final String tripId;
@@ -71,22 +81,29 @@ class DealModel {
       );
 
   factory DealModel.fromJson(Map<String, dynamic> json) {
-    final amount = json['final_agreed_price'];
-    if (amount is! num) {
-      throw const FormatException('Deal price is required.');
+    final minor = json['final_agreed_price_minor'];
+    final legacy = json['final_agreed_price'];
+    final amountMinor = minor is num
+        ? minor.toInt()
+        : legacy is num
+            ? Money.fromBdt(legacy).minorUnits
+            : null;
+    if (amountMinor == null) {
+      throw const FormatException('Deal price (final_agreed_price_minor) is required.');
     }
     final status = DealStatusWire.fromWire(_requiredString(json, 'status'));
     final locked = (json['deal_locked'] as bool?) ??
-        (status == DealStatus.escrowLocked || status == DealStatus.completed);
-    final verified = (json['open_box_verified'] as bool?) ??
-        status == DealStatus.completed;
+        (status == DealStatus.escrowLocked ||
+            status == DealStatus.inTransit ||
+            status == DealStatus.completed);
+    final verified = json['open_box_verified'] as bool? ?? false;
     return DealModel(
       id: _requiredString(json, 'id'),
       tripId: _requiredString(json, 'trip_id'),
       packageId: _requiredString(json, 'package_id'),
       travelerId: _requiredString(json, 'traveler_id'),
       senderId: _requiredString(json, 'sender_id'),
-      agreedPrice: Money.fromBdt(amount),
+      agreedPrice: Money.fromMinorUnits(amountMinor),
       dealLocked: locked,
       openBoxVerified: verified,
       status: status,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../core/theme/app_colors.dart';
@@ -96,7 +97,7 @@ class _DealChatScreenState extends State<DealChatScreen> {
     String? inspectionPhotoUrl;
     final provider = context.read<UserProvider>();
     if (provider.dataMode.name == 'supabase') {
-      inspectionPhotoUrl = await _requestInspectionPhotoUrl();
+      inspectionPhotoUrl = await _requestInspectionPhotoUrl(deal.id);
       if (inspectionPhotoUrl == null) return;
     }
     try {
@@ -121,38 +122,53 @@ class _DealChatScreenState extends State<DealChatScreen> {
     }
   }
 
-  Future<String?> _requestInspectionPhotoUrl() async {
-    final controller = TextEditingController();
-    try {
-      return await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          backgroundColor: AppColors.surfaceDark,
-          title: const Text('Inspection photo', style: TextStyle(color: Colors.white)),
-          content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.url,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              labelText: 'Secure inspection photo URL',
-              labelStyle: TextStyle(color: Colors.grey),
+  Future<String?> _requestInspectionPhotoUrl(String dealId) async {
+    final provider = context.read<UserProvider>();
+    if (provider.dataMode.name != 'supabase') {
+      return 'demo://inspection-photo';
+    }
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.surfaceDark,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.orangeAccent),
+              title: const Text('Take inspection photo', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CANCEL')),
-            ElevatedButton(
-              onPressed: () {
-                final value = controller.text.trim();
-                if (value.isEmpty) return;
-                Navigator.pop(dialogContext, value);
-              },
-              child: const Text('LOCK ESCROW'),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.orangeAccent),
+              title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
           ],
         ),
+      ),
+    );
+    if (source == null) return null;
+    final file = await picker.pickImage(source: source, imageQuality: 85);
+    if (file == null) return null;
+    final bytes = await file.readAsBytes();
+    final name = 'inspection-${DateTime.now().millisecondsSinceEpoch}.jpg';
+    return provider.uploadInspectionPhoto(dealId: dealId, bytes: bytes, fileName: name);
+  }
+
+  Future<void> _requestRefund(DealModel deal) async {
+    try {
+      await context.read<UserProvider>().dealsController.requestRefund(deal.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escrow refund requested via wallet_refund RPC.'), backgroundColor: AppColors.success),
       );
-    } finally {
-      controller.dispose();
+    } on Object catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
+      );
     }
   }
 
@@ -316,6 +332,11 @@ class _DealChatScreenState extends State<DealChatScreen> {
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
                           icon: const Icon(Icons.verified_user, color: Colors.white, size: 16),
                           label: const Text('Release Payout', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                      if (provider.dataMode.name == 'supabase' && deal.senderId == provider.userId)
+                        OutlinedButton(
+                          onPressed: () => _requestRefund(deal),
+                          child: const Text('Refund escrow'),
                         ),
                     ],
                   )
