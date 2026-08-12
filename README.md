@@ -15,7 +15,7 @@ supabase/               Shared database migrations, policies, tests, and functio
 docs/                   Product, architecture, decisions, and operations
 ```
 
-The database is the shared contract between both clients. Product-sensitive operations such as wallet movements, escrow release, identity approval, and administrative actions must run through authorized server-side functions.
+The database is the shared contract between both clients. Product-sensitive operations such as wallet movements, escrow release, identity approval, and administrative actions must run through authorized server-side functions. MVP matching works nationwide on traveler-defined Bangladesh routes; live payment-provider credits are deferred — use admin staging credit in non-production environments.
 
 ## Quick start
 
