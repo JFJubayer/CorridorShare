@@ -13,6 +13,6 @@ enabled = true
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000"]
+site_url = "https://corridorshare-tan.vercel.app"
+additional_redirect_urls = ["http://localhost:3000", "https://corridorshare-tan.vercel.app", "https://corridorshare-fahmid-hasans-projects.vercel.app"]
 
