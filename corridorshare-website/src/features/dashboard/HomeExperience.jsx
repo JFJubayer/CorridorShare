@@ -11,6 +11,7 @@ import WalletGuard from '@/features/auth/WalletGuard';
 import HeroBubbleShowcase from '@/features/landing/HeroBubbleShowcase';
 import { postPackage, postTrip } from '@/features/dashboard/actions';
 import { isMockDataSource } from '@/config/supabaseClient';
+import { toBdE164 } from '@/shared/phone/bdPhone';
 import { 
   Wallet, Plus, Navigation, ChevronRight, Package, Calendar, 
   MapPin, Clock, Weight, BadgeDollarSign, ShieldAlert, Sparkles, CheckCircle2,
@@ -52,7 +53,7 @@ export default function HomeExperience() {
       return;
     }
     try {
-      await requestOtp(phoneInput.startsWith('+880') ? phoneInput : `+88${phoneInput}`);
+      await requestOtp(toBdE164(phoneInput));
       setAuthError('');
       setOtpSent(true);
     } catch (error) {
@@ -70,7 +71,7 @@ export default function HomeExperience() {
     setAuthError('');
     
     try {
-      await verifyOtp(phoneInput.startsWith('+880') ? phoneInput : `+88${phoneInput}`, otpInput);
+      await verifyOtp(toBdE164(phoneInput), otpInput);
       setShowAuthModal(false);
       setOtpSent(false);
       setPhoneInput('');

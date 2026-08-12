@@ -114,15 +114,18 @@ export default function MapCorridorInner({
 
         {/* Packages Markers */}
         {packages.map((pkg) => {
-          const pkgPos = [pkg.pickup_lat, pkg.pickup_lng];
+          const lat = Number(pkg.pickup_lat);
+          const lng = Number(pkg.pickup_lng);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+          const pkgPos = [lat, lng];
           const isNearMiss = pkg.is_near_miss;
           
           return (
-            <React.Fragment key={pkg.package_id}>
+            <React.Fragment key={pkg.package_id || pkg.id}>
               {/* Draw matching/near miss connector line if near miss */}
-              {isNearMiss && (
+              {isNearMiss && endPoint && (
                 <Polyline 
-                  positions={[pkgPos, [24.757082, 90.407438]]}
+                  positions={[pkgPos, endPoint]}
                   pathOptions={{ color: '#f59e0b', weight: 2, dashArray: '5, 8', opacity: 0.8 }}
                 />
               )}

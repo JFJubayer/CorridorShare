@@ -5,12 +5,12 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
-import { Bell, ShieldCheck, Home, Compass, MessageSquare, User, ShieldAlert, Sun, Moon, LogOut } from 'lucide-react';
+import { Bell, ShieldCheck, Home, Compass, MessageSquare, ShieldAlert, Sun, Moon, LogOut } from 'lucide-react';
 import AuthModal from '@/features/auth/AuthModal';
 
 export default function NavWrapper({ children }) {
   const pathname = usePathname();
-  const { profile, role, toggleRole, theme, toggleTheme, logout, isAuthenticated } = useUser();
+  const { profile, theme, toggleTheme, logout, isAuthenticated } = useUser();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
 
@@ -58,6 +58,7 @@ export default function NavWrapper({ children }) {
 
   // Hide default navigation if we are on the admin portal
   const isAdmin = pathname.startsWith('/admin') || pathname.startsWith('/admin-portal');
+  const isDealChat = pathname.startsWith('/chat/');
   const hasUnread = notifications.some(n => !n.read);
 
   return (
@@ -205,7 +206,7 @@ export default function NavWrapper({ children }) {
       </main>
 
       {/* Bottom Navigation Bar (Mobile View & Base Layout) */}
-      {!isAdmin && (
+      {!isAdmin && !isDealChat && (
         <nav className="fixed bottom-0 left-0 w-full z-45 flex justify-around items-center py-2 pb-safe bg-white dark:bg-slate-950 border-t border-outline-variant dark:border-slate-800 shadow-lg md:hidden transition-colors duration-300">
           <Link 
             href="/"
@@ -234,7 +235,7 @@ export default function NavWrapper({ children }) {
           <Link 
             href="/chat"
             className={`flex flex-col items-center justify-center transition-all ${
-              pathname === '/chat' 
+              pathname.startsWith('/chat') 
                 ? 'text-primary scale-105' 
                 : 'text-on-surface-variant hover:text-primary'
             }`}
@@ -246,7 +247,7 @@ export default function NavWrapper({ children }) {
       )}
 
       {/* Desktop sidebar navigation links helper */}
-      {!isAdmin && (
+      {!isAdmin && !isDealChat && (
         <div className="hidden md:flex fixed top-16 left-0 h-[calc(100vh-64px)] w-48 border-r border-outline-variant bg-surface p-4 flex-col gap-2 transition-colors duration-300">
           <Link 
             href="/"
@@ -275,7 +276,7 @@ export default function NavWrapper({ children }) {
           <Link 
             href="/chat"
             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs font-black transition-all ${
-              pathname === '/chat' 
+              pathname.startsWith('/chat') 
                 ? 'bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 shadow-xs' 
                 : 'text-on-surface-variant hover:bg-orange-500/10'
             }`}

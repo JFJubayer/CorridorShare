@@ -2,11 +2,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DEFAULT_DEMO_PROFILES } from '@/config/supabaseClient';
 import { chatRepository } from '@/repositories/chatRepository';
+import { tripRepository } from '@/repositories/tripRepository';
+import { packageRepository } from '@/repositories/packageRepository';
+import { profileRepository } from '@/repositories/profileRepository';
 import Card from '@/components/ui/Card';
 import { useUser } from '@/context/UserContext';
-import { Search, ShieldCheck, ShieldAlert, MessageSquare, Clock, MapPin, ChevronRight, User } from 'lucide-react';
+import { Search, ShieldCheck, ShieldAlert, MessageSquare, Clock, MapPin, ChevronRight } from 'lucide-react';
 import AuthGuard from '@/features/auth/AuthGuard';
 import Link from 'next/link';
 
@@ -24,45 +26,59 @@ function ChatsListPageContent() {
   const [chats, setChats] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
+    let active = true;
     const loadChats = async () => {
       setLoading(true);
-      const data = await chatRepository.list();
-      
-      if (data) {
-        const decorated = data.map((chat, idx) => {
-          let partner = DEFAULT_DEMO_PROFILES[idx % DEFAULT_DEMO_PROFILES.length];
-          
-          let partnerName = partner?.full_name || `User ${idx + 1}`;
-          let partnerAvatar = partner?.nid_photo_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&h=250&q=80";
-          let partnerNID = partner?.nid_status || "verified";
-          let routeInfo = partner?.corridor || "Dhaka Highway Corridor";
+      setLoadError('');
+      try {
+        const data = await chatRepository.list();
+        if (!active) return;
 
+        const decorated = await Promise.all((data || []).map(async (chat) => {
+          const [trip, pkg] = await Promise.all([
+            chat.trip_id ? tripRepository.findById(chat.trip_id) : null,
+            chat.package_id ? packageRepository.findById(chat.package_id) : null,
+          ]);
+          const partnerId = userId && trip?.traveler_id === userId
+            ? pkg?.sender_id
+            : trip?.traveler_id;
+          const partner = partnerId ? await profileRepository.findById(partnerId) : null;
           const lastMsg = chat.messages && chat.messages.length > 0
             ? chat.messages[chat.messages.length - 1]
-            : { message_text: "No messages yet", created_at: chat.created_at };
+            : { message_text: 'No messages yet', created_at: chat.created_at };
 
           return {
             ...chat,
-            partnerName,
-            partnerAvatar,
-            partnerNID,
-            routeInfo,
-            lastMessage: lastMsg.message_text,
-            lastMsgTime: lastMsg.created_at
+            partnerName: partner?.full_name || partner?.phone_number || 'Corridor Partner',
+            partnerAvatar: partner?.nid_photo_url || '',
+            partnerNID: partner?.nid_status || 'unverified',
+            routeInfo: trip
+              ? `${trip.departure_city || 'Pickup'} → ${trip.destination_city || 'Drop-off'}`
+              : (pkg?.route_info || 'Highway corridor deal'),
+            lastMessage: lastMsg.message_text || 'No messages yet',
+            lastMsgTime: lastMsg.created_at || chat.created_at,
           };
-        });
-        
-        setChats(decorated);
+        }));
+
+        if (active) setChats(decorated);
+      } catch (error) {
+        if (active) {
+          setChats([]);
+          setLoadError(error.message || 'Unable to load deal conversations.');
+        }
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
     };
 
     loadChats();
-  }, []);
+    return () => { active = false; };
+  }, [userId]);
 
-  const filteredChats = chats.filter(chat => 
+  const filteredChats = chats.filter((chat) =>
     chat.partnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     chat.routeInfo.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -95,6 +111,10 @@ function ChatsListPageContent() {
         />
       </div>
 
+      {loadError && (
+        <p role="alert" className="mb-4 rounded-2xl border border-orange-500/25 bg-orange-500/10 px-4 py-3 text-xs font-bold text-orange-700 dark:text-orange-300">{loadError}</p>
+      )}
+
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <svg className="animate-spin h-8 w-8 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -118,11 +138,17 @@ function ChatsListPageContent() {
               <Card className="flex items-center gap-4 p-4.5 bg-surface border border-orange-500/20 hover:border-orange-500/50 hover:shadow-xl transition-all duration-300 rounded-[28px] cursor-pointer">
                 {/* Partner Avatar with NID badge */}
                 <div className="relative flex-shrink-0">
-                  <img 
-                    src={chat.partnerAvatar} 
-                    alt={chat.partnerName} 
-                    className="w-13 h-13 rounded-full border border-orange-500/30 object-cover shadow-sm"
-                  />
+                  {chat.partnerAvatar ? (
+                    <img 
+                      src={chat.partnerAvatar} 
+                      alt={chat.partnerName} 
+                      className="w-13 h-13 rounded-full border border-orange-500/30 object-cover shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-13 h-13 rounded-full border border-orange-500/30 bg-orange-500/15 text-orange-600 flex items-center justify-center text-xs font-black shadow-sm">
+                      CS
+                    </div>
+                  )}
                   {chat.partnerNID === 'verified' ? (
                     <div className="absolute -bottom-0.5 -right-0.5 bg-secondary text-white rounded-full p-0.5 border-2 border-white dark:border-slate-950" title="NID Verified">
                       <ShieldCheck className="w-3 h-3" />

@@ -3,7 +3,7 @@
 
 import React, { use, useState, useEffect } from 'react';
 import LiveChatBox from '@/features/chat/LiveChatBox';
-import { ArrowLeft, MoreVertical, ShieldCheck, Stars } from 'lucide-react';
+import { ArrowLeft, MoreVertical, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import AuthGuard from '@/features/auth/AuthGuard';

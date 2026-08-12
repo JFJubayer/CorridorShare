@@ -5,6 +5,7 @@ import { useUser } from '@/context/UserContext';
 import { isMockDataSource } from '@/config/supabaseClient';
 import { profileRepository } from '@/repositories/profileRepository';
 import { uploadUserFile, STORAGE_BUCKETS } from '@/infrastructure/storage/upload';
+import { toBdE164 } from '@/shared/phone/bdPhone';
 import { 
   ShieldCheck, Phone, KeyRound, ArrowRight, X, Lock, User, Mail, 
   Car, Package, CheckCircle2, Sparkles, Compass, UploadCloud, ChevronLeft 
@@ -24,7 +25,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [selectedCorridors, setSelectedCorridors] = useState(['N3 Dhaka ↔ Mymensingh']);
+  const [selectedCorridors, setSelectedCorridors] = useState(['N3 Dhaka ↔ Mymensingh (Gazipur Bypass)']);
   const [nidUploaded, setNidUploaded] = useState(false);
   const [nidPhotoUrl, setNidPhotoUrl] = useState('');
   const [nidUploading, setNidUploading] = useState(false);
@@ -49,7 +50,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
     setStep(2);
   };
 
-  const fullPhoneNumber = () => phoneNumber.startsWith('+880') ? phoneNumber : `+88${phoneNumber}`;
+  const fullPhoneNumber = () => toBdE164(phoneNumber);
 
   const handleSendOTP = async (e) => {
     e.preventDefault();

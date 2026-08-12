@@ -95,6 +95,12 @@ function createId() {
   return '00000000-0000-4000-8000-000000000000'.replace(/0/g, () => Math.floor(Math.random() * 16).toString(16));
 }
 
+function parsePointWkt(wkt) {
+  const match = String(wkt || '').match(/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i);
+  if (!match) return { latitude: null, longitude: null };
+  return { longitude: Number(match[1]), latitude: Number(match[2]) };
+}
+
 function getStorageItem(key, fallback = []) {
   if (typeof window === 'undefined') return clone(fallback);
   const raw = window.localStorage.getItem(key);
@@ -394,22 +400,32 @@ export const mockClient = {
     if (!Number.isFinite(bufferMeters) || bufferMeters < 100 || bufferMeters > 50000) {
       return { data: null, error: new Error('Buffer distance must be between 100 and 50000 meters.') };
     }
+    const callerId = currentUser()?.id;
+    const tripCapacity = Number(trip.weight_capacity_kg);
     return {
-      data: getRows('packages').filter((pkg) => pkg.status === 'pending').map((pkg) => ({
-        package_id: pkg.id,
-        sender_id: pkg.sender_id,
-        item_description: pkg.item_description,
-        item_type: pkg.item_type || pkg.item_description,
-        proposed_reward_minor: pkg.proposed_reward_minor,
-        is_premium: pkg.is_premium,
-        distance_from_corridor: 120,
-        is_near_miss: false,
-        pickup_lat: pkg.pickup_lat,
-        pickup_lng: pkg.pickup_lng,
-        pickup_radius_meters: pkg.pickup_radius_meters,
-        route_info: pkg.route_info,
-        eta: pkg.eta,
-      })),
+      data: getRows('packages').filter((pkg) => {
+        if (pkg.status !== 'pending') return false;
+        if (callerId && pkg.sender_id === callerId) return false;
+        if (pkg.weight_kg != null && Number.isFinite(tripCapacity) && Number(pkg.weight_kg) > tripCapacity) return false;
+        return true;
+      }).map((pkg) => {
+        const point = parsePointWkt(pkg.pickup_location);
+        return {
+          package_id: pkg.id,
+          sender_id: pkg.sender_id,
+          item_description: pkg.item_description,
+          item_type: pkg.item_type || pkg.item_description,
+          proposed_reward_minor: pkg.proposed_reward_minor,
+          is_premium: pkg.is_premium,
+          distance_from_corridor: 120,
+          is_near_miss: false,
+          pickup_lat: pkg.pickup_lat ?? point.latitude,
+          pickup_lng: pkg.pickup_lng ?? point.longitude,
+          pickup_radius_meters: pkg.pickup_radius_meters,
+          route_info: pkg.route_info,
+          eta: pkg.eta,
+        };
+      }),
       error: null,
     };
   },
