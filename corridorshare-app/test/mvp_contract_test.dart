@@ -30,7 +30,7 @@ void main() {
 
     await listings.addPackage(
       currentUserId: 'sender-1',
-      description: 'Docs',
+      description: 'Docs-require-phone',
       weight: 1.0,
       reward: Money.fromBdt(200),
       pickup: pickup,
@@ -39,7 +39,8 @@ void main() {
       recipientPhone: '+8801712345678',
       liveRepository: null,
     );
-    expect(listings.packages.last.recipientPhone, '+8801712345678');
+    final created = listings.packages.firstWhere((pkg) => pkg.itemDescription == 'Docs-require-phone');
+    expect(created.recipientPhone, '+8801712345678');
   });
 
   test('nationwide places include non-N3 cities', () {

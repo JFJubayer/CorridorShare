@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/config/app_config.dart';
-import '../infrastructure/supabase/supabase_backend_repository.dart';
 import '../providers/user_provider.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -208,6 +207,7 @@ class _AdminScreenState extends State<AdminScreen> {
       );
       return;
     }
+    if (!mounted) return;
     final repository = context.read<UserProvider>().liveRepository;
     if (repository == null) return;
     setState(() => _busy = true);

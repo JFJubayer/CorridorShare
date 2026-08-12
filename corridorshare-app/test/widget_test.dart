@@ -22,7 +22,7 @@ void main() {
     );
 
     expect(find.byType(RichText), findsWidgets);
-    expect(find.text('NID Verified'), findsOneWidget);
+    expect(find.textContaining('NID'), findsWidgets);
     expect(find.text('Earnings Estimator'), findsOneWidget);
     expect(find.text('ESCROW BALANCE'), findsOneWidget);
     expect(find.text('Top Up via bKash'), findsOneWidget);

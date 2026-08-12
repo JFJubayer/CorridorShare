@@ -26,7 +26,7 @@ class GeoPoint {
 }
 
 class PackageModel {
-  const PackageModel({
+  PackageModel({
     required this.id,
     required this.senderId,
     required this.itemDescription,
@@ -46,10 +46,7 @@ class PackageModel {
     this.weightKg,
   }) : assert(pickupRadiusMeters > 0),
        assert(distanceFromCorridor >= 0),
-       assert(
-         pickup.latitude != dropoff.latitude || pickup.longitude != dropoff.longitude,
-         'dropoff must differ from pickup',
-       );
+       assert(!pickup.isSameAs(dropoff), 'dropoff must differ from pickup');
 
   final String id;
   final String senderId;

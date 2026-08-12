@@ -153,7 +153,7 @@ class _MatchScreenState extends State<MatchScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
             child: DropdownButtonFormField<String>(
-              value: _selectedTrip?.id,
+              initialValue: _selectedTrip?.id,
               dropdownColor: const Color(0xFF0F172A),
               decoration: const InputDecoration(
                 labelText: 'Match against your trip (RPC)',

@@ -56,7 +56,7 @@ class DashboardScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     if (isTraveler) ...[
                       DropdownButtonFormField<String>(
-                        value: departureId,
+                        initialValue: departureId,
                         dropdownColor: const Color(0xFF0F172A),
                         decoration: const InputDecoration(
                           labelText: 'Departure (Bangladesh)',
@@ -70,7 +70,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: destinationId,
+                        initialValue: destinationId,
                         dropdownColor: const Color(0xFF0F172A),
                         decoration: const InputDecoration(
                           labelText: 'Destination (Bangladesh)',
@@ -107,7 +107,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: pickupId,
+                        initialValue: pickupId,
                         dropdownColor: const Color(0xFF0F172A),
                         decoration: const InputDecoration(
                           labelText: 'Pickup place',
@@ -121,7 +121,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: dropoffId,
+                        initialValue: dropoffId,
                         dropdownColor: const Color(0xFF0F172A),
                         decoration: const InputDecoration(
                           labelText: 'Dropoff place (must differ)',
