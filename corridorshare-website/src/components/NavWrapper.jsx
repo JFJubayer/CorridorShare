@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
-import { Bell, ShieldCheck, Home, Compass, MessageSquare, ShieldAlert, Sun, Moon, LogOut } from 'lucide-react';
+import { Bell, ShieldCheck, Home, Compass, MessageSquare, ShieldAlert, Sun, Moon, LogOut, X } from 'lucide-react';
 import AuthModal from '@/features/auth/AuthModal';
 
 export default function NavWrapper({ children }) {
@@ -17,6 +17,25 @@ export default function NavWrapper({ children }) {
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   React.useEffect(() => { setMounted(true); }, []);
+
+  const BETA_BANNER_KEY = 'cs_friends_beta_banner_dismissed';
+  const [betaBannerDismissed, setBetaBannerDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem(BETA_BANNER_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const showBetaBanner = isAuthenticated && !betaBannerDismissed;
+  const dismissBetaBanner = () => {
+    setBetaBannerDismissed(true);
+    try {
+      localStorage.setItem(BETA_BANNER_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+  };
 
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = React.useRef(null);
@@ -200,6 +219,24 @@ export default function NavWrapper({ children }) {
 
       {/* Main Content Layout */}
       <main className="flex-grow pt-16 pb-20 md:pb-8">
+        {isAuthenticated && showBetaBanner && (
+          <div className="mx-4 mt-3 md:ml-52 md:mr-6 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 flex items-start gap-3">
+            <div className="flex-grow space-y-0.5">
+              <p className="text-xs font-semibold text-on-surface">Friends private beta</p>
+              <p className="text-[11px] text-on-surface-variant font-medium leading-relaxed">
+                OTP sign-in, matching, deal chat, meetup pins, and escrow OTP work. Live payments and live GPS tracking are not included — use admin wallet credit for staging.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissBetaBanner}
+              className="p-1 rounded-full hover:bg-primary/15 text-on-surface-variant"
+              aria-label="Dismiss friends beta banner"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         {children}
       </main>
 

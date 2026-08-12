@@ -3,10 +3,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_DEMO_PROFILES, isMockDataSource } from '@/config/supabaseClient';
-import { addDemoKycProfile, loadProfilesForReview, resetDemoUsers, setKycStatus } from '@/features/admin/actions';
+import { addDemoKycProfile, creditWalletStaging, loadProfilesForReview, resetDemoUsers, setKycStatus } from '@/features/admin/actions';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { ShieldCheck, ShieldAlert, Phone, DollarSign, Calendar, RefreshCw, ZoomIn, Ban, RotateCcw, Plus, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Phone, DollarSign, Calendar, RefreshCw, ZoomIn, Ban, RotateCcw, Plus, CheckCircle2, Wallet } from 'lucide-react';
 import AuthGuard from '@/features/auth/AuthGuard';
 
 export default function AdminPortalPage() {
@@ -23,6 +23,7 @@ function AdminPortalPageContent() {
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
   const [actionError, setActionError] = useState('');
+  const [actionInfo, setActionInfo] = useState('');
 
   const loadProfiles = useCallback(async (showSpinner = false) => {
     if (showSpinner) setLoading(true);
@@ -74,6 +75,20 @@ function AdminPortalPageContent() {
       await loadProfiles();
     } catch (error) {
       setActionError(error.message || 'Unable to create a demo profile.');
+    }
+  };
+
+  const handleCreditWallet = async (profileId) => {
+    const amountRaw = window.prompt('Staging credit amount (BDT) via admin_credit_wallet:', '500');
+    if (amountRaw == null) return;
+    const noteRaw = window.prompt('Note for ledger (optional):', 'Friends beta staging credit');
+    try {
+      setActionError('');
+      await creditWalletStaging({ profileId, amountBdt: amountRaw, note: noteRaw || undefined });
+      await loadProfiles();
+      setActionInfo(`Credited ${Number(amountRaw).toFixed(2)} BDT via admin_credit_wallet.`);
+    } catch (error) {
+      setActionError(error.message || 'Unable to credit this wallet. Admin role required.');
     }
   };
 
@@ -130,6 +145,7 @@ function AdminPortalPageContent() {
       </div>
 
       {actionError && <p role="alert" className="mb-4 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-xs font-bold text-red-600 dark:text-red-400">{actionError}</p>}
+      {actionInfo && <p className="mb-4 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-xs font-bold text-primary">{actionInfo}</p>}
 
       {/* Filter Tabs Bar */}
       <div className="flex items-center gap-2.5 border-b border-outline-variant pb-3 mb-6 overflow-x-auto">
@@ -270,6 +286,16 @@ function AdminPortalPageContent() {
                       Suspend Account
                     </Button>
                   )}
+
+                  <Button
+                    onClick={() => handleCreditWallet(p.id)}
+                    variant="secondary"
+                    className="flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-full border border-outline"
+                    title="Calls admin_credit_wallet — staging funding only, not a payment gateway"
+                  >
+                    <Wallet className="w-4 h-4" />
+                    Credit staging wallet
+                  </Button>
                 </div>
 
               </Card>

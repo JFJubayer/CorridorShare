@@ -11,6 +11,7 @@ import { useUser } from '@/context/UserContext';
 import { Search, ShieldCheck, ShieldAlert, MessageSquare, Clock, MapPin, ChevronRight } from 'lucide-react';
 import AuthGuard from '@/features/auth/AuthGuard';
 import Link from 'next/link';
+import { meetupPinPreview } from '@/shared/chat/meetupPin';
 
 export default function ChatsListPage() {
   return (
@@ -58,7 +59,7 @@ function ChatsListPageContent() {
             routeInfo: trip
               ? `${trip.departure_city || 'Pickup'} → ${trip.destination_city || 'Drop-off'}`
               : (pkg?.route_info || 'Highway corridor deal'),
-            lastMessage: lastMsg.message_text || 'No messages yet',
+            lastMessage: meetupPinPreview(lastMsg.message_text || 'No messages yet'),
             lastMsgTime: lastMsg.created_at || chat.created_at,
           };
         }));
@@ -124,9 +125,13 @@ function ChatsListPageContent() {
       ) : filteredChats.length === 0 ? (
         <div className="text-center py-16 bg-surface border border-outline rounded-xl p-6 space-y-3 shadow-md">
           <MessageSquare className="w-10 h-10 text-primary/50 mx-auto" />
-          <h3 className="font-semibold text-on-surface text-base">No active chats found</h3>
+          <h3 className="font-semibold text-on-surface text-base">
+            {searchQuery.trim() ? 'No chats match your search' : 'No deal chats yet'}
+          </h3>
           <p className="text-xs text-on-surface-variant font-medium max-w-xs mx-auto">
-            Send delivery requests to active travelers in the Matching tab to initiate conversations.
+            {searchQuery.trim()
+              ? 'Try a different partner name or corridor route.'
+              : 'Open Matching, send a delivery request, and the deal chat will appear here.'}
           </p>
         </div>
       ) : (
