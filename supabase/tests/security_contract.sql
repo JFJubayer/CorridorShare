@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap;
-select plan(21);
+select plan(22);
 
 insert into auth.users (
   id, instance_id, aud, role, phone, encrypted_password,
@@ -218,6 +218,18 @@ select ok(
     where package_id = '30000000-0000-0000-0000-000000000011'
   ),
   'packages heavier than trip capacity are excluded'
+);
+
+select results_eq(
+  $$
+    select dropoff_lat, dropoff_lng, weight_kg
+    from public.match_packages_within_corridor('20000000-0000-0000-0000-000000000002', 5000)
+    where package_id = '30000000-0000-0000-0000-000000000012'
+  $$,
+  $$
+    values (24.5::double precision, 90.405::double precision, 3::numeric)
+  $$,
+  'match returns dropoff coords and weight_kg for matching packages'
 );
 
 -- ---------------------------------------------------------------------------
