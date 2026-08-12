@@ -11,4 +11,10 @@ export const packageRepository = {
     if (error) throw error;
     return data?.[0] ?? null;
   },
+  async listForSender(senderId) {
+    if (!senderId) return [];
+    const { data, error } = await supabase.from('packages').select('*').eq('sender_id', senderId).order('created_at', { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
 };

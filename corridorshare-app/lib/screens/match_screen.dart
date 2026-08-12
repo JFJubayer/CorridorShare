@@ -8,7 +8,9 @@ import '../widgets/map_corridor.dart';
 import 'deal_chat_screen.dart';
 
 class MatchScreen extends StatefulWidget {
-  const MatchScreen({super.key});
+  const MatchScreen({super.key, this.initialTripId});
+
+  final String? initialTripId;
 
   @override
   State<MatchScreen> createState() => _MatchScreenState();
@@ -25,8 +27,19 @@ class _MatchScreenState extends State<MatchScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final provider = context.read<UserProvider>();
+    TripModel? preferred;
+    final initialId = widget.initialTripId;
+    if (initialId != null) {
+      for (final trip in provider.trips) {
+        if (trip.id == initialId) {
+          preferred = trip;
+          break;
+        }
+      }
+    }
     final myTrips = provider.trips.where((t) => t.travelerId == provider.userId).toList();
-    final fallback = myTrips.isNotEmpty ? myTrips.first : (provider.trips.isNotEmpty ? provider.trips.first : null);
+    final fallback = preferred ??
+        (myTrips.isNotEmpty ? myTrips.first : (provider.trips.isNotEmpty ? provider.trips.first : null));
     if (_selectedTrip == null && fallback != null) {
       _selectedTrip = fallback;
       WidgetsBinding.instance.addPostFrameCallback((_) => _runMatch());
@@ -112,9 +125,20 @@ class _MatchScreenState extends State<MatchScreen> {
                   ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Offer must be a positive amount.')));
                   return;
                 }
+                final tripId = _selectedTrip?.id;
+                if (tripId == null) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Select a trip before sending an offer.')));
+                  return;
+                }
                 Navigator.of(ctx).pop();
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => DealChatScreen(package: pkg)),
+                  MaterialPageRoute(
+                    builder: (_) => DealChatScreen(
+                      package: pkg,
+                      tripId: tripId,
+                      agreedReward: offer,
+                    ),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
@@ -227,7 +251,22 @@ class _MatchScreenState extends State<MatchScreen> {
               child: Text('$_error', style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
             ),
           Expanded(
-            child: ListView.builder(
+            child: _matches.isEmpty && !_loading
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        tripOptions.isEmpty
+                            ? 'No trips yet. Post a trip from Dashboard, then match packages along your corridor.'
+                            : (_error == null
+                                ? 'No packages matched this corridor yet. Pull refresh or widen the trip selection.'
+                                : 'Matching failed. Fix the error above and retry.'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
               padding: const EdgeInsets.all(14),
               itemCount: _matches.length,
               itemBuilder: (ctx, idx) {
@@ -272,8 +311,17 @@ class _MatchScreenState extends State<MatchScreen> {
                                 if (pkg.isNearMiss) {
                                   _showDetourDialog(pkg);
                                 } else {
+                                  final tripId = _selectedTrip?.id;
+                                  if (tripId == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Select a trip before opening a deal room.')),
+                                    );
+                                    return;
+                                  }
                                   Navigator.of(context).push(
-                                    MaterialPageRoute(builder: (_) => DealChatScreen(package: pkg)),
+                                    MaterialPageRoute(
+                                      builder: (_) => DealChatScreen(package: pkg, tripId: tripId),
+                                    ),
                                   );
                                 }
                               },

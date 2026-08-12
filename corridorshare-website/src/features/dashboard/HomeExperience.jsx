@@ -12,6 +12,10 @@ import HeroBubbleShowcase from '@/features/landing/HeroBubbleShowcase';
 import { postPackage, postTrip } from '@/features/dashboard/actions';
 import { isMockDataSource } from '@/config/supabaseClient';
 import { toBdE164 } from '@/shared/phone/bdPhone';
+import { tripRepository } from '@/repositories/tripRepository';
+import { packageRepository } from '@/repositories/packageRepository';
+import { chatRepository } from '@/repositories/chatRepository';
+import { meetupPinPreview } from '@/shared/chat/meetupPin';
 import { 
   Wallet, Plus, Navigation, ChevronRight, Package, Calendar, 
   MapPin, Clock, Weight, BadgeDollarSign, ShieldAlert, Sparkles, CheckCircle2,
@@ -23,7 +27,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function HomeExperience() {
   const { 
-    role, setRole, profile, topUp, isAuthenticated, requestOtp, verifyOtp, userId
+    role, setRole, profile, topUp, isAuthenticated, requestOtp, verifyOtp, userId, logout
   } = useUser();
 
   // Authentication Dialog States
@@ -87,6 +91,7 @@ export default function HomeExperience() {
     try {
       await postTrip({ userId, form: tripForm });
       setShowPostModal(false);
+      await refreshDashboard();
       alert('Trip posted successfully! Check "Upcoming Trips" below.');
     } catch (error) {
       alert(error.message || 'Unable to post this trip.');
@@ -99,53 +104,96 @@ export default function HomeExperience() {
     try {
       await postPackage({ userId, form: packageForm });
       setShowPostModal(false);
-      alert('Package delivery request posted! Navigating to Matching tab will find travelers.');
+      await refreshDashboard();
+      alert('Package delivery request posted! Matching can find travelers once a trip is live.');
     } catch (error) {
       alert(error.message || 'Unable to post this package request.');
     }
   };
 
-  const activeDeliveries = [
-    {
-      id: 'CS-9821',
-      route: 'Dhaka to Chittagong',
-      status: 'In Transit',
-      item: 'Small Document',
-      eta: 'Today',
-      progress: 66
-    },
-    {
-      id: 'CS-7742',
-      route: 'Sylhet to Dhaka',
-      status: 'Matched',
-      item: 'Electronics (2kg)',
-      eta: 'Match Date: May 12',
-      progress: 33
-    }
-  ];
+  const [upcomingTrips, setUpcomingTrips] = useState([]);
+  const [activeDeliveries, setActiveDeliveries] = useState([]);
+  const [activityFeed, setActivityFeed] = useState([]);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState('');
 
-  const upcomingTrips = [
-    {
-      id: 'trip-1',
-      route: 'Dhaka to Mymensingh',
-      time: 'Tonight 8 PM',
-      capacity: '10kg capacity',
-      status: 'Scheduled'
-    },
-    {
-      id: 'trip-2',
-      route: 'Dhaka to Sherpur',
-      time: 'Today 2 PM',
-      capacity: '15kg capacity',
-      status: 'Active'
-    }
-  ];
+  const packageProgress = (status) => {
+    const key = String(status || '').toLowerCase();
+    if (key === 'delivered' || key === 'completed') return 100;
+    if (key === 'in_transit' || key === 'in-transit') return 66;
+    if (key === 'matched' || key === 'accepted' || key === 'locked') return 33;
+    return 10;
+  };
 
-  const platformFeed = [
-    { text: "CS-1092 matched on N3 Corridor (Gazipur Bypass)", time: "2 mins ago" },
-    { text: "Safety Lock enforced for Package CS-5510", time: "15 mins ago" },
-    { text: "Traveler Aminul verification status updated to Verified", time: "1 hr ago" }
-  ];
+  const refreshDashboard = async () => {
+    if (!userId) {
+      setUpcomingTrips([]);
+      setActiveDeliveries([]);
+      setActivityFeed([]);
+      return;
+    }
+    setDashboardLoading(true);
+    setDashboardError('');
+    try {
+      const [trips, packages, deals] = await Promise.all([
+        tripRepository.listForTraveler(userId),
+        packageRepository.listForSender(userId),
+        chatRepository.list().catch(() => []),
+      ]);
+
+      setUpcomingTrips((trips || []).map((trip) => ({
+        id: trip.id,
+        route: `${trip.departure_city || 'Pickup'} to ${trip.destination_city || 'Drop-off'}`,
+        time: trip.travel_time
+          ? new Date(trip.travel_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+          : 'Schedule TBD',
+        capacity: trip.weight_capacity_kg != null ? `${trip.weight_capacity_kg}kg capacity` : 'Capacity TBD',
+        status: trip.status || 'scheduled',
+      })));
+
+      setActiveDeliveries((packages || []).map((pkg) => ({
+        id: pkg.id,
+        route: pkg.item_description || 'Package request',
+        status: pkg.status || 'pending',
+        item: pkg.weight_kg != null ? `${pkg.weight_kg}kg · ${(pkg.proposed_reward_minor || 0) / 100} BDT` : 'Package',
+        eta: pkg.created_at ? `Posted ${new Date(pkg.created_at).toLocaleDateString()}` : '',
+        progress: packageProgress(pkg.status),
+      })));
+
+      const feed = (deals || []).slice(0, 8).map((deal) => {
+        const last = deal.messages && deal.messages.length > 0
+          ? deal.messages[deal.messages.length - 1]
+          : null;
+        const preview = last?.message_text
+          ? meetupPinPreview(last.message_text)
+          : (deal.deal_locked ? 'Escrow locked' : 'Deal opened');
+        return {
+          id: deal.id,
+          text: preview,
+          time: last?.created_at || deal.created_at
+            ? new Date(last?.created_at || deal.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+            : '',
+          href: `/chat/${deal.id}`,
+        };
+      });
+      setActivityFeed(feed);
+    } catch (error) {
+      setDashboardError(error.message || 'Unable to load your trips and packages.');
+    } finally {
+      setDashboardLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || !userId) return undefined;
+    let active = true;
+    (async () => {
+      if (!active) return;
+      await refreshDashboard();
+    })();
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, userId]);
 
   // ----------------------------------------------------
   // LANDING PAGE MARKUP (UNAUTHENTICATED)
@@ -612,70 +660,123 @@ export default function HomeExperience() {
               </Link>
             </div>
 
+            {dashboardError && (
+              <p role="alert" className="mb-3 rounded-xl border border-outline bg-primary/10 px-3 py-2 text-xs font-bold text-primary">{dashboardError}</p>
+            )}
+            {!dashboardLoading && upcomingTrips.length === 0 && activeDeliveries.length === 0 && activityFeed.length === 0 && (
+              <Card className="mb-4 border border-primary/25 bg-primary/5 rounded-xl p-5 space-y-3">
+                <h3 className="font-semibold text-sm text-on-surface">Friends beta checklist</h3>
+                <ol className="list-decimal pl-5 space-y-1.5 text-xs text-on-surface-variant font-medium">
+                  <li>Confirm NID status in Account (admin reviews submissions).</li>
+                  <li>Ask an admin to credit staging wallet if you need escrow funds.</li>
+                  <li>Traveler: post a trip. Sender: request a delivery.</li>
+                  <li>Open Matching → send a delivery request → use deal chat check-ins / meetup pin.</li>
+                </ol>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button variant="primary" onClick={() => setShowPostModal(true)} className="py-2 text-xs">
+                    {role === 'traveler' ? 'Post New Trip' : 'Request Delivery'}
+                  </Button>
+                  <Link href="/match" className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-outline text-xs font-semibold text-primary hover:bg-primary/10">
+                    Open Matching
+                  </Link>
+                  <Link href="/chat" className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-outline text-xs font-semibold text-on-surface hover:bg-surface-container-low">
+                    Messages
+                  </Link>
+                </div>
+              </Card>
+            )}
             <div className="space-y-4">
-              {role === 'traveler' ? (
-                upcomingTrips.map((trip) => (
-                  <Card key={trip.id} className="relative group overflow-hidden border border-outline-variant rounded-xl">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <span className="text-[10px] font-bold text-on-surface-variant block uppercase">Trip ID: {trip.id}</span>
-                        <span className="font-bold text-on-surface text-base mt-1 block">{trip.route}</span>
-                      </div>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${ trip.status === 'Active' ? 'bg-primary/10 text-primary border border-primary/25' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant' }`}>
-                        {trip.status}
-                      </span>
-                    </div>
-
-                    <div className="pt-2.5 border-t border-outline-variant flex justify-between items-center text-xs text-on-surface-variant font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <span>{trip.time}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Weight className="w-4 h-4 text-primary" />
-                        <span>{trip.capacity}</span>
-                      </div>
-                    </div>
+              {dashboardLoading ? (
+                <Card className="border border-outline-variant rounded-xl p-6 text-center text-xs text-on-surface-variant font-medium">
+                  Loading your {role === 'traveler' ? 'trips' : 'packages'}…
+                </Card>
+              ) : role === 'traveler' ? (
+                upcomingTrips.length === 0 ? (
+                  <Card className="border border-dashed border-outline-variant rounded-xl p-6 text-center space-y-2">
+                    <Car className="w-8 h-8 text-primary/50 mx-auto" />
+                    <h3 className="font-semibold text-on-surface text-sm">No trips yet</h3>
+                    <p className="text-xs text-on-surface-variant font-medium">
+                      Post a trip to start matching packages along your Bangladesh route.
+                    </p>
+                    <Button variant="primary" onClick={() => setShowPostModal(true)} className="mt-2 py-2 text-xs">
+                      Post New Trip
+                    </Button>
                   </Card>
-                ))
+                ) : (
+                  upcomingTrips.map((trip) => (
+                    <Card key={trip.id} className="relative group overflow-hidden border border-outline-variant rounded-xl">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <span className="text-[10px] font-bold text-on-surface-variant block uppercase">Trip ID: {String(trip.id).slice(0, 8)}…</span>
+                          <span className="font-bold text-on-surface text-base mt-1 block">{trip.route}</span>
+                        </div>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${ String(trip.status).toLowerCase() === 'active' ? 'bg-primary/10 text-primary border border-primary/25' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant' }`}>
+                          {trip.status}
+                        </span>
+                      </div>
+
+                      <div className="pt-2.5 border-t border-outline-variant flex justify-between items-center text-xs text-on-surface-variant font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-4 h-4 text-primary" />
+                          <span>{trip.time}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Weight className="w-4 h-4 text-primary" />
+                          <span>{trip.capacity}</span>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )
               ) : (
-                activeDeliveries.map((pkg) => (
-                  <Card key={pkg.id} className="overflow-hidden border border-outline-variant rounded-xl">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <span className="text-[10px] font-bold text-on-surface-variant block uppercase">Package ID: {pkg.id}</span>
-                        <span className="font-bold text-on-surface text-base mt-1 block">{pkg.route}</span>
-                      </div>
-                      <span className="bg-primary/10 text-primary border border-primary/25 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                        {pkg.status}
-                      </span>
-                    </div>
-
-                    {/* Progress Visual Tracker */}
-                    <div className="space-y-2 py-2">
-                      <div className="flex justify-between text-[9px] font-bold text-on-surface-variant uppercase tracking-wide">
-                        <span className={pkg.progress >= 33 ? 'text-primary font-bold' : ''}>Matched</span>
-                        <span className={pkg.progress >= 66 ? 'text-primary font-bold' : ''}>In Transit</span>
-                        <span className={pkg.progress >= 100 ? 'text-primary font-bold' : ''}>Delivered</span>
-                      </div>
-                      <div className="w-full h-2 bg-primary/10 rounded-full overflow-hidden flex border border-outline">
-                        <div 
-                          className="h-full bg-primary transition-all duration-500 relative"
-                          style={{ width: `${pkg.progress}%` }}
-                        >
-                                                  </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2.5 border-t border-outline-variant flex justify-between items-center text-xs text-on-surface-variant font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <Package className="w-4 h-4 text-primary" />
-                        <span>{pkg.item}</span>
-                      </div>
-                      <span className="text-primary font-extrabold text-xs">{pkg.eta}</span>
-                    </div>
+                activeDeliveries.length === 0 ? (
+                  <Card className="border border-dashed border-outline-variant rounded-xl p-6 text-center space-y-2">
+                    <Package className="w-8 h-8 text-primary/50 mx-auto" />
+                    <h3 className="font-semibold text-on-surface text-sm">No packages yet</h3>
+                    <p className="text-xs text-on-surface-variant font-medium">
+                      Request a delivery, then ask a friend traveler to match from the Matching tab.
+                    </p>
+                    <Button variant="primary" onClick={() => setShowPostModal(true)} className="mt-2 py-2 text-xs">
+                      Request Delivery
+                    </Button>
                   </Card>
-                ))
+                ) : (
+                  activeDeliveries.map((pkg) => (
+                    <Card key={pkg.id} className="overflow-hidden border border-outline-variant rounded-xl">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <span className="text-[10px] font-bold text-on-surface-variant block uppercase">Package ID: {String(pkg.id).slice(0, 8)}…</span>
+                          <span className="font-bold text-on-surface text-base mt-1 block">{pkg.route}</span>
+                        </div>
+                        <span className="bg-primary/10 text-primary border border-primary/25 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
+                          {pkg.status}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 py-2">
+                        <div className="flex justify-between text-[9px] font-bold text-on-surface-variant uppercase tracking-wide">
+                          <span className={pkg.progress >= 33 ? 'text-primary font-bold' : ''}>Matched</span>
+                          <span className={pkg.progress >= 66 ? 'text-primary font-bold' : ''}>In Transit</span>
+                          <span className={pkg.progress >= 100 ? 'text-primary font-bold' : ''}>Delivered</span>
+                        </div>
+                        <div className="w-full h-2 bg-primary/10 rounded-full overflow-hidden flex border border-outline">
+                          <div
+                            className="h-full bg-primary transition-all duration-500 relative"
+                            style={{ width: `${pkg.progress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-2.5 border-t border-outline-variant flex justify-between items-center text-xs text-on-surface-variant font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <Package className="w-4 h-4 text-primary" />
+                          <span>{pkg.item}</span>
+                        </div>
+                        <span className="text-primary font-extrabold text-xs">{pkg.eta}</span>
+                      </div>
+                    </Card>
+                  ))
+                )
               )}
             </div>
           </section>
@@ -732,7 +833,7 @@ export default function HomeExperience() {
                   </Button>
                   {!isMockDataSource && (
                     <p className="text-[10px] text-amber-100/90 font-medium leading-relaxed">
-                      Live bKash/Nagad top-up is coming later. Escrow lock, delivery OTP, release, and refund already use your wallet balance.
+                      Live provider top-up is deferred. For friends beta, ask an admin to credit your wallet. Escrow lock, OTP, release, and refund already use wallet balance.
                     </p>
                   )}
 
@@ -749,23 +850,80 @@ export default function HomeExperience() {
             </Card>
           </section>
 
-          {/* Real-time Activity Feed */}
+          {/* Account panel */}
+          <section>
+            <div className="bg-surface border border-outline rounded-xl p-5 shadow-sm space-y-4">
+              <h3 className="font-extrabold text-xs text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-primary" />
+                Account
+              </h3>
+              <dl className="space-y-2 text-xs">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-on-surface-variant font-bold">Phone</dt>
+                  <dd className="font-semibold text-on-surface text-right">{profile?.phone_number || '—'}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-on-surface-variant font-bold">NID status</dt>
+                  <dd className="font-semibold text-on-surface uppercase text-right">{profile?.nid_status || 'unverified'}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-on-surface-variant font-bold">Security role</dt>
+                  <dd className="font-semibold text-on-surface uppercase text-right">{profile?.role || 'member'}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-on-surface-variant font-bold">Active mode</dt>
+                  <dd className="font-semibold text-on-surface uppercase text-right">{role}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-on-surface-variant font-bold">Wallet</dt>
+                  <dd className="font-semibold text-primary text-right">
+                    {profile ? parseFloat(profile.wallet_balance).toFixed(2) : '0.00'} BDT
+                  </dd>
+                </div>
+              </dl>
+              <p className="text-[10px] text-on-surface-variant leading-relaxed font-medium bg-primary/8 border border-outline rounded-lg p-2.5">
+                Friends beta: live payment top-up is not connected. Ask an admin to credit your wallet via <span className="font-bold">admin_credit_wallet</span> for staging demos.
+              </p>
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    await logout();
+                  } catch (error) {
+                    alert(error.message || 'Unable to log out.');
+                  }
+                }}
+                className="w-full py-2.5 text-xs flex items-center justify-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Log out
+              </Button>
+            </div>
+          </section>
+
+          {/* Deal activity from real chats */}
           <section>
             <div className="bg-surface border border-outline rounded-xl p-5 shadow-sm">
               <h3 className="font-extrabold text-xs text-on-surface uppercase tracking-wider mb-4 flex items-center gap-1.5">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                Live Matching Corridor Activity
+                Your deal activity
               </h3>
               <div className="space-y-4">
-                {platformFeed.map((f, i) => (
-                  <div key={i} className="flex gap-2.5 text-xs border-b border-outline-variant/30 pb-3 last:border-b-0 last:pb-0">
-                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0"></div>
-                    <div className="flex-grow space-y-0.5">
-                      <p className="text-on-surface leading-normal font-medium">{f.text}</p>
-                      <span className="text-[11px] text-on-surface-variant block font-medium">{f.time}</span>
-                    </div>
-                  </div>
-                ))}
+                {activityFeed.length === 0 ? (
+                  <p className="text-xs text-on-surface-variant font-medium">
+                    No deals yet. Match a package to open a chat.
+                  </p>
+                ) : (
+                  activityFeed.map((f) => (
+                    <Link key={f.id} href={f.href} className="flex gap-2.5 text-xs border-b border-outline-variant/30 pb-3 last:border-b-0 last:pb-0 hover:opacity-80">
+                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0"></div>
+                      <div className="flex-grow space-y-0.5 min-w-0">
+                        <p className="text-on-surface leading-normal font-medium truncate">{f.text}</p>
+                        <span className="text-[11px] text-on-surface-variant block font-medium">{f.time}</span>
+                      </div>
+                    </Link>
+                  ))
+                )}
               </div>
             </div>
           </section>

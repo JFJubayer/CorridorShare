@@ -114,8 +114,14 @@ export default function MapCorridorInner({
 
         {/* Packages Markers */}
         {packages.map((pkg) => {
-          const lat = Number(pkg.pickup_lat);
-          const lng = Number(pkg.pickup_lng);
+          // Prefer real dropoff from match RPC when present; fall back to pickup.
+          const dropLat = Number(pkg.dropoff_lat);
+          const dropLng = Number(pkg.dropoff_lng);
+          const pickLat = Number(pkg.pickup_lat);
+          const pickLng = Number(pkg.pickup_lng);
+          const useDropoff = Number.isFinite(dropLat) && Number.isFinite(dropLng);
+          const lat = useDropoff ? dropLat : pickLat;
+          const lng = useDropoff ? dropLng : pickLng;
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
           const pkgPos = [lat, lng];
           const isNearMiss = pkg.is_near_miss;
@@ -149,7 +155,7 @@ export default function MapCorridorInner({
                       )}
                     </div>
                     <p className="text-on-surface-variant font-medium">Reward: <strong className="text-primary font-black">{pkg.proposed_reward} BDT</strong></p>
-                    <p className="text-on-surface-variant font-medium">Distance: {pkg.distance_from_corridor}m</p>
+                    <p className="text-on-surface-variant font-medium">Distance: {pkg.distance_from_corridor}m · {useDropoff ? 'drop-off' : 'pickup'}</p>
                     <button 
                       onClick={() => onSelectPackage && onSelectPackage(pkg)}
                       className="mt-2 w-full bg-primary text-white py-1.5 rounded-full text-center text-[10px] font-black uppercase tracking-wider hover:opacity-90 cursor-pointer shadow-xs"

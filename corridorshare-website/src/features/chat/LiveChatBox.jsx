@@ -7,7 +7,10 @@ import { chatRepository } from '@/repositories/chatRepository';
 import { tripRepository } from '@/repositories/tripRepository';
 import { packageRepository } from '@/repositories/packageRepository';
 import { uploadUserFile, STORAGE_BUCKETS } from '@/infrastructure/storage/upload';
-import { Camera, CheckSquare, Lock, Unlock, Send, Sparkles, AlertCircle, KeyRound, RotateCcw } from 'lucide-react';
+import { Camera, CheckSquare, Lock, Unlock, Send, Sparkles, AlertCircle, KeyRound, RotateCcw, MapPin, ExternalLink, Navigation } from 'lucide-react';
+import { formatMeetupPinMessage, parseMeetupPinMessage, meetupMapsUrl } from '@/shared/chat/meetupPin';
+
+const CHECK_IN_CHIPS = ['Departed', 'Near pickup', 'Handed over', 'Near dropoff'];
 
 export default function LiveChatBox({ dealId }) {
   const { userId } = useUser();
@@ -17,6 +20,7 @@ export default function LiveChatBox({ dealId }) {
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [sharingMeetup, setSharingMeetup] = useState(false);
   const [inspectionPhoto, setInspectionPhoto] = useState('');
   const [checkedContraband, setCheckedContraband] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
@@ -89,6 +93,68 @@ export default function LiveChatBox({ dealId }) {
     } catch (error) {
       setActionError(error.message || 'Unable to send the message.');
     }
+  };
+
+  const handleShareMeetup = async () => {
+    if (!userId || sharingMeetup) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setActionError('Geolocation is not available in this browser.');
+      return;
+    }
+    setSharingMeetup(true);
+    setActionError('');
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+      });
+      const lat = Number(position.coords.latitude.toFixed(5));
+      const lng = Number(position.coords.longitude.toFixed(5));
+      const messageText = formatMeetupPinMessage({ lat, lng, label: 'Meetup' });
+      const message = await chatRepository.createMessage({
+        dealId,
+        senderId: userId,
+        messageText,
+      });
+      if (message) setMessages((previous) => previous.some((item) => item.id === message.id) ? previous : [...previous, message]);
+      setActionInfo('Meetup pin shared.');
+    } catch (error) {
+      const denied = error?.code === 1 || /denied/i.test(error?.message || '');
+      setActionError(denied
+        ? 'Location permission denied. Allow location once to share a meetup pin.'
+        : (error.message || 'Unable to share meetup pin.'));
+    } finally {
+      setSharingMeetup(false);
+    }
+  };
+
+  const handleCheckIn = async (label) => {
+    if (!userId || isWorking) return;
+    setIsWorking(true);
+    setActionError('');
+    try {
+      const message = await chatRepository.createMessage({
+        dealId,
+        senderId: userId,
+        messageText: label,
+      });
+      if (message) setMessages((previous) => previous.some((item) => item.id === message.id) ? previous : [...previous, message]);
+      setActionInfo(`Check-in sent: ${label}`);
+    } catch (error) {
+      setActionError(error.message || 'Unable to send check-in.');
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const dealStatusLabel = () => {
+    if (deal?.status === 'completed') return 'Completed — escrow released';
+    if (deal?.status === 'cancelled') return 'Cancelled / refunded';
+    if (deal?.deal_locked) return 'Escrow locked — in transit';
+    return 'Negotiating';
   };
 
   const handlePhotoUpload = async (e) => {
@@ -190,6 +256,19 @@ export default function LiveChatBox({ dealId }) {
       {actionError && <p role="alert" className="m-4 mb-0 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400">{actionError}</p>}
       {actionInfo && <p className="m-4 mb-0 rounded-xl border border-outline bg-primary/10 px-3 py-2 text-xs font-bold text-primary">{actionInfo}</p>}
 
+      <div className="border-b border-outline bg-surface-container-low px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-[10px] uppercase font-black tracking-widest text-on-surface-variant">Deal status</p>
+          <p className="text-xs font-semibold text-on-surface mt-0.5">{dealStatusLabel()}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] uppercase font-black tracking-widest text-on-surface-variant">Agreed reward</p>
+          <p className="text-xs font-bold text-primary mt-0.5">
+            {Number.isSafeInteger(agreedAmountMinor) ? `${(agreedAmountMinor / 100).toFixed(2)} BDT` : 'Not set'}
+          </p>
+        </div>
+      </div>
+
       <div className="bg-primary/10 border-b border-outline p-4 space-y-3">
         <div className="flex items-start gap-3">
           <AlertCircle className="text-primary w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -248,6 +327,35 @@ export default function LiveChatBox({ dealId }) {
                 <div className="bg-primary/10 border border-primary/25 text-primary font-semibold text-[10px] uppercase tracking-wider px-4 py-2 rounded-full flex items-center gap-1.5 shadow-xs">
                   <Sparkles className="w-3.5 h-3.5 text-primary" />
                   {msg.message_text}
+                </div>
+              </div>
+            );
+          }
+
+          const meetupPin = parseMeetupPinMessage(msg.message_text);
+          if (meetupPin) {
+            return (
+              <div key={msg.id} className={`flex items-end gap-2 max-w-[90%] ${isMe ? 'ml-auto flex-row-reverse' : ''}`}>
+                <div className={`w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center font-semibold text-[10px] shadow-sm ${ isMe ? 'bg-primary text-white' : 'bg-amber-600 text-white' }`}>
+                  {isMe ? 'ME' : 'TR'}
+                </div>
+                <div className="bg-surface border border-primary/30 rounded-2xl p-3.5 shadow-md min-w-[220px] space-y-2">
+                  <div className="flex items-center gap-2 text-primary">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">{meetupPin.label}</span>
+                  </div>
+                  <p className="text-xs font-mono text-on-surface">
+                    {meetupPin.lat.toFixed(5)}, {meetupPin.lng.toFixed(5)}
+                  </p>
+                  <a
+                    href={meetupMapsUrl(meetupPin)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:underline"
+                  >
+                    Open in maps
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 </div>
               </div>
             );
@@ -364,22 +472,53 @@ export default function LiveChatBox({ dealId }) {
           </div>
         )}
 
-        {!dealLocked && !dealCancelled && (
-          <form onSubmit={handleSend} className="flex gap-2">
-            <input
-              type="text"
-              value={newMsg}
-              onChange={(e) => setNewMsg(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-grow bg-surface-container-low border border-outline rounded-full px-5 py-3 text-xs outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-on-surface font-medium"
-            />
+        {!dealCompleted && !dealCancelled && (
+          <div className="space-y-2">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-1">
+                <Navigation className="w-3 h-3 text-primary" />
+                Check-in chips
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {CHECK_IN_CHIPS.map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled={isWorking || !userId}
+                    onClick={() => handleCheckIn(label)}
+                    className="px-3 py-1.5 rounded-full border border-outline bg-surface-container-low text-[10px] font-semibold uppercase tracking-wider text-on-surface hover:border-primary/40 hover:bg-primary/10 disabled:opacity-50"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
-              type="submit"
-              className="bg-primary hover:bg-primary-700 text-white rounded-full px-5 py-3 flex items-center justify-center transition-all active:scale-95 shadow-sm cursor-pointer"
+              type="button"
+              onClick={handleShareMeetup}
+              disabled={sharingMeetup || !userId}
+              className="w-full py-2.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-primary/15 disabled:opacity-50"
             >
-              <Send className="w-4 h-4" />
+              <MapPin className="w-3.5 h-3.5" />
+              {sharingMeetup ? 'Getting location…' : 'Share meetup pin'}
             </button>
-          </form>
+            <form onSubmit={handleSend} className="flex gap-2">
+              <input
+                type="text"
+                value={newMsg}
+                onChange={(e) => setNewMsg(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-grow bg-surface-container-low border border-outline rounded-full px-5 py-3 text-xs outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-on-surface font-medium"
+              />
+              <button
+                type="submit"
+                className="bg-primary hover:bg-primary-700 text-white rounded-full px-5 py-3 flex items-center justify-center transition-all active:scale-95 shadow-sm cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
         )}
       </div>
     </div>

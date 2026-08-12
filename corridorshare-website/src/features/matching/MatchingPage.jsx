@@ -41,40 +41,50 @@ function MatchPageContent() {
   const [highwayRoute, setHighwayRoute] = useState([]);
   const [requestingId, setRequestingId] = useState(null);
 
+  const loadTripGeometry = (trip) => {
+    if (Array.isArray(trip.route_leaflet) && trip.route_leaflet.length > 1) {
+      setHighwayRoute(trip.route_leaflet);
+      return;
+    }
+    if (typeof trip.route_path === 'string' && trip.route_path.startsWith('LINESTRING')) {
+      const coords = trip.route_path
+        .replace('LINESTRING(', '')
+        .replace(')', '')
+        .split(',')
+        .map((pair) => pair.trim().split(/\s+/))
+        .filter((pair) => pair.length === 2)
+        .map(([lng, lat]) => [Number(lat), Number(lng)])
+        .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
+      if (coords.length > 1) setHighwayRoute(coords);
+    }
+  };
+
+  const runMatchSearch = async (tripOverride = null) => {
+    try {
+      const trip = tripOverride || activeTrip || await tripRepository.findLatestForTraveler(userId);
+      if (!trip) throw new Error('Post a trip before searching this corridor for packages.');
+      setActiveTrip(trip);
+      setStartPoint(trip.departure_city || '');
+      setDestination(trip.destination_city || '');
+      loadTripGeometry(trip);
+
+      const bufferMeters = Math.max(Number(startRadius) || 0, Number(destRadius) || 0) * 1000 || 5000;
+      const data = await matchingRepository.findPackages(trip.id, bufferMeters);
+      setMatches(data || []);
+      setMatchError('');
+    } catch (error) {
+      setMatches([]);
+      setMatchError(error.message || 'Unable to load corridor matches.');
+    }
+  };
+
   useEffect(() => {
-    const fetchRouteAndMatches = async () => {
-      try {
-        const trip = await tripRepository.findLatestForTraveler(userId);
-        if (!trip) throw new Error('Post a trip before searching this corridor for packages.');
-        setActiveTrip(trip);
-        setStartPoint(trip.departure_city || '');
-        setDestination(trip.destination_city || '');
-
-        // Prefer real trip geometry when available; otherwise snap via OSRM from city labels later.
-        if (Array.isArray(trip.route_leaflet) && trip.route_leaflet.length > 1) {
-          setHighwayRoute(trip.route_leaflet);
-        } else if (typeof trip.route_path === 'string' && trip.route_path.startsWith('LINESTRING')) {
-          const coords = trip.route_path
-            .replace('LINESTRING(', '')
-            .replace(')', '')
-            .split(',')
-            .map((pair) => pair.trim().split(/\s+/))
-            .filter((pair) => pair.length === 2)
-            .map(([lng, lat]) => [Number(lat), Number(lng)])
-            .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
-          if (coords.length > 1) setHighwayRoute(coords);
-        }
-
-        const data = await matchingRepository.findPackages(trip.id, 5000.0);
-        if (data) setMatches(data);
-        setMatchError('');
-      } catch (error) {
-        setMatches([]);
-        setMatchError(error.message || 'Unable to load corridor matches.');
-      }
-    };
-
-    fetchRouteAndMatches();
+    const timer = window.setTimeout(() => {
+      runMatchSearch();
+    }, 0);
+    return () => window.clearTimeout(timer);
+    // Initial corridor load only; radius re-runs via the Filter control.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const openDealForPackage = async (pkg, extraRewardMinor = 0) => {
@@ -197,9 +207,14 @@ function MatchPageContent() {
         <div className="p-5 border-b border-outline-variant flex justify-between items-center bg-surface transition-colors duration-300">
           <div>
             <h3 className="text-base font-semibold text-on-surface tracking-tight">Match Results</h3>
-            <p className="text-xs text-on-surface-variant font-medium mt-0.5">{matches.length} Packages found along corridor</p>
+            <p className="text-xs text-on-surface-variant font-medium mt-0.5">{matches.length} packages · buffer {Math.max(Number(startRadius) || 0, Number(destRadius) || 0) || 5} km</p>
           </div>
-          <button className="bg-surface-container-low border border-outline text-on-surface p-2.5 rounded-full hover:bg-primary/10 transition-colors">
+          <button
+            type="button"
+            title="Re-run match with current radius (km)"
+            onClick={() => runMatchSearch()}
+            className="bg-surface-container-low border border-outline text-on-surface p-2.5 rounded-full hover:bg-primary/10 transition-colors"
+          >
             <Filter className="w-4 h-4 text-primary" />
           </button>
         </div>

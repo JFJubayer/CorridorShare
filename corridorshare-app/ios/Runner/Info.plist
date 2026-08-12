@@ -72,5 +72,7 @@
 	<string>CorridorShare needs photo library access for NID and inspection evidence uploads.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>CorridorShare does not record audio; this permission is unused.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>CorridorShare uses your location only when you tap Share meetup pin in a deal chat.</string>
 </dict>
 </plist>
