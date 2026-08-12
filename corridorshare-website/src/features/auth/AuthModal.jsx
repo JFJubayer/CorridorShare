@@ -102,7 +102,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
     try {
       const url = await uploadUserFile({
         bucket: STORAGE_BUCKETS.nid,
-        folder: `profiles/${userId}`,
+        folder: userId, // storage RLS requires first path segment = auth.uid()
         file,
       });
       await profileRepository.updateOwnDetails(userId, {
@@ -500,7 +500,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-on-surface">Upload NID Card Photo</p>
-                    <p className="text-[10px] text-on-surface-variant mt-0.5">Supports JPG, PNG or PDF (Max 5MB)</p>
+                    <p className="text-[10px] text-on-surface-variant mt-0.5">Supports JPG, PNG or WebP (Max 5MB)</p>
                   </div>
 
                   <label className={`inline-flex px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${ nidUploaded ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-primary/10 text-primary border border-primary/25' }`}>

@@ -160,13 +160,17 @@ export default function LiveChatBox({ dealId }) {
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!userId) {
+      setActionError('Sign in before uploading an inspection photo.');
+      return;
+    }
 
     setIsUploading(true);
     setActionError('');
     try {
       const url = await uploadUserFile({
         bucket: STORAGE_BUCKETS.inspection,
-        folder: `deals/${dealId}`,
+        folder: `${userId}/${dealId}`,
         file,
       });
       setInspectionPhoto(url);
