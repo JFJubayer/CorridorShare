@@ -173,6 +173,9 @@ class DealsController extends ChangeNotifier {
   }
 
   Future<String> issueDeliveryOtp(String dealId) async {
+    if (_config.isDemo) {
+      throw UnsupportedError('Delivery OTP is rejected in demo mode.');
+    }
     final repository = _liveRepository;
     if (repository == null) {
       throw UnsupportedError('Delivery OTP is issued only by the live server.');
@@ -186,6 +189,9 @@ class DealsController extends ChangeNotifier {
     required String dealId,
     required String otp,
   }) async {
+    if (_config.isDemo) {
+      throw UnsupportedError('Payout release is rejected in demo mode.');
+    }
     if (otp.trim().length != 6) {
       throw ArgumentError('A six-digit recipient OTP is required.');
     }
@@ -209,6 +215,28 @@ class DealsController extends ChangeNotifier {
     } else {
       _replaceLiveDeal(updated);
     }
+    notifyListeners();
+  }
+
+
+  Future<void> requestRefund(String dealId) async {
+    final deal = _requiredDeal(dealId);
+    final repository = _liveRepository;
+    if (repository == null) {
+      throw UnsupportedError('Escrow refund is available only through the live server.');
+    }
+    if (_config.isDemo) {
+      throw UnsupportedError('Escrow refund is rejected in demo mode.');
+    }
+    final row = await repository.refundWallet(
+      dealId: dealId,
+      idempotencyKey: 'refund-$dealId-${DateTime.now().microsecondsSinceEpoch}',
+    );
+    _replaceLiveDeal(deal.copyWith(
+      dealLocked: row['deal_locked'] as bool? ?? false,
+      openBoxVerified: row['open_box_verified'] as bool? ?? deal.openBoxVerified,
+      status: DealStatusWire.fromWire(row['status'] as String),
+    ));
     notifyListeners();
   }
 

@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/geo/bangladesh_geo.dart';
 import '../../core/money/money.dart';
 import '../../models/deal_model.dart';
 import '../../models/package_model.dart';
@@ -13,10 +16,17 @@ class SupabaseBackendRepository {
 
   final SupabaseClient _client;
 
+  static const nidPhotosBucket = 'nid-photos';
+  static const parcelInspectionsBucket = 'parcel-inspections';
+
   Future<Map<String, dynamic>> fetchCurrentProfile() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw StateError('No authenticated Supabase user.');
-    final row = await _client.from('profiles').select('id, nid_status').eq('id', userId).single();
+    final row = await _client
+        .from('profiles')
+        .select('id, phone_number, full_name, role, nid_status, nid_photo_url')
+        .eq('id', userId)
+        .single();
     return Map<String, dynamic>.from(row);
   }
 
@@ -67,51 +77,117 @@ class SupabaseBackendRepository {
         senderName: 'Participant',
         text: _string(data, 'message_text'),
         createdAt: DateTime.parse(_string(data, 'created_at')),
+        imageUrl: data['image_verification_url'] as String?,
       );
     }).toList(growable: false);
   }
 
   Future<TripModel> createTrip(TripModel trip) async {
+    if (trip.routePoints.length < 2) {
+      throw ArgumentError('createTrip requires real route geometry from user input (2+ points).');
+    }
     final row = await _client.from('trips').insert({
-        'traveler_id': trip.travelerId,
-        'departure_city': trip.departureCity,
-        'destination_city': trip.destinationCity,
-        'route_path': 'LINESTRING(90.4125 23.8103, 90.4203 24.7471)',
-        'travel_time': trip.travelTime.toUtc().toIso8601String(),
-        'weight_capacity_kg': trip.weightCapacityKg,
+      'traveler_id': trip.travelerId,
+      'departure_city': trip.departureCity,
+      'destination_city': trip.destinationCity,
+      'route_path': BangladeshGeo.lineStringWkt(trip.routePoints),
+      'travel_time': trip.travelTime.toUtc().toIso8601String(),
+      'weight_capacity_kg': trip.weightCapacityKg,
     }).select().single();
     return _tripFromRow(Map<String, dynamic>.from(row));
   }
 
   Future<PackageModel> createPackage(PackageModel package) async {
-    final row = await _client.from('packages').insert({
-        'sender_id': package.senderId,
-        'pickup_location': 'POINT(${package.pickup.longitude} ${package.pickup.latitude})',
-        'dropoff_location': 'POINT(${package.pickup.longitude} ${package.pickup.latitude})',
-        'pickup_radius_meters': package.pickupRadiusMeters,
-        'item_description': package.itemDescription,
-        'item_type': package.itemType,
-        'proposed_reward_minor': package.reward.minorUnits,
-        'is_premium': package.isPremium,
-    }).select().single();
+    if (package.pickup.isSameAs(package.dropoff)) {
+      throw ArgumentError('dropoff_location must differ from pickup_location.');
+    }
+    final payload = <String, dynamic>{
+      'sender_id': package.senderId,
+      'pickup_location': BangladeshGeo.pointWkt(package.pickup),
+      'dropoff_location': BangladeshGeo.pointWkt(package.dropoff),
+      'pickup_radius_meters': package.pickupRadiusMeters,
+      'item_description': package.itemDescription,
+      'item_type': package.itemType,
+      'proposed_reward_minor': package.reward.minorUnits,
+      'is_premium': package.isPremium,
+      if (package.weightKg != null) 'weight_kg': package.weightKg,
+    };
+    final phone = package.recipientPhone?.trim();
+    if (phone == null || phone.isEmpty) {
+      throw ArgumentError('recipient_phone is required when creating a package.');
+    }
+    payload['recipient_phone'] = phone;
+    final recipientName = package.recipientName?.trim();
+    if (recipientName != null && recipientName.isNotEmpty) {
+      payload['recipient_name'] = recipientName;
+    }
+    final row = await _client.from('packages').insert(payload).select().single();
     return _packageFromRow(Map<String, dynamic>.from(row));
   }
 
-  Future<Map<String, dynamic>> createDeal({required String tripId, required String packageId, required Money amount}) async {
+  Future<Map<String, dynamic>> createDeal({
+    required String tripId,
+    required String packageId,
+    required Money amount,
+  }) async {
     final row = await _client.from('chats_and_deals').insert({
-        'trip_id': tripId,
-        'package_id': packageId,
-        'final_agreed_price_minor': amount.minorUnits,
+      'trip_id': tripId,
+      'package_id': packageId,
+      'final_agreed_price_minor': amount.minorUnits,
     }).select().single();
     return Map<String, dynamic>.from(row);
   }
 
-  Future<void> sendMessage({required String dealId, required String senderId, required String text}) async {
+  Future<void> sendMessage({
+    required String dealId,
+    required String senderId,
+    required String text,
+  }) async {
     await _client.from('messages').insert({
-        'deal_id': dealId,
-        'sender_id': senderId,
-        'message_text': text,
+      'deal_id': dealId,
+      'sender_id': senderId,
+      'message_text': text,
     });
+  }
+
+  /// Live matching uses the PostGIS RPC — never a client-side corridor filter.
+  Future<List<PackageModel>> matchPackagesWithinCorridor({
+    required String tripId,
+    double bufferDistanceMeters = 3000,
+  }) async {
+    final rows = await _client.rpc(
+      'match_packages_within_corridor',
+      params: {
+        'traveler_trip_id': tripId,
+        'buffer_distance_meters': bufferDistanceMeters,
+      },
+    );
+    return (rows as List<dynamic>).map((row) {
+      final data = Map<String, dynamic>.from(row as Map);
+      final pickup = GeoPoint(
+        (data['pickup_lat'] as num).toDouble(),
+        (data['pickup_lng'] as num).toDouble(),
+      );
+      // Match RPC returns pickup only; synthesize a distinct dropoff marker for
+      // the PackageModel invariant until dropoff is joined into the RPC.
+      final dropoff = GeoPoint(pickup.latitude + 0.02, pickup.longitude + 0.02);
+      return PackageModel(
+        id: _string(data, 'package_id'),
+        senderId: _string(data, 'sender_id'),
+        itemDescription: _string(data, 'item_description'),
+        reward: Money.fromMinorUnits((data['proposed_reward_minor'] as num).toInt()),
+        isPremium: data['is_premium'] as bool? ?? false,
+        status: PackageStatus.pending,
+        pickup: pickup,
+        dropoff: dropoff,
+        pickupRadiusMeters: (data['pickup_radius_meters'] as num).toInt(),
+        distanceFromCorridor: (data['distance_from_corridor'] as num).toDouble(),
+        isNearMiss: data['is_near_miss'] as bool? ?? false,
+        routeInfo: 'Matched via corridor RPC',
+        eta: DateTime.now().toUtc().add(const Duration(hours: 6)),
+        itemType: data['item_type'] as String? ?? 'Parcel',
+      );
+    }).toList(growable: false);
   }
 
   Future<Map<String, dynamic>> lockDeal({
@@ -119,7 +195,8 @@ class SupabaseBackendRepository {
     required Money amount,
     required String inspectionPhotoUrl,
     required String idempotencyKey,
-  }) async => Map<String, dynamic>.from(await _client.rpc('lock_deal_with_inspection', params: {
+  }) async =>
+      Map<String, dynamic>.from(await _client.rpc('lock_deal_with_inspection', params: {
         'p_deal_id': dealId,
         'p_amount_minor': amount.minorUnits,
         'p_inspection_photo_url': inspectionPhotoUrl,
@@ -133,11 +210,72 @@ class SupabaseBackendRepository {
     required String dealId,
     required String otp,
     required String idempotencyKey,
-  }) async => Map<String, dynamic>.from(await _client.rpc('wallet_release', params: {
+  }) async =>
+      Map<String, dynamic>.from(await _client.rpc('wallet_release', params: {
         'p_deal_id': dealId,
         'p_delivery_otp': otp,
         'p_idempotency_key': idempotencyKey,
       }));
+
+  Future<Map<String, dynamic>> refundWallet({
+    required String dealId,
+    required String idempotencyKey,
+  }) async =>
+      Map<String, dynamic>.from(await _client.rpc('wallet_refund', params: {
+        'p_deal_id': dealId,
+        'p_idempotency_key': idempotencyKey,
+      }));
+
+  Future<List<Map<String, dynamic>>> fetchProfilesForAdmin() async {
+    final rows = await _client
+        .from('profiles')
+        .select('id, phone_number, full_name, role, nid_status, nid_photo_url, created_at')
+        .order('created_at', ascending: false);
+    return (rows as List<dynamic>)
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> adminSetNidStatus({
+    required String profileId,
+    required String status,
+  }) async =>
+      Map<String, dynamic>.from(await _client.rpc('admin_set_nid_status', params: {
+        'p_profile_id': profileId,
+        'p_status': status,
+      }));
+
+  /// Uploads to private Storage buckets created by the MVP BD contract migration.
+  /// Paths are `{auth.uid()}/{fileName}` to satisfy RLS folder checks.
+  Future<String> uploadEvidenceImage({
+    required String folder,
+    required String fileName,
+    required Uint8List bytes,
+    String contentType = 'image/jpeg',
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw StateError('No authenticated Supabase user.');
+    final bucket = switch (folder) {
+      'nid' => nidPhotosBucket,
+      'inspection' => parcelInspectionsBucket,
+      _ => throw ArgumentError.value(folder, 'folder', 'must be nid or inspection'),
+    };
+    final path = '$userId/$fileName';
+    await _client.storage.from(bucket).uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
+        );
+    // Buckets are private; persist a time-limited signed URL for RPC/profile use.
+    final signed = await _client.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 7);
+    return signed;
+  }
+
+  Future<void> updateOwnNidPhoto(String photoUrl) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw StateError('No authenticated Supabase user.');
+    await _client.from('profiles').update({'nid_photo_url': photoUrl}).eq('id', userId);
+  }
 }
 
 class BackendRepositoryFactory {
@@ -152,33 +290,39 @@ String _string(Map<String, dynamic> map, String key) {
   return value;
 }
 
-TripModel _tripFromRow(Map<String, dynamic> row) => TripModel(
-      id: _string(row, 'id'),
-      travelerId: _string(row, 'traveler_id'),
-      departureCity: _string(row, 'departure_city'),
-      destinationCity: _string(row, 'destination_city'),
-      travelTime: DateTime.parse(_string(row, 'travel_time')),
-      weightCapacityKg: (row['weight_capacity_kg'] as num).toDouble(),
-      status: TripStatusLabel.fromWire(_string(row, 'status')),
-      travelerName: 'Verified traveler',
-      travelerRating: 0,
-    );
+TripModel _tripFromRow(Map<String, dynamic> row) {
+  final parsed = TripModel.fromJson({
+    ...row,
+    'traveler_name': row['traveler_name'] ?? 'Verified traveler',
+    'traveler_rating': row['traveler_rating'] ?? 0,
+    'status': row['status'] ?? 'scheduled',
+  });
+  return parsed;
+}
 
-PackageModel _packageFromRow(Map<String, dynamic> row) => PackageModel(
-      id: _string(row, 'id'),
-      senderId: _string(row, 'sender_id'),
-      itemDescription: _string(row, 'item_description'),
-      reward: Money.fromMinorUnits((row['proposed_reward_minor'] as num).toInt()),
-      isPremium: row['is_premium'] as bool? ?? false,
-      status: PackageStatusWire.fromWire(_string(row, 'status')),
-      pickup: _point(row['pickup_location']),
-      pickupRadiusMeters: (row['pickup_radius_meters'] as num).toInt(),
-      distanceFromCorridor: 0,
-      isNearMiss: false,
-      routeInfo: 'Route details available after matching.',
-      eta: DateTime.parse(_string(row, 'created_at')),
-      itemType: row['item_type'] as String? ?? 'Parcel',
-    );
+PackageModel _packageFromRow(Map<String, dynamic> row) {
+  final pickup = _point(row['pickup_location']);
+  final dropoff = _point(row['dropoff_location']);
+  return PackageModel(
+    id: _string(row, 'id'),
+    senderId: _string(row, 'sender_id'),
+    itemDescription: _string(row, 'item_description'),
+    reward: Money.fromMinorUnits((row['proposed_reward_minor'] as num).toInt()),
+    isPremium: row['is_premium'] as bool? ?? false,
+    status: PackageStatusWire.fromWire(_string(row, 'status')),
+    pickup: pickup,
+    dropoff: dropoff,
+    pickupRadiusMeters: (row['pickup_radius_meters'] as num).toInt(),
+    distanceFromCorridor: 0,
+    isNearMiss: false,
+    routeInfo: 'Route details available after matching.',
+    eta: DateTime.parse(_string(row, 'created_at')),
+    itemType: row['item_type'] as String? ?? 'Parcel',
+    recipientPhone: (row['recipient_phone'] as String?)?.trim(),
+    recipientName: (row['recipient_name'] as String?)?.trim(),
+    weightKg: (row['weight_kg'] as num?)?.toDouble(),
+  );
+}
 
 DealModel _dealFromRow(Map<String, dynamic> row) => DealModel(
       id: _string(row, 'id'),
@@ -205,5 +349,5 @@ GeoPoint _point(dynamic value) {
       return GeoPoint(double.parse(match.group(2)!), double.parse(match.group(1)!));
     }
   }
-  throw const FormatException('pickup_location must be GeoJSON or WKT POINT.');
+  throw const FormatException('location must be GeoJSON or WKT POINT.');
 }

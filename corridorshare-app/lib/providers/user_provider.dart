@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
 
 import '../core/config/app_config.dart';
@@ -14,10 +16,6 @@ import '../infrastructure/supabase/supabase_backend_repository.dart';
 export '../features/session/session_controller.dart' show AppRole, NidStatus;
 
 /// Compatibility façade for the existing UI.
-///
-/// Product state now lives in feature controllers. New screens should depend on
-/// the narrow controller they need; this façade can be removed once old screens
-/// have migrated without a UI rewrite.
 class UserProvider extends ChangeNotifier {
   factory UserProvider({
     AppConfig? config,
@@ -86,9 +84,11 @@ class UserProvider extends ChangeNotifier {
   String get userId => _session.userId;
   List<TripModel> get trips => _listings.trips;
   List<PackageModel> get packages => _listings.packages;
+  List<PackageModel> get matchedPackages => _listings.matchedPackages;
   List<DealModel> get deals => _deals.deals;
   List<String> get activityFeed => List.unmodifiable(_activityFeed);
   DealsController get dealsController => _deals;
+  ListingsController get listingsController => _listings;
   SupabaseBackendRepository? get liveRepository => _liveRepository;
   String? get liveDataError => _liveDataError;
 
@@ -123,6 +123,7 @@ class UserProvider extends ChangeNotifier {
     required String destination,
     required String date,
     required double capacity,
+    required List<GeoPoint> routePoints,
   }) async {
     await _listings.addTrip(
       currentUserId: userId,
@@ -130,6 +131,7 @@ class UserProvider extends ChangeNotifier {
       destination: destination,
       travelTime: DateTime.now().toUtc().add(const Duration(hours: 2)),
       capacity: capacity,
+      routePoints: routePoints,
       liveRepository: _liveRepository,
     );
     _activityFeed.insert(0, 'New trip posted: $departure → $destination');
@@ -140,23 +142,73 @@ class UserProvider extends ChangeNotifier {
     required String desc,
     required double weight,
     required double reward,
-    required String location,
+    required GeoPoint pickup,
+    required GeoPoint dropoff,
+    required String routeInfo,
+    String? recipientPhone,
+    String? recipientName,
   }) async {
     await _listings.addPackage(
       currentUserId: userId,
       description: desc,
       weight: weight,
       reward: Money.fromBdt(reward),
-      location: location,
+      pickup: pickup,
+      dropoff: dropoff,
+      routeInfo: routeInfo,
+      recipientPhone: recipientPhone,
+      recipientName: recipientName,
       liveRepository: _liveRepository,
     );
     _activityFeed.insert(0, 'New package request posted: $desc');
     notifyListeners();
   }
 
+  Future<List<PackageModel>> matchPackagesForTrip(String tripId) =>
+      _listings.matchForTrip(tripId: tripId, liveRepository: _liveRepository);
+
+  Future<String> uploadNidPhoto({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    final repository = _liveRepository;
+    if (repository == null) {
+      throw UnsupportedError('NID photo upload requires live Supabase mode.');
+    }
+    final url = await repository.uploadEvidenceImage(
+      folder: 'nid',
+      fileName: fileName,
+      bytes: bytes,
+    );
+    await repository.updateOwnNidPhoto(url);
+    _session.applyServerProfile(nidStatus: 'pending');
+    _activityFeed.insert(0, 'NID photo submitted for admin review.');
+    notifyListeners();
+    return url;
+  }
+
+  Future<String> uploadInspectionPhoto({
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    final repository = _liveRepository;
+    if (repository == null) {
+      throw UnsupportedError('Inspection photo upload requires live Supabase mode.');
+    }
+    return repository.uploadEvidenceImage(
+      folder: 'inspection',
+      fileName: fileName,
+      bytes: bytes,
+    );
+  }
+
   Future<void> _topUp(double amount, String provider) async {
     if (!_config.isDemo) {
-      throw UnsupportedError('Top-ups require a provider-confirmed server payment flow in live mode.');
+      throw UnsupportedError(
+        'Live $provider top-up is blocked: no payment provider is configured. '
+        'Wallet funding requires a provider-confirmed server callback '
+        '(wallet_credit_from_provider). Use a funded test wallet in live mode.',
+      );
     }
     _wallet.topUp(amount: Money.fromBdt(amount), provider: provider);
     _activityFeed.insert(0, 'Top-up added via $provider.');

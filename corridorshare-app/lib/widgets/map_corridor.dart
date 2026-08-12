@@ -1,33 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+
 import '../models/package_model.dart';
 
 class MapCorridorWidget extends StatelessWidget {
   final List<PackageModel> packages;
+  final List<GeoPoint> routePoints;
   final Function(PackageModel)? onPackageTap;
 
   const MapCorridorWidget({
     super.key,
     required this.packages,
+    this.routePoints = const [],
     this.onPackageTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final corridorPolyline = [
-      const LatLng(23.8103, 90.4125), // Uttara / Dhaka Airport
-      const LatLng(23.9999, 90.4203), // Gazipur Chaurasta
-      const LatLng(24.2500, 90.3900), // Mawna / Trishal
-      const LatLng(24.7471, 90.4203), // Mymensingh Bypass
-    ];
+    final corridorPolyline = routePoints.isNotEmpty
+        ? routePoints.map((p) => LatLng(p.latitude, p.longitude)).toList(growable: false)
+        : const <LatLng>[
+            // Bangladesh overview fallback (not a hardcoded N3 trip route).
+            LatLng(23.8103, 90.4125),
+            LatLng(22.3569, 91.7832),
+            LatLng(24.8949, 91.8687),
+            LatLng(24.3745, 88.6042),
+          ];
+
+    final center = corridorPolyline[corridorPolyline.length ~/ 2];
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: FlutterMap(
-        options: const MapOptions(
-          initialCenter: LatLng(24.2500, 90.4100),
-          initialZoom: 8.5,
+        options: MapOptions(
+          initialCenter: center,
+          initialZoom: routePoints.isEmpty ? 6.4 : 7.8,
         ),
         children: [
           TileLayer(

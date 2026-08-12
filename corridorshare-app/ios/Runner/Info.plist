@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>CorridorShare needs camera access for NID and open-box inspection photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CorridorShare needs photo library access for NID and inspection evidence uploads.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>CorridorShare does not record audio; this permission is unused.</string>
 </dict>
 </plist>

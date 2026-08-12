@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../core/geo/bangladesh_geo.dart';
+import '../core/config/app_config.dart';
 import '../providers/user_provider.dart';
 import '../widgets/surcharge_calculator.dart';
 import 'match_screen.dart';
@@ -10,11 +13,14 @@ class DashboardScreen extends StatelessWidget {
 
   void _showPostModal(BuildContext context, bool isTraveler) {
     final provider = Provider.of<UserProvider>(context, listen: false);
-    final depController = TextEditingController(text: 'Uttara Sector 7');
-    final destController = TextEditingController(text: 'Valuka Bypass');
     final descController = TextEditingController(text: 'Documents Envelope');
     final rewardController = TextEditingController(text: '450');
     final weightController = TextEditingController(text: '5.0');
+    final recipientController = TextEditingController();
+    String? departureId = BangladeshGeo.places.first.id;
+    String? destinationId = BangladeshGeo.places[1].id;
+    String? pickupId = BangladeshGeo.places.first.id;
+    String? dropoffId = BangladeshGeo.places[5].id;
 
     showModalBottomSheet<void>(
       context: context,
@@ -24,143 +30,232 @@ class DashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            top: 24,
-            left: 24,
-            right: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isTraveler ? 'Post Scheduled Highway Trip' : 'Request Parcel Shipping',
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                top: 24,
+                left: 24,
+                right: 24,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
               ),
-              const SizedBox(height: 16),
-              if (isTraveler) ...[
-                TextField(
-                  controller: depController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Departure Location (e.g. Uttara Sector 7)',
-                    labelStyle: TextStyle(color: Colors.grey),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: destController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Destination Highway Point (e.g. Valuka Bypass)',
-                    labelStyle: TextStyle(color: Colors.grey),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: weightController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Available Capacity (KG)',
-                    labelStyle: TextStyle(color: Colors.grey),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
-                  ),
-                ),
-              ] else ...[
-                TextField(
-                  controller: descController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Parcel Item Description',
-                    labelStyle: TextStyle(color: Colors.grey),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: rewardController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Proposed Surcharge Reward (BDT)',
-                    labelStyle: TextStyle(color: Colors.grey),
-                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final capacity = double.tryParse(weightController.text);
-                    final reward = double.tryParse(rewardController.text);
-                    if (isTraveler && (capacity == null || capacity <= 0)) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Capacity must be a positive number.')));
-                      return;
-                    }
-                    if (!isTraveler && (reward == null || reward <= 0)) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Reward must be a positive amount.')));
-                      return;
-                    }
-                    try {
-                      if (isTraveler) {
-                      await provider.addTrip(
-                        departure: depController.text,
-                        destination: destController.text,
-                        date: '4:30 PM',
-                        capacity: capacity!,
-                      );
-                    } else {
-                      await provider.addPackage(
-                        desc: descController.text,
-                        weight: 2.0,
-                        reward: reward!,
-                        location: 'Dhaka Corridor',
-                      );
-                    }
-                    } on Object catch (error) {
-                      if (!ctx.mounted) return;
-                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('$error')));
-                      return;
-                    }
-                    if (!ctx.mounted || !context.mounted) return;
-                    Navigator.of(ctx).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(isTraveler ? 'Trip posted successfully!' : 'Delivery request posted!'),
-                        backgroundColor: const Color(0xFF059669),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isTraveler ? 'Post Bangladesh Highway Trip' : 'Request Parcel Shipping',
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Geometry comes from your selected places — not a hardcoded N3 LINESTRING.',
+                      style: TextStyle(color: Colors.grey, fontSize: 11),
+                    ),
+                    const SizedBox(height: 16),
+                    if (isTraveler) ...[
+                      DropdownButtonFormField<String>(
+                        value: departureId,
+                        dropdownColor: const Color(0xFF0F172A),
+                        decoration: const InputDecoration(
+                          labelText: 'Departure (Bangladesh)',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                        ),
+                        items: BangladeshGeo.places
+                            .map((p) => DropdownMenuItem(value: p.id, child: Text('${p.label} (${p.region})', style: const TextStyle(color: Colors.white, fontSize: 12))))
+                            .toList(),
+                        onChanged: (v) => setModalState(() => departureId = v),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
-                  child: Text(
-                    isTraveler ? 'POST TRIP' : 'SUBMIT REQUEST',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: destinationId,
+                        dropdownColor: const Color(0xFF0F172A),
+                        decoration: const InputDecoration(
+                          labelText: 'Destination (Bangladesh)',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                        ),
+                        items: BangladeshGeo.places
+                            .map((p) => DropdownMenuItem(value: p.id, child: Text('${p.label} (${p.region})', style: const TextStyle(color: Colors.white, fontSize: 12))))
+                            .toList(),
+                        onChanged: (v) => setModalState(() => destinationId = v),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: weightController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Available Capacity (KG)',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
+                        ),
+                      ),
+                    ] else ...[
+                      TextField(
+                        controller: descController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Parcel Item Description',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: pickupId,
+                        dropdownColor: const Color(0xFF0F172A),
+                        decoration: const InputDecoration(
+                          labelText: 'Pickup place',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                        ),
+                        items: BangladeshGeo.places
+                            .map((p) => DropdownMenuItem(value: p.id, child: Text(p.label, style: const TextStyle(color: Colors.white, fontSize: 12))))
+                            .toList(),
+                        onChanged: (v) => setModalState(() => pickupId = v),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: dropoffId,
+                        dropdownColor: const Color(0xFF0F172A),
+                        decoration: const InputDecoration(
+                          labelText: 'Dropoff place (must differ)',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                        ),
+                        items: BangladeshGeo.places
+                            .map((p) => DropdownMenuItem(value: p.id, child: Text(p.label, style: const TextStyle(color: Colors.white, fontSize: 12))))
+                            .toList(),
+                        onChanged: (v) => setModalState(() => dropoffId = v),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: rewardController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Proposed Surcharge Reward (BDT)',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: weightController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Weight (KG)',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: recipientController,
+                        keyboardType: TextInputType.phone,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Recipient phone (required)',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final capacity = double.tryParse(weightController.text);
+                          final reward = double.tryParse(rewardController.text);
+                          try {
+                            if (isTraveler) {
+                              if (capacity == null || capacity <= 0) {
+                                throw ArgumentError('Capacity must be a positive number.');
+                              }
+                              final dep = BangladeshGeo.byId(departureId ?? '');
+                              final dest = BangladeshGeo.byId(destinationId ?? '');
+                              if (dep == null || dest == null) {
+                                throw ArgumentError('Select valid Bangladesh places.');
+                              }
+                              final route = BangladeshGeo.routeBetween(dep, dest);
+                              await provider.addTrip(
+                                departure: dep.label,
+                                destination: dest.label,
+                                date: 'soon',
+                                capacity: capacity,
+                                routePoints: route,
+                              );
+                            } else {
+                              if (reward == null || reward <= 0) {
+                                throw ArgumentError('Reward must be a positive amount.');
+                              }
+                              if (capacity == null || capacity <= 0) {
+                                throw ArgumentError('Weight must be a positive number.');
+                              }
+                              final pickup = BangladeshGeo.byId(pickupId ?? '');
+                              final dropoff = BangladeshGeo.byId(dropoffId ?? '');
+                              if (pickup == null || dropoff == null) {
+                                throw ArgumentError('Select valid pickup and dropoff places.');
+                              }
+                              if (pickup.id == dropoff.id) {
+                                throw ArgumentError('Dropoff must differ from pickup.');
+                              }
+                              final phone = recipientController.text.trim();
+                              if (phone.isEmpty) {
+                                throw ArgumentError('Recipient phone is required.');
+                              }
+                              await provider.addPackage(
+                                desc: descController.text,
+                                weight: capacity,
+                                reward: reward,
+                                pickup: pickup.point,
+                                dropoff: dropoff.point,
+                                routeInfo: '${pickup.label} → ${dropoff.label}',
+                                recipientPhone: phone,
+                              );
+                            }
+                          } on Object catch (error) {
+                            if (!ctx.mounted) return;
+                            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('$error')));
+                            return;
+                          }
+                          if (!ctx.mounted || !context.mounted) return;
+                          Navigator.of(ctx).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(isTraveler ? 'Trip posted with live geometry!' : 'Delivery request posted!'),
+                              backgroundColor: const Color(0xFF059669),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
+                        child: Text(
+                          isTraveler ? 'POST TRIP' : 'SUBMIT REQUEST',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    )
+                  ],
                 ),
-              )
-            ],
-          ),
+              ),
+            );
+          },
         );
       },
     ).whenComplete(() {
-      depController.dispose();
-      destController.dispose();
       descController.dispose();
       rewardController.dispose();
       weightController.dispose();
+      recipientController.dispose();
     });
   }
 
@@ -215,6 +310,19 @@ class DashboardScreen extends StatelessWidget {
                   ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Top-up amount must be positive.')));
                   return;
                 }
+                if (userProvider.dataMode == AppDataMode.supabase) {
+                  if (!ctx.mounted) return;
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Live $providerName top-up is blocked: no payment provider is configured. '
+                        'Escrow lock/release still work when the wallet is already funded.',
+                      ),
+                      backgroundColor: Colors.orangeAccent,
+                    ),
+                  );
+                  return;
+                }
                 try {
                   if (providerName == 'bKash') {
                     await userProvider.topUpBkash(amt);
@@ -242,6 +350,39 @@ class DashboardScreen extends StatelessWidget {
         );
       },
     ).whenComplete(amountController.dispose);
+  }
+
+
+  Future<void> _uploadNidPhoto(BuildContext context) async {
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    if (provider.dataMode != AppDataMode.supabase) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('NID photo upload requires live Supabase mode.')),
+      );
+      return;
+    }
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (file == null) return;
+    try {
+      final bytes = await file.readAsBytes();
+      await provider.uploadNidPhoto(
+        bytes: bytes,
+        fileName: 'nid-${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('NID photo uploaded to Storage and marked pending for admin review.'),
+          backgroundColor: Color(0xFF059669),
+        ),
+      );
+    } on Object catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
+      );
+    }
   }
 
   @override
@@ -274,20 +415,26 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF68DBA9).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF68DBA9).withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.verified, color: Color(0xFF68DBA9), size: 14),
-                SizedBox(width: 4),
-                Text('NID Verified', style: TextStyle(color: Color(0xFF68DBA9), fontSize: 11, fontWeight: FontWeight.bold)),
-              ],
+          GestureDetector(
+            onTap: () => _uploadNidPhoto(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF68DBA9).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF68DBA9).withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified, color: Color(0xFF68DBA9), size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    'NID ${userProvider.nidStatus}',
+                    style: const TextStyle(color: Color(0xFF68DBA9), fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
             ),
           ),
           Padding(

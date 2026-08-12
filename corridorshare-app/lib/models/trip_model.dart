@@ -1,3 +1,5 @@
+import 'package_model.dart';
+
 enum TripStatus { scheduled, active, completed, cancelled }
 
 extension TripStatusLabel on TripStatus {
@@ -28,6 +30,7 @@ class TripModel {
     required this.status,
     required this.travelerName,
     required this.travelerRating,
+    this.routePoints = const [],
   }) : assert(weightCapacityKg > 0);
 
   final String id;
@@ -39,6 +42,7 @@ class TripModel {
   final TripStatus status;
   final String travelerName;
   final double travelerRating;
+  final List<GeoPoint> routePoints;
 
   String get travelTimeLabel => '${travelTime.hour.toString().padLeft(2, '0')}:${travelTime.minute.toString().padLeft(2, '0')}';
   String get travelerRatingLabel => '${travelerRating.toStringAsFixed(1)} ★';
@@ -46,8 +50,8 @@ class TripModel {
   factory TripModel.fromJson(Map<String, dynamic> json) {
     final time = DateTime.tryParse(json['travel_time'] as String? ?? '');
     final capacity = (json['weight_capacity_kg'] as num?)?.toDouble();
-    final rating = (json['traveler_rating'] as num?)?.toDouble();
-    if (time == null || capacity == null || capacity <= 0 || rating == null) {
+    final rating = (json['traveler_rating'] as num?)?.toDouble() ?? 0;
+    if (time == null || capacity == null || capacity <= 0) {
       throw const FormatException('Trip payload has invalid required fields.');
     }
     return TripModel(
@@ -58,8 +62,11 @@ class TripModel {
       travelTime: time,
       weightCapacityKg: capacity,
       status: TripStatusLabel.fromWire(_requiredString(json, 'status')),
-      travelerName: _requiredString(json, 'traveler_name'),
+      travelerName: (json['traveler_name'] as String?)?.trim().isNotEmpty == true
+          ? json['traveler_name'] as String
+          : 'Verified traveler',
       travelerRating: rating,
+      routePoints: _routePointsFrom(json['route_path']),
     );
   }
 
@@ -74,6 +81,31 @@ class TripModel {
         'traveler_name': travelerName,
         'traveler_rating': travelerRating,
       };
+}
+
+List<GeoPoint> _routePointsFrom(dynamic value) {
+  if (value is Map && value['coordinates'] is List) {
+    final coords = value['coordinates'] as List<dynamic>;
+    return coords
+        .whereType<List>()
+        .where((pair) => pair.length >= 2)
+        .map((pair) => GeoPoint((pair[1] as num).toDouble(), (pair[0] as num).toDouble()))
+        .toList(growable: false);
+  }
+  if (value is String) {
+    final match = RegExp(r'LINESTRING\((.+)\)', caseSensitive: false).firstMatch(value);
+    if (match != null) {
+      return match
+          .group(1)!
+          .split(',')
+          .map((segment) {
+            final parts = segment.trim().split(RegExp(r'\s+'));
+            return GeoPoint(double.parse(parts[1]), double.parse(parts[0]));
+          })
+          .toList(growable: false);
+    }
+  }
+  return const [];
 }
 
 String _requiredString(Map<String, dynamic> json, String key) {
