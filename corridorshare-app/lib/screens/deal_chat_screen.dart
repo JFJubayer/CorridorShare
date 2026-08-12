@@ -97,7 +97,7 @@ class _DealChatScreenState extends State<DealChatScreen> {
     String? inspectionPhotoUrl;
     final provider = context.read<UserProvider>();
     if (provider.dataMode.name == 'supabase') {
-      inspectionPhotoUrl = await _requestInspectionPhotoUrl();
+      inspectionPhotoUrl = await _requestInspectionPhotoUrl(deal.id);
       if (inspectionPhotoUrl == null) return;
     }
     try {
@@ -122,7 +122,7 @@ class _DealChatScreenState extends State<DealChatScreen> {
     }
   }
 
-  Future<String?> _requestInspectionPhotoUrl() async {
+  Future<String?> _requestInspectionPhotoUrl(String dealId) async {
     final provider = context.read<UserProvider>();
     if (provider.dataMode.name != 'supabase') {
       return 'demo://inspection-photo';
@@ -154,7 +154,7 @@ class _DealChatScreenState extends State<DealChatScreen> {
     if (file == null) return null;
     final bytes = await file.readAsBytes();
     final name = 'inspection-${DateTime.now().millisecondsSinceEpoch}.jpg';
-    return provider.uploadInspectionPhoto(bytes: bytes, fileName: name);
+    return provider.uploadInspectionPhoto(dealId: dealId, bytes: bytes, fileName: name);
   }
 
   Future<void> _requestRefund(DealModel deal) async {

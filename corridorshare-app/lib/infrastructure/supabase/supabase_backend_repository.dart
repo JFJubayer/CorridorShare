@@ -246,11 +246,13 @@ class SupabaseBackendRepository {
       }));
 
   /// Uploads to private Storage buckets created by the MVP BD contract migration.
-  /// Paths are `{auth.uid()}/{fileName}` to satisfy RLS folder checks.
+  /// NID paths: `{auth.uid()}/{fileName}`.
+  /// Inspection paths: `{auth.uid()}/{dealId}/{fileName}` when [dealId] is set.
   Future<String> uploadEvidenceImage({
     required String folder,
     required String fileName,
     required Uint8List bytes,
+    String? dealId,
     String contentType = 'image/jpeg',
   }) async {
     final userId = _client.auth.currentUser?.id;
@@ -260,7 +262,9 @@ class SupabaseBackendRepository {
       'inspection' => parcelInspectionsBucket,
       _ => throw ArgumentError.value(folder, 'folder', 'must be nid or inspection'),
     };
-    final path = '$userId/$fileName';
+    final path = folder == 'inspection' && dealId != null && dealId.trim().isNotEmpty
+        ? '$userId/${dealId.trim()}/$fileName'
+        : '$userId/$fileName';
     await _client.storage.from(bucket).uploadBinary(
           path,
           bytes,
@@ -274,8 +278,22 @@ class SupabaseBackendRepository {
   Future<void> updateOwnNidPhoto(String photoUrl) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw StateError('No authenticated Supabase user.');
-    await _client.from('profiles').update({'nid_photo_url': photoUrl}).eq('id', userId);
+    await _client.from('profiles').update({'nid_photo_url': photoUrl, 'nid_status': 'pending'}).eq('id', userId);
   }
+
+  /// Staging-only funding. Not a payment provider — members cannot call this successfully.
+  Future<Map<String, dynamic>> adminCreditWallet({
+    required String profileId,
+    required int amountMinor,
+    required String idempotencyKey,
+    String? note,
+  }) async =>
+      Map<String, dynamic>.from(await _client.rpc('admin_credit_wallet', params: {
+        'p_profile_id': profileId,
+        'p_amount_minor': amountMinor,
+        'p_idempotency_key': idempotencyKey,
+        if (note != null && note.trim().isNotEmpty) 'p_note': note.trim(),
+      }));
 }
 
 class BackendRepositoryFactory {

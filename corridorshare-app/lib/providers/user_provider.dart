@@ -188,6 +188,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<String> uploadInspectionPhoto({
+    required String dealId,
     required Uint8List bytes,
     required String fileName,
   }) async {
@@ -199,6 +200,7 @@ class UserProvider extends ChangeNotifier {
       folder: 'inspection',
       fileName: fileName,
       bytes: bytes,
+      dealId: dealId,
     );
   }
 
@@ -206,8 +208,8 @@ class UserProvider extends ChangeNotifier {
     if (!_config.isDemo) {
       throw UnsupportedError(
         'Live $provider top-up is blocked: no payment provider is configured. '
-        'Wallet funding requires a provider-confirmed server callback '
-        '(wallet_credit_from_provider). Use a funded test wallet in live mode.',
+        'Staging wallets are funded by an admin via admin_credit_wallet '
+        '(not a client top-up). Provider credits remain wallet_credit_from_provider.',
       );
     }
     _wallet.topUp(amount: Money.fromBdt(amount), provider: provider);

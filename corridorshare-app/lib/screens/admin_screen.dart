@@ -143,6 +143,95 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
+
+  Future<void> _creditWallet(String profileId) async {
+    final amountController = TextEditingController(text: '500');
+    final noteController = TextEditingController(text: 'Staging admin credit');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        title: const Text('admin_credit_wallet', style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Manual staging funding only — not a payment provider.',
+              style: TextStyle(color: Colors.amberAccent, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Amount (BDT)',
+                labelStyle: TextStyle(color: Colors.grey),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: noteController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Note',
+                labelStyle: TextStyle(color: Colors.grey),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL', style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
+            child: const Text('CREDIT', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      amountController.dispose();
+      noteController.dispose();
+      return;
+    }
+    final bdt = double.tryParse(amountController.text.trim());
+    final note = noteController.text.trim();
+    amountController.dispose();
+    noteController.dispose();
+    if (bdt == null || bdt <= 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Amount must be a positive BDT value.'), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+    final repository = context.read<UserProvider>().liveRepository;
+    if (repository == null) return;
+    setState(() => _busy = true);
+    try {
+      await repository.adminCreditWallet(
+        profileId: profileId,
+        amountMinor: (bdt * 100).round(),
+        idempotencyKey: 'admin-credit-$profileId-${DateTime.now().microsecondsSinceEpoch}',
+        note: note.isEmpty ? null : note,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Credited ৳${bdt.toStringAsFixed(0)} via admin_credit_wallet'), backgroundColor: const Color(0xFF059669)),
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Widget _metric(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -231,6 +320,11 @@ class _AdminScreenState extends State<AdminScreen> {
                 onPressed: _busy ? null : () => _setStatus(profile['id'] as String, 'suspended'),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
                 child: const Text('Suspend', style: TextStyle(color: Colors.white)),
+              ),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : () => _creditWallet(profile['id'] as String),
+                icon: const Icon(Icons.account_balance_wallet, size: 14),
+                label: const Text('Credit wallet'),
               ),
             ],
           ),

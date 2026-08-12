@@ -571,14 +571,31 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
+                    if (userProvider.dataMode != AppDataMode.demo)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Live top-up blocked: no payment provider. Staging funding uses admin_credit_wallet.',
+                          style: TextStyle(color: Colors.amberAccent, fontSize: 11),
+                        ),
+                      ),
                     Row(
                       children: [
                         Expanded(
                           child: ElevatedButton(
                             onPressed: userProvider.dataMode.name == 'demo'
                                 ? () => _showTopUpDialog(context, 'bKash', Colors.pinkAccent)
-                                : null,
+                                : () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Live top-up blocked: no payment provider. Ask an admin to run admin_credit_wallet.',
+                                        ),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -592,7 +609,16 @@ class DashboardScreen extends StatelessWidget {
                           child: ElevatedButton(
                             onPressed: userProvider.dataMode.name == 'demo'
                                 ? () => _showTopUpDialog(context, 'Nagad', Colors.deepOrangeAccent)
-                                : null,
+                                : () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Live top-up blocked: no payment provider. Ask an admin to run admin_credit_wallet.',
+                                        ),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFF97316),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
