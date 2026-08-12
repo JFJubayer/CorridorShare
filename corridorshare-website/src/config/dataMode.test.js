@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { getDataMode } from './dataMode';
 
 describe('getDataMode', () => {
-  it('defaults to Supabase and rejects missing live credentials', () => {
+  it('defaults to Supabase and rejects missing live credentials with a friendly message', () => {
     expect(getDataMode({}).mode).toBe('supabase');
-    expect(getDataMode({}).error).toContain('NEXT_PUBLIC_SUPABASE_URL');
+    expect(getDataMode({}).error).toMatch(/not connected yet/i);
+    expect(getDataMode({}).error).not.toMatch(/NEXT_PUBLIC_/);
   });
 
   it('accepts explicit demo mode only outside production', () => {

@@ -19,11 +19,10 @@ export default function FigmaMakeDashboardWidget() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black font-mono text-orange-600 dark:text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
-                  #CS-987654
+                  Example card
                 </span>
                 <span className="text-xs bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                  In Transit
+                  Sample UI
                 </span>
               </div>
               <h3 className="font-black text-on-surface text-lg mt-2 tracking-tight">
@@ -32,12 +31,12 @@ export default function FigmaMakeDashboardWidget() {
             </div>
             <div className="flex items-center gap-2.5 bg-surface-container-low px-4 py-2 rounded-full border border-orange-500/20">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-400 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                MC
+                VT
               </div>
               <div>
-                <p className="text-xs font-black text-on-surface">Miguel C.</p>
-                <p className="text-xs text-amber-500 font-bold flex items-center gap-0.5">
-                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" /> 4.9 Verified Driver
+                <p className="text-xs font-black text-on-surface">Example Traveler</p>
+                <p className="text-xs text-on-surface-variant font-bold flex items-center gap-0.5">
+                  <Star className="w-3.5 h-3.5 text-amber-500" /> Sample tracking UI
                 </p>
               </div>
             </div>
@@ -129,12 +128,13 @@ export default function FigmaMakeDashboardWidget() {
             <div>
               <p className="text-xs uppercase font-black tracking-widest text-on-surface-variant">Earnings Overview</p>
               <h3 className="text-3xl font-black text-on-surface tracking-tight font-display mt-1">
-                24,500 <span className="text-sm font-bold text-orange-600 dark:text-orange-400">BDT</span>
+                — <span className="text-sm font-bold text-orange-600 dark:text-orange-400">BDT</span>
               </h3>
+              <p className="text-[10px] text-on-surface-variant font-medium mt-1">Illustrative layout — live totals come from your wallet.</p>
             </div>
             <div className="bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-2 rounded-full border border-orange-500/20 flex items-center gap-1 font-black text-xs">
               <TrendingUp className="w-4 h-4" />
-              +18.4%
+              Example
             </div>
           </div>
 
@@ -166,11 +166,11 @@ export default function FigmaMakeDashboardWidget() {
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div className="bg-surface-container-low p-4 rounded-2xl border border-orange-500/15">
               <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Matched Routes</p>
-              <p className="text-xl font-black text-on-surface font-mono mt-0.5">14 Trips</p>
+              <p className="text-xl font-black text-on-surface font-mono mt-0.5">—</p>
             </div>
             <div className="bg-surface-container-low p-4 rounded-2xl border border-orange-500/15">
-              <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Escrow Released</p>
-              <p className="text-xl font-black text-orange-600 dark:text-orange-400 font-mono mt-0.5">100%</p>
+              <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Escrow Model</p>
+              <p className="text-xl font-black text-orange-600 dark:text-orange-400 font-mono mt-0.5">Hold→OTP</p>
             </div>
           </div>
         </Card>

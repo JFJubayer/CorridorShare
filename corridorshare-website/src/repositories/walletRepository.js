@@ -9,7 +9,7 @@ export const walletRepository = {
 
   async requestDemoTopUp(profileId, amountMinor) {
     if (!isMockDataSource) {
-      throw new Error('Wallet top-ups are processed by the payment service and cannot be changed from the browser.');
+      throw new Error('Live wallet top-up is coming later. Payment providers are not connected yet.');
     }
     if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
       throw new Error('Top-up amount must be a positive whole number of poisha.');

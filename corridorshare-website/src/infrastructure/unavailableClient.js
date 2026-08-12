@@ -1,7 +1,7 @@
 function unavailable(operation) {
   return Promise.resolve({
     data: null,
-    error: new Error(`Cannot ${operation}: ${process.env.NEXT_PUBLIC_DATA_MODE || 'supabase'} data source is not configured.`),
+    error: new Error(`Cannot ${operation}: live data is not connected. Configure Supabase credentials or use demo mode locally.`),
   });
 }
 
@@ -18,7 +18,15 @@ export const unavailableClient = {
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
   },
   from: () => ({
-    select: () => ({ then: (resolve) => resolve({ data: null, error: new Error('Data source is not configured.') }) }),
+    select: () => ({ then: (resolve) => resolve({ data: null, error: new Error('Live data is not connected.') }) }),
+    insert: () => ({ then: (resolve) => resolve({ data: null, error: new Error('Live data is not connected.') }) }),
+    update: () => ({ eq: () => ({ then: (resolve) => resolve({ data: null, error: new Error('Live data is not connected.') }) }) }),
   }),
   rpc: () => unavailable('call a server operation'),
+  storage: {
+    from: () => ({
+      upload: () => unavailable('upload a file'),
+      getPublicUrl: () => ({ data: { publicUrl: '' } }),
+    }),
+  },
 };

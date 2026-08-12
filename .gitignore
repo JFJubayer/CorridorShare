@@ -37,3 +37,6 @@ yarn-error.log*
 /corridorshare-app/android/app/release
 /corridorshare-app/ios/Flutter/.last_build_id
 .vercel
+
+# Supabase CLI local temp (never commit)
+supabase/.temp/

@@ -42,6 +42,11 @@ export default function AuthGuard({ children, title = "Authentication Required",
             <p className="text-xs md:text-sm text-on-surface-variant leading-relaxed font-medium">
               {authError || 'Please sign up or log in with your phone number to access highway corridor matching, deal negotiations, and identity verification.'}
             </p>
+            {authError && (
+              <p className="text-[11px] text-on-surface-variant font-medium">
+                Matching and chat stay gated until the website can reach a configured backend.
+              </p>
+            )}
           </div>
 
           {!authError && <div className="pt-2">

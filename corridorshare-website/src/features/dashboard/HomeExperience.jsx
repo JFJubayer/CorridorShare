@@ -42,7 +42,7 @@ export default function HomeExperience() {
   // Dashboard Create States
   const [showPostModal, setShowPostModal] = useState(false);
   const [tripForm, setTripForm] = useState({ departure: '', destination: '', date: '', capacity: '5' });
-  const [packageForm, setPackageForm] = useState({ desc: '', weight: '2', reward: '150', location: 'Dhaka' });
+  const [packageForm, setPackageForm] = useState({ desc: '', weight: '2', reward: '150', pickup: '', dropoff: '', recipientPhone: '', recipientName: '' });
 
   // Handle Mock Phone Verification Send Code
   const handleSendCode = async (e) => {
@@ -375,15 +375,20 @@ export default function HomeExperience() {
         {/* Figma Make UI Tracking & Analytics Dashboard Component */}
         <FigmaMakeDashboardWidget />
 
-        {/* Mobbin-Inspired Live Corridor Inspiration Directory */}
+        {/* Example Bangladesh corridor cards */}
         <MobbinInspirationGrid />
 
         {/* Interactive Safety & Escrow Trust Architecture Component */}
         <SafetyTrustMatrix />
 
         {/* Footnotes */}
-        <footer className="text-center py-6 border-t border-outline-variant/35 text-[10px] text-on-surface-variant font-bold">
-          &copy; {new Date().getFullYear()} CorridorShare P2P Logistics. Bangladesh.
+        <footer className="text-center py-6 border-t border-outline-variant/35 text-[10px] text-on-surface-variant font-bold space-y-2">
+          <div className="flex justify-center gap-4">
+            <Link href="/terms" className="hover:text-orange-600 dark:hover:text-orange-400">Terms</Link>
+            <Link href="/privacy" className="hover:text-orange-600 dark:hover:text-orange-400">Privacy</Link>
+            <Link href="/support" className="hover:text-orange-600 dark:hover:text-orange-400">Support</Link>
+          </div>
+          <p>&copy; {new Date().getFullYear()} CorridorShare P2P Logistics. Bangladesh.</p>
         </footer>
 
         {/* STATEFUL AUTHENTICATION MODAL (LOG IN / SIGN UP) */}
@@ -499,7 +504,7 @@ export default function HomeExperience() {
         <div className="flex items-center gap-3">
           <span className="text-[10px] uppercase font-bold text-orange-700 dark:text-orange-300 bg-orange-500/10 px-3.5 py-1.5 rounded-full border border-orange-500/30 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
-            Simulated Sandbox Active
+            Account Connected
           </span>
         </div>
       </div>
@@ -740,10 +745,10 @@ export default function HomeExperience() {
                   <Button 
                     variant="secondary" 
                     disabled={!isMockDataSource}
-                    title={isMockDataSource ? 'Add local demo funds' : 'Live top-ups require a provider-confirmed payment flow'}
+                    title={isMockDataSource ? 'Add local demo funds' : 'Live top-up is coming later — payment providers are not connected yet'}
                     onClick={() => {
                       if (!isMockDataSource) return;
-                      const amt = prompt("Enter simulated amount to top up via bKash/Nagad (BDT):", "50");
+                      const amt = prompt("Enter simulated amount to top up (demo only, BDT):", "50");
                       if (amt && !isNaN(amt)) {
                         topUp(parseFloat(amt));
                       }
@@ -751,8 +756,13 @@ export default function HomeExperience() {
                     className="bg-white/20 hover:bg-white/30 border border-white/30 text-white py-3 w-full flex items-center justify-center gap-1.5 rounded-full"
                   >
                     <Plus className="w-4 h-4" />
-                    {isMockDataSource ? 'Demo Top Up' : 'Top Up Unavailable'}
+                    {isMockDataSource ? 'Demo Top Up' : 'Top Up Coming Later'}
                   </Button>
+                  {!isMockDataSource && (
+                    <p className="text-[10px] text-amber-100/90 font-medium leading-relaxed">
+                      Live bKash/Nagad top-up is coming later. Escrow lock, delivery OTP, release, and refund already use your wallet balance.
+                    </p>
+                  )}
 
                   <Button
                     variant="primary"
@@ -871,15 +881,25 @@ export default function HomeExperience() {
                         className="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-primary text-on-surface"
                       />
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="col-span-2">
-                        <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Pickup Area</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Pickup Place</label>
                         <input 
                           type="text" required placeholder="e.g. Uttara, Dhaka"
-                          value={packageForm.location} onChange={(e) => setPackageForm({...packageForm, location: e.target.value})}
+                          value={packageForm.pickup} onChange={(e) => setPackageForm({...packageForm, pickup: e.target.value})}
                           className="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-primary text-on-surface"
                         />
                       </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Drop-off Place</label>
+                        <input 
+                          type="text" required placeholder="e.g. Sylhet Sadar"
+                          value={packageForm.dropoff} onChange={(e) => setPackageForm({...packageForm, dropoff: e.target.value})}
+                          className="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-primary text-on-surface"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Weight (KG)</label>
                         <input 
@@ -888,15 +908,34 @@ export default function HomeExperience() {
                           className="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-primary text-on-surface"
                         />
                       </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Proposed Reward (BDT)</label>
+                        <input 
+                          type="number" required placeholder="e.g. 200"
+                          value={packageForm.reward} onChange={(e) => setPackageForm({...packageForm, reward: e.target.value})}
+                          className="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-primary text-on-surface"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Proposed Reward (BDT)</label>
-                      <input 
-                        type="number" required placeholder="e.g. 200"
-                        value={packageForm.reward} onChange={(e) => setPackageForm({...packageForm, reward: e.target.value})}
-                        className="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-primary text-on-surface"
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Recipient Phone</label>
+                        <input 
+                          type="tel" required placeholder="e.g. +88017XXXXXXXX"
+                          value={packageForm.recipientPhone} onChange={(e) => setPackageForm({...packageForm, recipientPhone: e.target.value})}
+                          className="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-primary text-on-surface"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Recipient Name (optional)</label>
+                        <input 
+                          type="text" placeholder="e.g. Rahim Uddin"
+                          value={packageForm.recipientName} onChange={(e) => setPackageForm({...packageForm, recipientName: e.target.value})}
+                          className="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2.5 text-xs outline-none focus:ring-2 focus:ring-primary text-on-surface"
+                        />
+                      </div>
                     </div>
+                    <p className="text-[10px] text-on-surface-variant -mt-1">Recipient phone is required for handoff. Required by the backend after PR #2.</p>
                   </div>
                   <div className="flex gap-2 pt-2">
                     <Button variant="secondary" type="button" onClick={() => setShowPostModal(false)}>Cancel</Button>
