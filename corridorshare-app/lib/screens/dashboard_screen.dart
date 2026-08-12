@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../core/geo/bangladesh_geo.dart';
 import '../core/config/app_config.dart';
+import '../models/trip_model.dart';
 import '../providers/user_provider.dart';
 import '../widgets/surcharge_calculator.dart';
 import 'match_screen.dart';
@@ -385,6 +386,296 @@ class DashboardScreen extends StatelessWidget {
     }
   }
 
+
+
+  Widget _buildFriendsBetaChecklist(BuildContext context, UserProvider userProvider) {
+    final nidDone = userProvider.nidStatus == 'verified' || userProvider.nidStatus == 'pending';
+    final listingDone = userProvider.trips.isNotEmpty || userProvider.packages.isNotEmpty;
+    final dealDone = userProvider.deals.isNotEmpty;
+    final walletOk = userProvider.availableWalletBalance > 0;
+    if (nidDone && listingDone && dealDone && walletOk) {
+      return const SizedBox.shrink();
+    }
+    Widget row({
+      required bool done,
+      required String title,
+      required String subtitle,
+      required String cta,
+      required VoidCallback onTap,
+    }) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              done ? Icons.check_circle : Icons.radio_button_unchecked,
+              color: done ? const Color(0xFF68DBA9) : Colors.orangeAccent,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11, height: 1.3)),
+                ],
+              ),
+            ),
+            if (!done)
+              TextButton(
+                onPressed: onTap,
+                child: Text(cta, style: const TextStyle(color: Color(0xFFF97316), fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF1E293B)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Friends beta checklist', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 4),
+          const Text(
+            'Complete these once so matching, deal chat, and escrow work for staging demos.',
+            style: TextStyle(color: Colors.grey, fontSize: 11, height: 1.35),
+          ),
+          const SizedBox(height: 14),
+          row(
+            done: nidDone,
+            title: 'Upload NID for admin review',
+            subtitle: 'Status: ${userProvider.nidStatus}',
+            cta: 'Upload',
+            onTap: () => _uploadNidPhoto(context),
+          ),
+          row(
+            done: walletOk,
+            title: 'Fund wallet via admin credit',
+            subtitle: 'No live top-up — ask an admin for admin_credit_wallet.',
+            cta: 'Account',
+            onTap: () => _showAccountSheet(context),
+          ),
+          row(
+            done: listingDone,
+            title: userProvider.isTraveler ? 'Post a corridor trip' : 'Request a package delivery',
+            subtitle: 'Lists stay empty until you create real listings.',
+            cta: 'Post',
+            onTap: () => _showPostModal(context, userProvider.isTraveler),
+          ),
+          row(
+            done: dealDone,
+            title: 'Open a deal from Matching',
+            subtitle: 'Deal chats appear under Messages after a match request.',
+            cta: 'Match',
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MatchScreen())),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAccountSheet(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Account', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 16),
+              _accountRow('NID status', userProvider.nidStatus),
+              _accountRow('Role', userProvider.isTraveler ? 'Traveler' : 'Sender'),
+              _accountRow('Wallet available', '৳ ${userProvider.availableWalletBalance.toStringAsFixed(2)}'),
+              _accountRow('Escrow held', '৳ ${userProvider.escrowLockedBalance.toStringAsFixed(2)}'),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.35)),
+                ),
+                child: const Text(
+                  'Private beta: live bKash/Nagad top-up is disabled. Staging wallets are funded by an admin via admin_credit_wallet.',
+                  style: TextStyle(color: Colors.amberAccent, fontSize: 11, height: 1.35),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _uploadNidPhoto(context);
+                  },
+                  icon: const Icon(Icons.badge_outlined, size: 16, color: Color(0xFF68DBA9)),
+                  label: const Text('Upload / update NID photo', style: TextStyle(color: Color(0xFF68DBA9))),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        userProvider.toggleRole();
+                        Navigator.pop(ctx);
+                      },
+                      child: Text(userProvider.isTraveler ? 'Switch to Sender' : 'Switch to Traveler'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await userProvider.logout();
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                      child: const Text('Log out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _accountRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  void _requestCapacityOnTrip(BuildContext context, TripModel trip) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final myPackages = userProvider.packages
+        .where((pkg) => pkg.senderId == userProvider.userId)
+        .toList(growable: false);
+
+    if (myPackages.isEmpty) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF0F172A),
+          title: const Text('Post a package first', style: TextStyle(color: Colors.white)),
+          content: const Text(
+            'You need at least one package request before you can open a deal on this trip. '
+            'Post a parcel from Dashboard, or browse Matching as a traveler.',
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CLOSE', style: TextStyle(color: Colors.grey))),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _showPostModal(context, false);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
+              child: const Text('POST PACKAGE', style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => MatchScreen(initialTripId: trip.id)));
+              },
+              child: const Text('OPEN MATCHING', style: TextStyle(color: Colors.orangeAccent)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Choose a package for ${trip.departureCity} → ${trip.destinationCity}',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Opens a deal room with this trip id — never a random packages.first shortcut.',
+                  style: TextStyle(color: Colors.grey, fontSize: 11),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.45),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: myPackages.length,
+                    itemBuilder: (_, idx) {
+                      final pkg = myPackages[idx];
+                      return ListTile(
+                        title: Text(pkg.itemDescription, style: const TextStyle(color: Colors.white)),
+                        subtitle: Text('৳ ${pkg.proposedReward.toStringAsFixed(0)} • ${pkg.routeInfo}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                        trailing: const Icon(Icons.chevron_right, color: Colors.orangeAccent),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => DealChatScreen(package: pkg, tripId: trip.id),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => MatchScreen(initialTripId: trip.id)));
+                  },
+                  child: const Text('Or open Matching for this trip', style: TextStyle(color: Colors.orangeAccent)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
@@ -397,10 +688,13 @@ class DashboardScreen extends StatelessWidget {
         toolbarHeight: 64,
         title: Row(
           children: [
-            const CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xFF1C2B3C),
-              child: Icon(Icons.person, color: Color(0xFFFFB690), size: 20),
+            GestureDetector(
+              onTap: () => _showAccountSheet(context),
+              child: const CircleAvatar(
+                radius: 18,
+                backgroundColor: Color(0xFF1C2B3C),
+                child: Icon(Icons.person, color: Color(0xFFFFB690), size: 20),
+              ),
             ),
             const SizedBox(width: 10),
             RichText(
@@ -505,6 +799,7 @@ class DashboardScreen extends StatelessWidget {
                 onShipPressed: () => _showPostModal(context, userProvider.isTraveler),
               ),
               const SizedBox(height: 20),
+              _buildFriendsBetaChecklist(context, userProvider),
 
               Container(
                 width: double.infinity,
@@ -648,7 +943,25 @@ class DashboardScreen extends StatelessWidget {
 
               SizedBox(
                 height: 175,
-                child: ListView.builder(
+                child: userProvider.trips.isEmpty
+                    ? Container(
+                        width: double.infinity,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1C2B3C),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFF1E293B)),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'No corridor trips yet. Post a trip or package above — lists stay empty until real data loads.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey, fontSize: 12, height: 1.35),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: userProvider.trips.length,
                   itemBuilder: (ctx, idx) {
@@ -732,10 +1045,7 @@ class DashboardScreen extends StatelessWidget {
                             children: [
                               Text('Up to ${trip.weightCapacityKg.toStringAsFixed(0)}kg', style: const TextStyle(color: Colors.grey, fontSize: 10)),
                               GestureDetector(
-                                onTap: () {
-                                  final dummyPkg = userProvider.packages.first;
-                                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => DealChatScreen(package: dummyPkg)));
-                                },
+                                onTap: () => _requestCapacityOnTrip(context, trip),
                                 child: const Text('Request', style: TextStyle(color: Color(0xFFF97316), fontWeight: FontWeight.bold, fontSize: 11)),
                               ),
                             ],

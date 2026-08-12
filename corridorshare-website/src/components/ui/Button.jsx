@@ -1,13 +1,13 @@
 import React from 'react';
 
 export default function Button({ children, variant = 'primary', className = '', ...props }) {
-  const baseStyle = "w-full py-3 px-5 rounded-full font-bold text-sm transition-all tactile-btn cursor-pointer flex items-center justify-center gap-2 select-none";
-  
+  const baseStyle = "w-full py-3 px-5 rounded-full font-semibold text-sm transition-all tactile-btn cursor-pointer flex items-center justify-center gap-2 select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none";
+
   const variants = {
-    primary: "bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white shadow-md shadow-orange-500/25 border border-orange-400/30",
-    secondary: "bg-surface-container-low text-on-surface border border-outline hover:bg-orange-500/10 dark:hover:bg-orange-500/20",
-    danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-500/20",
-    success: "bg-amber-600 text-white hover:bg-amber-700 shadow-sm shadow-amber-500/20"
+    primary: "bg-primary hover:bg-primary-700 text-white shadow-sm border border-primary/20",
+    secondary: "bg-surface-container-lowest text-on-surface border border-outline hover:bg-primary/8 dark:hover:bg-primary/15",
+    danger: "bg-error text-white hover:opacity-90 shadow-sm",
+    success: "bg-secondary text-white hover:opacity-90 shadow-sm"
   };
 
   return (
@@ -19,4 +19,3 @@ export default function Button({ children, variant = 'primary', className = '', 
     </button>
   );
 }
-

@@ -3,10 +3,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_DEMO_PROFILES, isMockDataSource } from '@/config/supabaseClient';
-import { addDemoKycProfile, loadProfilesForReview, resetDemoUsers, setKycStatus } from '@/features/admin/actions';
+import { addDemoKycProfile, creditWalletStaging, loadProfilesForReview, resetDemoUsers, setKycStatus } from '@/features/admin/actions';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { ShieldCheck, ShieldAlert, Phone, DollarSign, Calendar, RefreshCw, ZoomIn, Ban, RotateCcw, Plus, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Phone, DollarSign, Calendar, RefreshCw, ZoomIn, Ban, RotateCcw, Plus, CheckCircle2, Wallet } from 'lucide-react';
 import AuthGuard from '@/features/auth/AuthGuard';
 
 export default function AdminPortalPage() {
@@ -23,6 +23,7 @@ function AdminPortalPageContent() {
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
   const [actionError, setActionError] = useState('');
+  const [actionInfo, setActionInfo] = useState('');
 
   const loadProfiles = useCallback(async (showSpinner = false) => {
     if (showSpinner) setLoading(true);
@@ -77,6 +78,20 @@ function AdminPortalPageContent() {
     }
   };
 
+  const handleCreditWallet = async (profileId) => {
+    const amountRaw = window.prompt('Staging credit amount (BDT) via admin_credit_wallet:', '500');
+    if (amountRaw == null) return;
+    const noteRaw = window.prompt('Note for ledger (optional):', 'Friends beta staging credit');
+    try {
+      setActionError('');
+      await creditWalletStaging({ profileId, amountBdt: amountRaw, note: noteRaw || undefined });
+      await loadProfiles();
+      setActionInfo(`Credited ${Number(amountRaw).toFixed(2)} BDT via admin_credit_wallet.`);
+    } catch (error) {
+      setActionError(error.message || 'Unable to credit this wallet. Admin role required.');
+    }
+  };
+
   const filteredProfiles = profiles.filter((p) => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'pending') return p.nid_status === 'pending' || p.nid_status === 'unverified';
@@ -89,7 +104,7 @@ function AdminPortalPageContent() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <span className="text-[10px] bg-gradient-to-r from-orange-600 to-amber-500 text-white px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-xs">
+          <span className="text-[10px] bg-primary text-white px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-xs">
             KYC Compliance
           </span>
           <h1 className="text-2xl font-black text-on-surface tracking-tight mt-1.5 font-display">
@@ -104,7 +119,7 @@ function AdminPortalPageContent() {
           {isMockDataSource && <>
           <button 
             onClick={handleAddSampleKYC}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-orange-600 to-amber-500 text-white px-4 py-2.5 rounded-full text-xs font-black transition-all shadow-md hover:from-orange-500 hover:to-amber-400 active:scale-95 outline-none cursor-pointer"
+            className="flex items-center gap-1.5 bg-primary text-white px-4 py-2.5 rounded-full text-xs font-black transition-all shadow-md hover:bg-primary-700 active:scale-95 outline-none cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Test KYC
@@ -112,24 +127,25 @@ function AdminPortalPageContent() {
           
           <button 
             onClick={handleResetDemoData}
-            className="flex items-center gap-1.5 bg-surface-container-low border border-orange-500/20 hover:bg-orange-500/10 px-4 py-2.5 rounded-full text-xs font-bold text-on-surface transition-all shadow-xs outline-none cursor-pointer"
+            className="flex items-center gap-1.5 bg-surface-container-low border border-outline hover:bg-primary/10 px-4 py-2.5 rounded-full text-xs font-bold text-on-surface transition-all shadow-xs outline-none cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-orange-500" />
+            <RotateCcw className="w-3.5 h-3.5 text-primary" />
             Reset Demo Users
           </button>
           </>}
 
           <button 
             onClick={() => loadProfiles(true)}
-            className="flex items-center gap-1.5 bg-surface border border-orange-500/20 hover:bg-orange-500/10 px-4 py-2.5 rounded-full text-xs font-bold text-on-surface transition-all shadow-xs outline-none cursor-pointer"
+            className="flex items-center gap-1.5 bg-surface border border-outline hover:bg-primary/10 px-4 py-2.5 rounded-full text-xs font-bold text-on-surface transition-all shadow-xs outline-none cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-orange-500" />
+            <RefreshCw className="w-3.5 h-3.5 text-primary" />
             Reload
           </button>
         </div>
       </div>
 
       {actionError && <p role="alert" className="mb-4 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-xs font-bold text-red-600 dark:text-red-400">{actionError}</p>}
+      {actionInfo && <p className="mb-4 rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-xs font-bold text-primary">{actionInfo}</p>}
 
       {/* Filter Tabs Bar */}
       <div className="flex items-center gap-2.5 border-b border-outline-variant pb-3 mb-6 overflow-x-auto">
@@ -149,16 +165,10 @@ function AdminPortalPageContent() {
             <button
               key={tab.id}
               onClick={() => setActiveFilter(tab.id)}
-              className={`px-4 py-2 rounded-full text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                activeFilter === tab.id
-                  ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-md'
-                  : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-orange-500/10'
-              }`}
+              className={`px-4 py-2 rounded-full text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${ activeFilter === tab.id ? 'bg-primary text-white shadow-md' : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-primary/10' }`}
             >
               <span>{tab.label}</span>
-              <span className={`text-[10px] px-2 py-0.2 rounded-full font-black ${
-                activeFilter === tab.id ? 'bg-white/25 text-white' : 'bg-surface-container-highest text-on-surface-variant'
-              }`}>
+              <span className={`text-[10px] px-2 py-0.2 rounded-full font-black ${ activeFilter === tab.id ? 'bg-white/25 text-white' : 'bg-surface-container-highest text-on-surface-variant' }`}>
                 {count}
               </span>
             </button>
@@ -169,15 +179,15 @@ function AdminPortalPageContent() {
       {/* Main Content List */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <svg className="animate-spin h-8 w-8 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
           <span className="text-sm font-semibold text-on-surface-variant">Loading verification data...</span>
         </div>
       ) : filteredProfiles.length === 0 ? (
-        <div className="bg-surface border border-orange-500/30 rounded-[28px] p-12 text-center max-w-lg mx-auto shadow-lg space-y-4 transition-colors duration-300">
-          <div className="bg-orange-500/10 text-orange-600 dark:text-orange-400 p-3 rounded-full w-fit mx-auto">
+        <div className="bg-surface border border-primary/25 rounded-xl p-12 text-center max-w-lg mx-auto shadow-lg space-y-4 transition-colors duration-300">
+          <div className="bg-primary/10 text-primary p-3 rounded-full w-fit mx-auto">
             <ShieldCheck className="w-8 h-8" />
           </div>
           <div>
@@ -189,7 +199,7 @@ function AdminPortalPageContent() {
               <Button onClick={handleAddSampleKYC} variant="primary" className="text-xs font-black rounded-full">
                 Add Sample KYC Profile
               </Button>
-              <Button onClick={handleResetDemoData} variant="secondary" className="text-xs font-bold rounded-full border border-orange-500/20">
+              <Button onClick={handleResetDemoData} variant="secondary" className="text-xs font-bold rounded-full border border-outline">
                 Reset Demo Users
               </Button>
             </>}
@@ -202,12 +212,12 @@ function AdminPortalPageContent() {
             const isSuspended = p.nid_status === 'suspended';
 
             return (
-              <Card key={p.id} className="bg-surface border border-orange-500/20 p-6 flex flex-col justify-between gap-5 shadow-md hover:shadow-xl transition-all duration-300 rounded-[28px]">
+              <Card key={p.id} className="bg-surface border border-outline p-6 flex flex-col justify-between gap-5 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl">
                 
                 {/* Profile Meta info */}
                 <div className="flex flex-col sm:flex-row gap-5 items-start">
                   {/* NID Card Photo Container */}
-                  <div className="relative w-full sm:w-48 h-32 rounded-2xl overflow-hidden bg-surface-container-low border border-orange-500/20 group flex-shrink-0">
+                  <div className="relative w-full sm:w-48 h-32 rounded-2xl overflow-hidden bg-surface-container-low border border-outline group flex-shrink-0">
                     <img 
                       src={p.nid_photo_url || "https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?auto=format&fit=crop&w=400&h=250&q=80"} 
                       alt="NID Submission" 
@@ -226,25 +236,19 @@ function AdminPortalPageContent() {
                       <span className="text-[10px] font-black text-on-surface-variant block uppercase tracking-widest">
                         UID: {String(p.id).slice(0, 12)}...
                       </span>
-                      <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-full border ${
-                        isVerified 
-                          ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' 
-                          : isSuspended
-                          ? 'bg-red-500/10 text-red-600 border border-red-500/20'
-                          : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                      }`}>
+                      <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-full border ${ isVerified ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : isSuspended ? 'bg-red-500/10 text-red-600 border border-red-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20' }`}>
                         {p.nid_status || 'pending'}
                       </span>
                     </div>
 
                     <div className="space-y-1.5 text-xs text-on-surface-variant font-medium">
                       <p className="flex items-center gap-1.5 font-bold text-on-surface">
-                        <Phone className="w-3.5 h-3.5 text-orange-500" />
+                        <Phone className="w-3.5 h-3.5 text-primary" />
                         Phone: {p.phone_number}
                       </p>
                       <p className="flex items-center gap-1.5 font-bold text-on-surface">
-                        <DollarSign className="w-3.5 h-3.5 text-orange-500" />
-                        Wallet Balance: <strong className="text-orange-600 dark:text-orange-400 font-mono font-black">{parseFloat(p.wallet_balance || 0).toFixed(2)} BDT</strong>
+                        <DollarSign className="w-3.5 h-3.5 text-primary" />
+                        Wallet Balance: <strong className="text-primary font-mono font-black">{parseFloat(p.wallet_balance || 0).toFixed(2)} BDT</strong>
                       </p>
                       <p className="flex items-center gap-1.5 text-[11px] text-on-surface-variant/80">
                         <Calendar className="w-3.5 h-3.5 text-on-surface-variant/55" />
@@ -255,7 +259,7 @@ function AdminPortalPageContent() {
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-orange-500/15">
+                <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-outline-variant">
                   {!isVerified ? (
                     <Button 
                       onClick={() => handleApprove(p.id)}
@@ -282,6 +286,16 @@ function AdminPortalPageContent() {
                       Suspend Account
                     </Button>
                   )}
+
+                  <Button
+                    onClick={() => handleCreditWallet(p.id)}
+                    variant="secondary"
+                    className="flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-full border border-outline"
+                    title="Calls admin_credit_wallet — staging funding only, not a payment gateway"
+                  >
+                    <Wallet className="w-4 h-4" />
+                    Credit staging wallet
+                  </Button>
                 </div>
 
               </Card>
@@ -294,7 +308,7 @@ function AdminPortalPageContent() {
       {selectedPhoto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setSelectedPhoto(null)}></div>
-          <div className="relative max-w-4xl max-h-[85vh] z-10 overflow-hidden rounded-[28px] border border-orange-500/30 shadow-2xl">
+          <div className="relative max-w-4xl max-h-[85vh] z-10 overflow-hidden rounded-xl border border-primary/25 shadow-lg">
             <img src={selectedPhoto} alt="NID Zoomed View" className="w-full h-auto max-h-[80vh] object-contain bg-slate-950" />
             <button 
               onClick={() => setSelectedPhoto(null)}

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/app_config.dart';
 import 'core/theme/app_colors.dart';
@@ -157,7 +158,10 @@ class SignInScreen extends StatelessWidget {
 }
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
+  static const _betaBannerKey = 'cs_friends_beta_banner_dismissed';
   int _currentIndex = 0;
+  bool _showPrivateBetaBanner = false;
+  bool _bannerReady = false;
 
   final List<Widget> _pages = const [
     DashboardScreen(),
@@ -167,11 +171,77 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadBannerPreference();
+  }
+
+  Future<void> _loadBannerPreference() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final dismissed = prefs.getBool(_betaBannerKey) ?? false;
+      if (!mounted) return;
+      setState(() {
+        _showPrivateBetaBanner = !dismissed;
+        _bannerReady = true;
+      });
+    } on Object {
+      if (!mounted) return;
+      setState(() {
+        _showPrivateBetaBanner = true;
+        _bannerReady = true;
+      });
+    }
+  }
+
+  Future<void> _dismissBanner() async {
+    setState(() => _showPrivateBetaBanner = false);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_betaBannerKey, true);
+    } on Object {
+      // Session-only dismiss if prefs unavailable.
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
+      body: Column(
+        children: [
+          if (_bannerReady && _showPrivateBetaBanner)
+            Material(
+              color: const Color(0xFF7C2D12),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Friends private beta — OTP sign-in, matching, deal chat, meetup pins, and escrow OTP work. Live payments and continuous GPS are not included; use admin wallet credit for staging.',
+                          style: TextStyle(color: Colors.white, fontSize: 11, height: 1.3),
+                        ),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: _dismissBanner,
+                        icon: const Icon(Icons.close, color: Colors.white70, size: 18),
+                        tooltip: 'Dismiss friends beta banner',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: _pages,
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,

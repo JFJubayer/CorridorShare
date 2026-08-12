@@ -168,9 +168,19 @@ class SupabaseBackendRepository {
         (data['pickup_lat'] as num).toDouble(),
         (data['pickup_lng'] as num).toDouble(),
       );
-      // Match RPC returns pickup only; synthesize a distinct dropoff marker for
-      // the PackageModel invariant until dropoff is joined into the RPC.
-      final dropoff = GeoPoint(pickup.latitude + 0.02, pickup.longitude + 0.02);
+      // Friends-beta match RPC (202608120002) returns dropoff_lat/lng + weight_kg.
+      // Prefer real coords; only synthesize a distinct marker if the RPC row is
+      // missing dropoff (older backends).
+      final dropLat = (data['dropoff_lat'] as num?)?.toDouble();
+      final dropLng = (data['dropoff_lng'] as num?)?.toDouble();
+      final dropoff = (dropLat != null && dropLng != null)
+          ? GeoPoint(dropLat, dropLng)
+          : GeoPoint(pickup.latitude + 0.02, pickup.longitude + 0.02);
+      if (dropoff.isSameAs(pickup)) {
+        throw FormatException(
+          'match_packages_within_corridor returned identical pickup/dropoff for package ${data['package_id']}',
+        );
+      }
       return PackageModel(
         id: _string(data, 'package_id'),
         senderId: _string(data, 'sender_id'),
@@ -186,6 +196,7 @@ class SupabaseBackendRepository {
         routeInfo: 'Matched via corridor RPC',
         eta: DateTime.now().toUtc().add(const Duration(hours: 6)),
         itemType: data['item_type'] as String? ?? 'Parcel',
+        weightKg: (data['weight_kg'] as num?)?.toDouble(),
       );
     }).toList(growable: false);
   }

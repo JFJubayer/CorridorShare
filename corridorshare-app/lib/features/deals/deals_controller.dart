@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/money/money.dart';
 import '../../models/deal_model.dart';
 import '../../models/package_model.dart';
 import '../../infrastructure/supabase/supabase_backend_repository.dart';
@@ -44,23 +45,25 @@ class DealsController extends ChangeNotifier {
     required PackageModel package,
     required String travelerId,
     required String tripId,
+    Money? agreedReward,
   }) async {
     DealModel? existing;
     for (final candidate in deals) {
-      if (candidate.packageId == package.id) {
+      if (candidate.packageId == package.id && candidate.tripId == tripId) {
         existing = candidate;
         break;
       }
     }
     if (existing != null) return existing;
 
+    final amount = agreedReward ?? package.reward;
     final deal = DealModel(
-      id: 'deal-${package.id}',
+      id: 'deal-${package.id}-$tripId',
       tripId: tripId,
       packageId: package.id,
       travelerId: travelerId,
       senderId: package.senderId,
-      agreedPrice: package.reward,
+      agreedPrice: amount,
       status: DealStatus.negotiating,
       packageItem: package.itemDescription,
       routeInfo: package.routeInfo,
@@ -71,7 +74,7 @@ class DealsController extends ChangeNotifier {
       final row = await repository.createDeal(
         tripId: tripId,
         packageId: package.id,
-        amount: package.reward,
+        amount: amount,
       );
       final created = DealModel(
         id: row['id'] as String,
@@ -79,7 +82,7 @@ class DealsController extends ChangeNotifier {
         packageId: package.id,
         travelerId: travelerId,
         senderId: package.senderId,
-        agreedPrice: package.reward,
+        agreedPrice: amount,
         status: DealStatusWire.fromWire(row['status'] as String),
         dealLocked: row['deal_locked'] as bool? ?? false,
         openBoxVerified: row['open_box_verified'] as bool? ?? false,

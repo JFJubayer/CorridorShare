@@ -1,23 +1,22 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Support | CorridorShare',
-  description: 'Support contacts for CorridorShare Bangladesh MVP.',
+  title: 'Support | CorridorShare Friends Beta',
+  description: 'Support for the CorridorShare friends private beta.',
 };
 
 export default function SupportPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12 md:pl-8 space-y-6">
-      <Link href="/" className="text-xs font-black text-orange-600 dark:text-orange-400 uppercase tracking-wider">← Back home</Link>
-      <h1 className="text-3xl font-black text-on-surface font-display tracking-tight">Support</h1>
+      <Link href="/" className="text-xs font-black text-primary uppercase tracking-wider">← Back home</Link>
+      <h1 className="text-3xl font-black text-on-surface font-display tracking-tight">Support (friends beta)</h1>
       <div className="text-sm text-on-surface-variant leading-relaxed font-medium space-y-4">
-        <p>Need help with CorridorShare?</p>
+        <p>This is a private friends trial. Reach the person who invited you for account, NID, or wallet staging help.</p>
         <ul className="list-disc pl-5 space-y-2">
-          <li>For account or NID review questions, contact the admin team operating your deployment.</li>
-          <li>For product bugs during the MVP, open a GitHub issue on the CorridorShare repository.</li>
-          <li>Emergency cargo or safety incidents should be reported to local authorities first.</li>
+          <li>Wallet top-up: ask an admin to run <code className="text-primary">admin_credit_wallet</code> — there is no payment gateway.</li>
+          <li>Product bugs: open a GitHub issue on the CorridorShare repository.</li>
+          <li>Safety or cargo emergencies: contact local authorities first.</li>
         </ul>
-        <p>Email placeholder: support@corridorshare.example</p>
       </div>
     </div>
   );

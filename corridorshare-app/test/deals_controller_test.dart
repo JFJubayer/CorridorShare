@@ -49,4 +49,36 @@ void main() {
       throwsA(isA<UnsupportedError>()),
     );
   });
+
+  test('matches existing deals by packageId and tripId, not package alone', () async {
+    final wallet = WalletController(config: demoConfig);
+    final listings = ListingsController(config: demoConfig);
+    final deals = DealsController(config: demoConfig, wallet: wallet);
+    final package = listings.packages.first;
+    final tripA = listings.trips.first;
+    final tripB = listings.trips.length > 1 ? listings.trips[1] : listings.trips.first;
+
+    final dealA = await deals.getOrCreateForPackage(
+      package: package,
+      travelerId: '00000000-0000-4000-8000-000000000111',
+      tripId: tripA.id,
+    );
+    final dealB = await deals.getOrCreateForPackage(
+      package: package,
+      travelerId: '00000000-0000-4000-8000-000000000111',
+      tripId: '${tripB.id}-alt',
+      agreedReward: package.reward,
+    );
+
+    expect(dealA.id, isNot(dealB.id));
+    expect(dealA.tripId, tripA.id);
+    expect(dealB.tripId, '${tripB.id}-alt');
+
+    final again = await deals.getOrCreateForPackage(
+      package: package,
+      travelerId: '00000000-0000-4000-8000-000000000111',
+      tripId: tripA.id,
+    );
+    expect(again.id, dealA.id);
+  });
 }

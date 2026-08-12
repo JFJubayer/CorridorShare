@@ -30,4 +30,23 @@ export const walletRepository = {
     });
     return { ...account, available_balance_minor: availableBalanceMinor };
   },
+
+  async adminCreditWallet({ profileId, amountMinor, idempotencyKey, note = null }) {
+    if (!profileId) throw new Error('A profile id is required.');
+    if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
+      throw new Error('Credit amount must be a positive whole number of poisha.');
+    }
+    if (!idempotencyKey || !String(idempotencyKey).trim()) {
+      throw new Error('An idempotency key is required.');
+    }
+    const params = {
+      p_profile_id: profileId,
+      p_amount_minor: amountMinor,
+      p_idempotency_key: String(idempotencyKey).trim(),
+    };
+    if (note && String(note).trim()) params.p_note = String(note).trim();
+    const { data, error } = await supabase.rpc('admin_credit_wallet', params);
+    if (error) throw error;
+    return data;
+  },
 };
