@@ -57,35 +57,65 @@ class MapCorridorWidget extends StatelessWidget {
             ],
           ),
           MarkerLayer(
-            markers: packages.map((pkg) {
-              return Marker(
-                point: LatLng(pkg.pickupLat, pkg.pickupLng),
-                width: 40,
-                height: 40,
-                child: GestureDetector(
-                  onTap: () {
-                    if (onPackageTap != null) onPackageTap!(pkg);
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: pkg.isNearMiss ? Colors.amber : const Color(0xFFF97316),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          blurRadius: 6,
-                        )
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.inventory_2,
-                      color: Colors.white,
-                      size: 20,
+            markers: [
+              for (final pkg in packages) ...[
+                Marker(
+                  point: LatLng(pkg.pickup.latitude, pkg.pickup.longitude),
+                  width: 40,
+                  height: 40,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (onPackageTap != null) onPackageTap!(pkg);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: pkg.isNearMiss ? Colors.amber : const Color(0xFFF97316),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            blurRadius: 6,
+                          )
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.inventory_2,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
-              );
-            }).toList(),
+                Marker(
+                  point: LatLng(pkg.dropoff.latitude, pkg.dropoff.longitude),
+                  width: 34,
+                  height: 34,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (onPackageTap != null) onPackageTap!(pkg);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0EA5E9),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white70, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            blurRadius: 5,
+                          )
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.flag,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
