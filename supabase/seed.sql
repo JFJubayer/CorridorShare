@@ -1,3 +1,23 @@
 -- Demo seed data belongs in the explicit demo adapters until local Auth users
 -- are provisioned. Production-like seed records must reference real auth.users.
-
+--
+-- Staging wallet funding (after an admin profile exists):
+--   select public.admin_credit_wallet(
+--     '<profile_uuid>',
+--     100000,                         -- 1000.00 BDT in poisha
+--     'seed-admin-credit-001',
+--     'Local staging credit'
+--   );
+-- Ordinary members cannot execute this RPC; promote with a direct SQL role update
+-- in disposable environments only:
+--   update public.profiles set role = 'admin' where id = '<admin_profile_uuid>';
+--
+-- Multi-city / nationwide route geometry notes (WGS84 lon/lat):
+--   Dhaka → Mymensingh:
+--     LINESTRING(90.399452 23.777176, 90.407438 24.757082)
+--   Chattogram → Sylhet:
+--     LINESTRING(91.7832 22.3569, 91.8687 24.8949)
+--   Dhaka → Rajshahi:
+--     LINESTRING(90.399452 23.777176, 88.6065 24.3745)
+-- Matching uses the trip's own LineString; no N3-only catalog is required.
+-- Packages need recipient_phone (recipient_name optional).
