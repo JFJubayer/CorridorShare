@@ -116,7 +116,7 @@ function ChatPageContent({ params }) {
                   alt={dealMeta.partnerName}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full border border-outline-variant bg-orange-500/15 text-orange-600 flex items-center justify-center text-xs font-black">
+                <div className="w-10 h-10 rounded-full border border-outline-variant bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
                   CS
                 </div>
               )}
@@ -140,32 +140,28 @@ function ChatPageContent({ params }) {
       </div>
 
       {loadError && (
-        <p role="alert" className="mx-4 mt-4 rounded-2xl border border-orange-500/25 bg-orange-500/10 px-4 py-3 text-xs font-bold text-orange-700 dark:text-orange-300">{loadError}</p>
+        <p role="alert" className="mx-4 mt-4 rounded-2xl border border-outline bg-primary/10 px-4 py-3 text-xs font-bold text-primary">{loadError}</p>
       )}
 
       <div className="flex flex-col lg:flex-row h-[calc(100vh-130px)]">
-        <div className={`lg:w-1/2 h-full relative border-r border-outline-variant ${
-          activeChatTab === 'map' ? 'block' : 'hidden lg:block'
-        }`}>
+        <div className={`lg:w-1/2 h-full relative border-r border-outline-variant ${ activeChatTab === 'map' ? 'block' : 'hidden lg:block' }`}>
           <MapCorridor route={actualRoute} />
-          <div className="absolute top-4 left-4 right-4 bg-surface/90 backdrop-blur-md p-3.5 rounded-2xl border border-orange-500/25 shadow-lg z-10">
+          <div className="absolute top-4 left-4 right-4 bg-surface/90 backdrop-blur-md p-3.5 rounded-2xl border border-outline shadow-lg z-10">
             <div className="flex justify-between items-center">
               <div>
-                <span className="text-[10px] uppercase font-black text-orange-600 dark:text-orange-400 tracking-wider">ACTIVE CORRIDOR MATCH</span>
-                <h3 className="text-sm font-black text-on-surface leading-tight font-display">{dealMeta.routeStart} ↔ {dealMeta.routeEnd}</h3>
+                <span className="text-[10px] uppercase font-semibold text-primary tracking-wider">ACTIVE CORRIDOR MATCH</span>
+                <h3 className="text-sm font-semibold text-on-surface leading-tight font-display">{dealMeta.routeStart} ↔ {dealMeta.routeEnd}</h3>
                 <p className="text-[11px] text-on-surface-variant font-bold mt-0.5">{dealMeta.details}</p>
               </div>
               <div className="text-right">
                 <span className="text-[10px] text-on-surface-variant block font-bold">Agreed Reward</span>
-                <span className="text-base font-black text-orange-600 dark:text-orange-400 font-display">{dealMeta.reward}</span>
+                <span className="text-base font-semibold text-primary font-display">{dealMeta.reward}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className={`lg:w-1/2 h-full flex flex-col ${
-          activeChatTab === 'chat' ? 'block' : 'hidden lg:block'
-        }`}>
+        <div className={`lg:w-1/2 h-full flex flex-col ${ activeChatTab === 'chat' ? 'block' : 'hidden lg:block' }`}>
           <LiveChatBox dealId={dealId} />
         </div>
       </div>
@@ -173,17 +169,13 @@ function ChatPageContent({ params }) {
       <div className="lg:hidden fixed bottom-0 left-0 w-full z-40 bg-surface border-t border-outline-variant flex">
         <button
           onClick={() => setActiveChatTab('chat')}
-          className={`flex-1 py-3 text-xs font-black text-center border-b-2 transition-all ${
-            activeChatTab === 'chat' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-on-surface-variant'
-          }`}
+          className={`flex-1 py-3 text-xs font-semibold text-center border-b-2 transition-all ${ activeChatTab === 'chat' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant' }`}
         >
           Deal Conversation
         </button>
         <button
           onClick={() => setActiveChatTab('map')}
-          className={`flex-1 py-3 text-xs font-black text-center border-b-2 transition-all ${
-            activeChatTab === 'map' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-on-surface-variant'
-          }`}
+          className={`flex-1 py-3 text-xs font-semibold text-center border-b-2 transition-all ${ activeChatTab === 'map' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant' }`}
         >
           Live Highway Map
         </button>

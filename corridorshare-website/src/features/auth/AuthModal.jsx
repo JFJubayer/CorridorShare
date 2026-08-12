@@ -174,13 +174,13 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
         onClick={onClose}
       />
 
-      <div className="bg-surface border-2 border-orange-500/35 rounded-[36px] p-6 sm:p-8 max-w-lg w-full relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+      <div className="bg-surface border-2 border-primary/25 rounded-2xl p-6 sm:p-8 max-w-lg w-full relative z-10 shadow-lg animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
         
         {/* Top Close Button */}
         {onClose && (
           <button 
             onClick={onClose}
-            className="absolute right-5 top-5 text-on-surface-variant hover:text-on-surface p-2 rounded-full hover:bg-orange-500/10 transition-colors z-20 cursor-pointer"
+            className="absolute right-5 top-5 text-on-surface-variant hover:text-on-surface p-2 rounded-full hover:bg-primary/10 transition-colors z-20 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -190,11 +190,11 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
         <div className="space-y-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-600 to-amber-500 text-white flex items-center justify-center font-black text-xs shadow-md shadow-orange-500/30">
+              <span className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-xs shadow-sm">
                 CS
               </span>
               <div>
-                <h3 className="text-xl font-black text-on-surface tracking-tight font-display">
+                <h3 className="text-xl font-semibold text-on-surface tracking-tight font-display">
                   {isSignUp ? 'Progressive Registration' : 'Welcome Back'}
                 </h3>
                 <p className="text-[11px] text-on-surface-variant font-bold">
@@ -204,7 +204,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
             </div>
 
             {isSignUp && (
-              <span className="text-xs font-black text-orange-600 dark:text-orange-400 bg-orange-500/15 px-3 py-1 rounded-full border border-orange-500/25">
+              <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full border border-outline">
                 Profile {getProgressPercentage()}% Complete
               </span>
             )}
@@ -212,9 +212,9 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
 
           {/* Interactive Progress Bar */}
           {isSignUp && (
-            <div className="w-full h-2.5 bg-orange-500/15 rounded-full overflow-hidden p-0.5 border border-orange-500/25">
+            <div className="w-full h-2.5 bg-primary/10 rounded-full overflow-hidden p-0.5 border border-outline">
               <div 
-                className="h-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 rounded-full transition-all duration-500 ease-out relative"
+                className="h-full bg-primary rounded-full transition-all duration-500 ease-out relative"
                 style={{ width: `${getProgressPercentage()}%` }}
               >
                 <div className="absolute right-0 top-0 bottom-0 w-3 bg-white/60 animate-pulse rounded-full" />
@@ -238,17 +238,17 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
             {step === 1 && (
               <form onSubmit={handleStep1Next} className="space-y-4 animate-in fade-in duration-200">
                 <div className="space-y-1 text-center">
-                  <h4 className="text-lg font-black text-on-surface font-display">Create Your Account</h4>
+                  <h4 className="text-lg font-semibold text-on-surface font-display">Create Your Account</h4>
                   <p className="text-xs text-on-surface-variant font-medium">Let&apos;s get started with your name and primary role.</p>
                 </div>
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-semibold text-on-surface-variant tracking-wide mb-1">
                       Full Name
                     </label>
-                    <div className="flex items-center bg-surface-container-low border border-orange-500/25 rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                      <User className="w-4 h-4 text-orange-500 mr-2.5 flex-shrink-0" />
+                    <div className="flex items-center bg-surface-container-low border border-outline rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary transition-all">
+                      <User className="w-4 h-4 text-primary mr-2.5 flex-shrink-0" />
                       <input 
                         type="text"
                         value={fullName}
@@ -261,11 +261,11 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-semibold text-on-surface-variant tracking-wide mb-1">
                       Email Address
                     </label>
-                    <div className="flex items-center bg-surface-container-low border border-orange-500/25 rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                      <Mail className="w-4 h-4 text-orange-500 mr-2.5 flex-shrink-0" />
+                    <div className="flex items-center bg-surface-container-low border border-outline rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-primary transition-all">
+                      <Mail className="w-4 h-4 text-primary mr-2.5 flex-shrink-0" />
                       <input 
                         type="email"
                         value={email}
@@ -278,35 +278,27 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-1.5">
+                    <label className="block text-[10px] font-semibold text-on-surface-variant tracking-wide mb-1.5">
                       I want to primarily:
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => setUserRole('traveler')}
-                        className={`p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-1.5 cursor-pointer ${
-                          userRole === 'traveler' 
-                            ? 'border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400 shadow-md' 
-                            : 'border-outline-variant/60 bg-surface-container-low text-on-surface-variant'
-                        }`}
+                        className={`p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-1.5 cursor-pointer ${ userRole === 'traveler' ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-outline-variant/60 bg-surface-container-low text-on-surface-variant' }`}
                       >
-                        <Car className="w-5 h-5 text-orange-500" />
-                        <span className="text-xs font-black">Highway Traveler</span>
+                        <Car className="w-5 h-5 text-primary" />
+                        <span className="text-xs font-semibold">Highway Traveler</span>
                         <span className="text-[9px] font-medium leading-tight text-on-surface-variant">Earn surcharges while traveling</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setUserRole('sender')}
-                        className={`p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-1.5 cursor-pointer ${
-                          userRole === 'sender' 
-                            ? 'border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400 shadow-md' 
-                            : 'border-outline-variant/60 bg-surface-container-low text-on-surface-variant'
-                        }`}
+                        className={`p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-1.5 cursor-pointer ${ userRole === 'sender' ? 'border-primary bg-primary/10 text-primary shadow-md' : 'border-outline-variant/60 bg-surface-container-low text-on-surface-variant' }`}
                       >
-                        <Package className="w-5 h-5 text-orange-500" />
-                        <span className="text-xs font-black">Package Sender</span>
+                        <Package className="w-5 h-5 text-primary" />
+                        <span className="text-xs font-semibold">Package Sender</span>
                         <span className="text-[9px] font-medium leading-tight text-on-surface-variant">Send cargo on express routes</span>
                       </button>
                     </div>
@@ -315,7 +307,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white py-4 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full bg-primary hover:bg-primary-700 text-white py-4 rounded-full font-semibold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
                   Continue to Phone Verification
                   <ArrowRight className="w-4 h-4" />
@@ -325,7 +317,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   <button
                     type="button"
                     onClick={() => setIsSignUp(false)}
-                    className="text-xs text-orange-600 dark:text-orange-400 font-bold hover:underline cursor-pointer"
+                    className="text-xs text-primary font-bold hover:underline cursor-pointer"
                   >
                     Already have an account? Sign In
                   </button>
@@ -339,7 +331,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                 <div className="flex items-center justify-between">
                   <button 
                     onClick={() => setStep(1)} 
-                    className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1 hover:underline cursor-pointer"
+                    className="text-xs font-bold text-primary flex items-center gap-1 hover:underline cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Back to Step 1
@@ -348,19 +340,19 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                 </div>
 
                 <div className="space-y-1 text-center">
-                  <h4 className="text-lg font-black text-on-surface font-display">Verify Phone Number</h4>
+                  <h4 className="text-lg font-semibold text-on-surface font-display">Verify Phone Number</h4>
                   <p className="text-xs text-on-surface-variant font-medium">We send SMS verification codes for secure geofenced deals.</p>
                 </div>
 
                 {!otpSent ? (
                   <form onSubmit={handleSendOTP} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-1.5">
+                      <label className="block text-[10px] font-semibold text-on-surface-variant tracking-wide mb-1.5">
                         Bangladesh Phone Number
                       </label>
-                      <div className="flex items-center bg-surface-container-low border border-orange-500/25 rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                        <Phone className="w-4 h-4 text-orange-500 mr-2 flex-shrink-0" />
-                        <span className="text-xs font-black text-on-surface mr-1.5">+880</span>
+                      <div className="flex items-center bg-surface-container-low border border-outline rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-primary transition-all">
+                        <Phone className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
+                        <span className="text-xs font-semibold text-on-surface mr-1.5">+880</span>
                         <input 
                           type="tel"
                           value={phoneNumber.replace('+880', '')}
@@ -375,7 +367,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white py-4 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full bg-primary hover:bg-primary-700 text-white py-4 rounded-full font-semibold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {isSubmitting ? 'Sending OTP SMS...' : 'Send 6-Digit OTP Code'}
                     </button>
@@ -384,19 +376,19 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   <form onSubmit={handleVerifyOTP} className="space-y-4">
                     <div>
                       <div className="flex justify-between items-center mb-1.5">
-                        <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider">
+                        <label className="block text-[10px] font-semibold text-on-surface-variant tracking-wide">
                           Enter 6-Digit Code
                         </label>
                         <button 
                           type="button" 
                           onClick={() => setOtpSent(false)}
-                          className="text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+                          className="text-[10px] font-bold text-primary hover:underline cursor-pointer"
                         >
                           Change Number
                         </button>
                       </div>
-                      <div className="flex items-center bg-surface-container-low border border-orange-500/25 rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                        <KeyRound className="w-4 h-4 text-orange-500 mr-2 flex-shrink-0" />
+                      <div className="flex items-center bg-surface-container-low border border-outline rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-primary transition-all">
+                        <KeyRound className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
                         <input 
                           type="text"
                           maxLength={6}
@@ -404,12 +396,12 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                           onChange={(e) => setOtpCode(e.target.value)}
                           placeholder="123456"
                           required
-                          className="bg-transparent border-none p-0 text-sm font-black w-full text-center tracking-widest focus:ring-0 text-on-surface outline-none"
+                          className="bg-transparent border-none p-0 text-sm font-semibold w-full text-center tracking-widest focus:ring-0 text-on-surface outline-none"
                         />
                       </div>
                       {isMockDataSource && (
                         <p className="text-[10px] text-on-surface-variant mt-1.5 text-center font-medium">
-                          Demo code: <strong className="text-orange-600 dark:text-orange-400">123456</strong>
+                          Demo code: <strong className="text-primary">123456</strong>
                         </p>
                       )}
                     </div>
@@ -417,7 +409,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white py-4 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full bg-primary hover:bg-primary-700 text-white py-4 rounded-full font-semibold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {isSubmitting ? 'Verifying OTP...' : 'Verify & Continue'}
                     </button>
@@ -433,7 +425,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   <button 
                     type="button"
                     onClick={() => setStep(2)} 
-                    className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1 hover:underline cursor-pointer"
+                    className="text-xs font-bold text-primary flex items-center gap-1 hover:underline cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Back to Step 2
@@ -442,7 +434,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                 </div>
 
                 <div className="space-y-1 text-center">
-                  <h4 className="text-lg font-black text-on-surface font-display">Select Primary Corridors</h4>
+                  <h4 className="text-lg font-semibold text-on-surface font-display">Select Primary Corridors</h4>
                   <p className="text-xs text-on-surface-variant font-medium">Choose highway routes you frequently travel or ship along.</p>
                 </div>
 
@@ -459,17 +451,13 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                         key={corridor}
                         type="button"
                         onClick={() => toggleCorridor(corridor)}
-                        className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between text-left cursor-pointer ${
-                          isSelected 
-                            ? 'border-orange-500 bg-orange-500/10 text-on-surface font-bold shadow-xs' 
-                            : 'border-outline-variant/60 bg-surface-container-low text-on-surface-variant'
-                        }`}
+                        className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between text-left cursor-pointer ${ isSelected ? 'border-primary bg-primary/10 text-on-surface font-bold shadow-xs' : 'border-outline-variant/60 bg-surface-container-low text-on-surface-variant' }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <Compass className={`w-4 h-4 ${isSelected ? 'text-orange-500' : 'text-on-surface-variant/60'}`} />
+                          <Compass className={`w-4 h-4 ${isSelected ? 'text-primary' : 'text-on-surface-variant/60'}`} />
                           <span className="text-xs font-bold">{corridor}</span>
                         </div>
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-orange-500" />}
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-primary" />}
                       </button>
                     );
                   })}
@@ -477,7 +465,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white py-4 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full bg-primary hover:bg-primary-700 text-white py-4 rounded-full font-semibold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
                   Continue to Trust Verification
                   <ArrowRight className="w-4 h-4" />
@@ -492,7 +480,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   <button 
                     type="button"
                     onClick={() => setStep(3)} 
-                    className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1 hover:underline cursor-pointer"
+                    className="text-xs font-bold text-primary flex items-center gap-1 hover:underline cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Back to Step 3
@@ -501,24 +489,20 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                 </div>
 
                 <div className="space-y-1 text-center">
-                  <h4 className="text-lg font-black text-on-surface font-display">National ID (NID) Verification</h4>
+                  <h4 className="text-lg font-semibold text-on-surface font-display">National ID (NID) Verification</h4>
                   <p className="text-xs text-on-surface-variant font-medium">Verify your identity to unlock escrow protection & instant deals.</p>
                 </div>
 
-                <div className="bg-surface-container-low border-2 border-dashed border-orange-500/30 rounded-3xl p-6 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-orange-500/15 text-orange-500 flex items-center justify-center mx-auto">
+                <div className="bg-surface-container-low border-2 border-dashed border-primary/25 rounded-3xl p-6 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
                     <UploadCloud className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xs font-black text-on-surface">Upload NID Card Photo</p>
+                    <p className="text-xs font-semibold text-on-surface">Upload NID Card Photo</p>
                     <p className="text-[10px] text-on-surface-variant mt-0.5">Supports JPG, PNG or PDF (Max 5MB)</p>
                   </div>
 
-                  <label className={`inline-flex px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${
-                      nidUploaded
-                        ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
-                        : 'bg-orange-500/15 text-orange-600 border border-orange-500/30'
-                    }`}>
+                  <label className={`inline-flex px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${ nidUploaded ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' : 'bg-primary/10 text-primary border border-primary/25' }`}>
                     <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleNidFileChange} disabled={nidUploading || !userId} />
                     {nidUploading ? 'Uploading NID...' : nidUploaded ? '✓ NID Photo Uploaded' : '+ Upload NID Photo'}
                   </label>
@@ -530,7 +514,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white py-4 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full bg-primary hover:bg-primary-700 text-white py-4 rounded-full font-semibold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
                   {isSubmitting ? (
                     <span>Unlocking Platform Access...</span>
@@ -550,17 +534,17 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
           /* ---------------------------------------------------- */
           <form onSubmit={handleQuickLogin} className="space-y-4 animate-in fade-in duration-200">
             <div className="space-y-1 text-center mb-2">
-              <h4 className="text-lg font-black text-on-surface font-display">Sign In to Your Account</h4>
+              <h4 className="text-lg font-semibold text-on-surface font-display">Sign In to Your Account</h4>
               <p className="text-xs text-on-surface-variant font-medium">Enter your registered mobile number to receive your login code.</p>
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-semibold text-on-surface-variant tracking-wide mb-1">
                 Registered Mobile Number
               </label>
-              <div className="flex items-center bg-surface-container-low border border-orange-500/25 rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                <Phone className="w-4 h-4 text-orange-500 mr-2 flex-shrink-0" />
-                <span className="text-xs font-black text-on-surface mr-1.5">+880</span>
+              <div className="flex items-center bg-surface-container-low border border-outline rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-primary transition-all">
+                <Phone className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
+                <span className="text-xs font-semibold text-on-surface mr-1.5">+880</span>
                 <input 
                   type="tel"
                   value={phoneNumber.replace('+880', '')}
@@ -573,11 +557,11 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
             </div>
 
             {otpSent && <div>
-              <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-semibold text-on-surface-variant tracking-wide mb-1">
                 6-Digit Login Code
               </label>
-              <div className="flex items-center bg-surface-container-low border border-orange-500/25 rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                <KeyRound className="w-4 h-4 text-orange-500 mr-2 flex-shrink-0" />
+              <div className="flex items-center bg-surface-container-low border border-outline rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-primary transition-all">
+                <KeyRound className="w-4 h-4 text-primary mr-2 flex-shrink-0" />
                 <input 
                   type="text"
                   maxLength={6}
@@ -585,7 +569,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   onChange={(e) => setOtpCode(e.target.value)}
                   placeholder="123456"
                   required
-                  className="bg-transparent border-none p-0 text-sm font-black w-full text-center tracking-widest focus:ring-0 text-on-surface outline-none"
+                  className="bg-transparent border-none p-0 text-sm font-semibold w-full text-center tracking-widest focus:ring-0 text-on-surface outline-none"
                 />
               </div>
             </div>}
@@ -593,7 +577,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white py-4 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+              className="w-full bg-primary hover:bg-primary-700 text-white py-4 rounded-full font-semibold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
               {isSubmitting ? 'Authenticating...' : otpSent ? 'Sign In & Access Platform' : 'Send Login Code'}
             </button>
@@ -605,7 +589,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                   setIsSignUp(true);
                   setStep(1);
                 }}
-                className="text-xs text-orange-600 dark:text-orange-400 font-bold hover:underline cursor-pointer"
+                className="text-xs text-primary font-bold hover:underline cursor-pointer"
               >
                 Don&apos;t have an account? Start Progressive Registration
               </button>

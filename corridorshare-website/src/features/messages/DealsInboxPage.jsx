@@ -88,11 +88,9 @@ function ChatsListPageContent() {
       
       {/* Header title */}
       <div className="mb-6 space-y-1">
-        <span className="text-[10px] bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 px-3 py-1 rounded-full font-black uppercase tracking-wider">
-          Peer-to-Peer Inbox
-        </span>
-        <h1 className="text-2xl md:text-3xl font-black text-on-surface tracking-tight font-display">
-          Active Conversations & Deals
+        <span className="eyebrow">Peer-to-peer inbox</span>
+        <h1 className="text-2xl md:text-3xl font-semibold text-on-surface tracking-tight font-display">
+          Active conversations & deals
         </h1>
         <p className="text-xs text-on-surface-variant font-medium">
           Negotiate delivery surcharges, attach open-box cargo photos, and lock matches in escrow.
@@ -100,8 +98,8 @@ function ChatsListPageContent() {
       </div>
 
       {/* Search Input Box */}
-      <div className="relative flex items-center bg-surface border border-orange-500/25 rounded-2xl px-4 py-3 mb-6 focus-within:ring-2 focus-within:ring-orange-500 transition-all shadow-sm">
-        <Search className="w-4 h-4 text-orange-500 mr-2.5 flex-shrink-0" />
+      <div className="relative flex items-center bg-surface border border-outline rounded-2xl px-4 py-3 mb-6 focus-within:ring-2 focus-within:ring-primary transition-all shadow-sm">
+        <Search className="w-4 h-4 text-primary mr-2.5 flex-shrink-0" />
         <input 
           type="text" 
           placeholder="Search partner name or corridor route..."
@@ -112,21 +110,21 @@ function ChatsListPageContent() {
       </div>
 
       {loadError && (
-        <p role="alert" className="mb-4 rounded-2xl border border-orange-500/25 bg-orange-500/10 px-4 py-3 text-xs font-bold text-orange-700 dark:text-orange-300">{loadError}</p>
+        <p role="alert" className="mb-4 rounded-2xl border border-outline bg-primary/10 px-4 py-3 text-xs font-bold text-primary">{loadError}</p>
       )}
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <svg className="animate-spin h-8 w-8 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
           <span className="text-xs font-bold text-on-surface-variant">Loading inbox...</span>
         </div>
       ) : filteredChats.length === 0 ? (
-        <div className="text-center py-16 bg-surface border border-orange-500/25 rounded-[28px] p-6 space-y-3 shadow-md">
-          <MessageSquare className="w-10 h-10 text-orange-500/50 mx-auto" />
-          <h3 className="font-black text-on-surface text-base">No active chats found</h3>
+        <div className="text-center py-16 bg-surface border border-outline rounded-xl p-6 space-y-3 shadow-md">
+          <MessageSquare className="w-10 h-10 text-primary/50 mx-auto" />
+          <h3 className="font-semibold text-on-surface text-base">No active chats found</h3>
           <p className="text-xs text-on-surface-variant font-medium max-w-xs mx-auto">
             Send delivery requests to active travelers in the Matching tab to initiate conversations.
           </p>
@@ -135,17 +133,17 @@ function ChatsListPageContent() {
         <div className="space-y-3.5">
           {filteredChats.map((chat) => (
             <Link href={`/chat/${chat.id}`} key={chat.id} className="block">
-              <Card className="flex items-center gap-4 p-4.5 bg-surface border border-orange-500/20 hover:border-orange-500/50 hover:shadow-xl transition-all duration-300 rounded-[28px] cursor-pointer">
+              <Card className="flex items-center gap-4 p-4.5 bg-surface border border-outline hover:border-primary/35 hover:shadow-xl transition-all duration-300 rounded-xl cursor-pointer">
                 {/* Partner Avatar with NID badge */}
                 <div className="relative flex-shrink-0">
                   {chat.partnerAvatar ? (
                     <img 
                       src={chat.partnerAvatar} 
                       alt={chat.partnerName} 
-                      className="w-13 h-13 rounded-full border border-orange-500/30 object-cover shadow-sm"
+                      className="w-13 h-13 rounded-full border border-primary/25 object-cover shadow-sm"
                     />
                   ) : (
-                    <div className="w-13 h-13 rounded-full border border-orange-500/30 bg-orange-500/15 text-orange-600 flex items-center justify-center text-xs font-black shadow-sm">
+                    <div className="w-13 h-13 rounded-full border border-primary/25 bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shadow-sm">
                       CS
                     </div>
                   )}
@@ -163,16 +161,16 @@ function ChatsListPageContent() {
                 {/* Conversation Meta info */}
                 <div className="flex-grow min-w-0">
                   <div className="flex justify-between items-start gap-2">
-                    <h4 className="font-black text-on-surface text-sm truncate font-display">
+                    <h4 className="font-semibold text-on-surface text-sm truncate font-display">
                       {chat.partnerName}
                     </h4>
                     <span className="text-[10px] text-on-surface-variant whitespace-nowrap flex items-center gap-1 font-bold">
-                      <Clock className="w-3 h-3 text-orange-500" />
+                      <Clock className="w-3 h-3 text-primary" />
                       {new Date(chat.lastMsgTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                   
-                  <p className="text-[11px] font-black text-orange-600 dark:text-orange-400 mt-0.5 flex items-center gap-1">
+                  <p className="text-[11px] font-semibold text-primary mt-0.5 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                     {chat.routeInfo}
                   </p>
@@ -183,7 +181,7 @@ function ChatsListPageContent() {
                 </div>
 
                 {/* Arrow navigation helper */}
-                <div className="flex-shrink-0 text-orange-500">
+                <div className="flex-shrink-0 text-primary">
                   <ChevronRight className="w-5 h-5" />
                 </div>
               </Card>

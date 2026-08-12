@@ -14,14 +14,14 @@ export default function FigmaMakeDashboardWidget() {
       
       {/* Package Tracking Timeline Card */}
       <div className="lg:col-span-7 space-y-4">
-        <Card className="border border-orange-500/25 bg-surface p-6 shadow-xl space-y-6 relative overflow-hidden rounded-[32px]">
-          <div className="flex flex-wrap justify-between items-center pb-4 border-b border-orange-500/15 gap-3">
+        <Card className="border border-outline bg-surface p-6 shadow-xl space-y-6 relative overflow-hidden rounded-2xl">
+          <div className="flex flex-wrap justify-between items-center pb-4 border-b border-outline-variant gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black font-mono text-orange-600 dark:text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
+                <span className="text-xs font-black font-mono text-primary bg-primary/10 px-3 py-1 rounded-full border border-outline">
                   Example card
                 </span>
-                <span className="text-xs bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                <span className="text-xs bg-primary text-white font-black px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
                   Sample UI
                 </span>
               </div>
@@ -29,8 +29,8 @@ export default function FigmaMakeDashboardWidget() {
                 Dhaka → Mymensingh <span className="text-xs font-bold text-on-surface-variant">(N3 Highway)</span>
               </h3>
             </div>
-            <div className="flex items-center gap-2.5 bg-surface-container-low px-4 py-2 rounded-full border border-orange-500/20">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-400 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+            <div className="flex items-center gap-2.5 bg-surface-container-low px-4 py-2 rounded-full border border-outline">
+              <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shadow-sm">
                 VT
               </div>
               <div>
@@ -44,11 +44,11 @@ export default function FigmaMakeDashboardWidget() {
 
           {/* Vertical Step Timeline */}
           <div className="space-y-6 relative pl-2">
-            <div className="absolute left-[15px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-orange-500 via-amber-500 to-orange-200 dark:to-orange-950"></div>
+            <div className="absolute left-[15px] top-3 bottom-3 w-0.5 bg-primary/40"></div>
 
             {/* Step 1: Picked Up */}
             <div className="flex items-start gap-4 relative z-10">
-              <div className="w-7 h-7 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-md">
+              <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shadow-md">
                 ✓
               </div>
               <div className="flex-grow flex justify-between items-center">
@@ -62,7 +62,7 @@ export default function FigmaMakeDashboardWidget() {
 
             {/* Step 2: On Route */}
             <div className="flex items-start gap-4 relative z-10">
-              <div className="w-7 h-7 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-md">
+              <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shadow-md">
                 ✓
               </div>
               <div className="flex-grow flex justify-between items-center">
@@ -76,15 +76,15 @@ export default function FigmaMakeDashboardWidget() {
 
             {/* Step 3: Current Position */}
             <div className="flex items-start gap-4 relative z-10">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white flex items-center justify-center font-bold text-xs ring-4 ring-orange-500/20 shadow-lg">
+              <div className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs ring-4 ring-primary/20 shadow-lg">
                 <Truck className="w-4 h-4 animate-bounce" />
               </div>
-              <div className="flex-grow flex justify-between items-center bg-orange-500/10 p-3.5 rounded-2xl border border-orange-500/20">
+              <div className="flex-grow flex justify-between items-center bg-primary/10 p-3.5 rounded-2xl border border-outline">
                 <div>
-                  <p className="text-sm font-black text-orange-600 dark:text-orange-400">Current: On N3 Corridor</p>
+                  <p className="text-sm font-black text-primary">Current: On N3 Corridor</p>
                   <p className="text-xs text-on-surface-variant font-semibold">Near Bhaluka Highway Bypass</p>
                 </div>
-                <span className="text-xs font-mono font-black text-orange-600 dark:text-orange-400">13:45 PM</span>
+                <span className="text-xs font-mono font-black text-primary">13:45 PM</span>
               </div>
             </div>
 
@@ -104,17 +104,17 @@ export default function FigmaMakeDashboardWidget() {
           </div>
 
           {/* Progress Bar & ETA */}
-          <div className="space-y-2 pt-2 border-t border-orange-500/15">
+          <div className="space-y-2 pt-2 border-t border-outline-variant">
             <div className="flex justify-between text-xs font-bold">
               <span className="text-on-surface-variant">Journey Completion</span>
-              <span className="text-orange-600 dark:text-orange-400 font-mono font-black">65% (ETA 45 mins)</span>
+              <span className="text-primary font-mono font-black">65% (ETA 45 mins)</span>
             </div>
-            <div className="w-full h-2.5 bg-orange-500/15 rounded-full overflow-hidden border border-orange-500/20 p-0.5">
+            <div className="w-full h-2.5 bg-primary/10 rounded-full overflow-hidden border border-outline p-0.5">
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: '65%' }}
                 transition={{ duration: 1.2, ease: "easeOut" }}
-                className="h-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 rounded-full"
+                className="h-full bg-primary rounded-full"
               />
             </div>
           </div>
@@ -123,16 +123,16 @@ export default function FigmaMakeDashboardWidget() {
 
       {/* Analytics & Earnings Bento Overview */}
       <div className="lg:col-span-5 space-y-6">
-        <Card className="border border-orange-500/25 bg-surface p-6 shadow-xl space-y-5 rounded-[32px] relative overflow-hidden">
+        <Card className="border border-outline bg-surface p-6 shadow-xl space-y-5 rounded-2xl relative overflow-hidden">
           <div className="flex justify-between items-center">
             <div>
               <p className="text-xs uppercase font-black tracking-widest text-on-surface-variant">Earnings Overview</p>
               <h3 className="text-3xl font-black text-on-surface tracking-tight font-display mt-1">
-                — <span className="text-sm font-bold text-orange-600 dark:text-orange-400">BDT</span>
+                — <span className="text-sm font-bold text-primary">BDT</span>
               </h3>
               <p className="text-[10px] text-on-surface-variant font-medium mt-1">Illustrative layout — live totals come from your wallet.</p>
             </div>
-            <div className="bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-2 rounded-full border border-orange-500/20 flex items-center gap-1 font-black text-xs">
+            <div className="bg-primary/10 text-primary px-3 py-2 rounded-full border border-outline flex items-center gap-1 font-black text-xs">
               <TrendingUp className="w-4 h-4" />
               Example
             </div>
@@ -140,7 +140,7 @@ export default function FigmaMakeDashboardWidget() {
 
           {/* Weekly Graph Simulation */}
           <div className="pt-2">
-            <div className="flex justify-between items-end h-28 gap-2 pt-4 border-b border-orange-500/15 pb-2">
+            <div className="flex justify-between items-end h-28 gap-2 pt-4 border-b border-outline-variant pb-2">
               {[
                 { day: 'Mon', h: '45%' },
                 { day: 'Tue', h: '65%' },
@@ -155,7 +155,7 @@ export default function FigmaMakeDashboardWidget() {
                     initial={{ height: 0 }}
                     animate={{ height: bar.h }}
                     transition={{ duration: 0.8, delay: i * 0.1 }}
-                    className="w-full max-w-[20px] bg-gradient-to-t from-orange-600 to-amber-400 rounded-t-full transition-colors shadow-xs"
+                    className="w-full max-w-[20px] bg-primary rounded-t-full transition-colors shadow-xs"
                   />
                   <span className="text-xs font-bold text-on-surface-variant">{bar.day}</span>
                 </div>
@@ -164,13 +164,13 @@ export default function FigmaMakeDashboardWidget() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="bg-surface-container-low p-4 rounded-2xl border border-orange-500/15">
+            <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant">
               <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Matched Routes</p>
               <p className="text-xl font-black text-on-surface font-mono mt-0.5">—</p>
             </div>
-            <div className="bg-surface-container-low p-4 rounded-2xl border border-orange-500/15">
+            <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant">
               <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Escrow Model</p>
-              <p className="text-xl font-black text-orange-600 dark:text-orange-400 font-mono mt-0.5">Hold→OTP</p>
+              <p className="text-xl font-black text-primary font-mono mt-0.5">Hold→OTP</p>
             </div>
           </div>
         </Card>
