@@ -4,7 +4,7 @@ import NavWrapper from '@/components/NavWrapper';
 
 export const metadata = {
   title: "CorridorShare | Peer-to-Peer Corridor Logistics",
-  description: "Monetize your travel or send packages securely across Bangladesh. Fast, secure, and NID-verified crowd-shipping platform.",
+  description: "Peer-to-peer highway delivery across Bangladesh with escrow holds, open-box inspection, and manual NID review.",
 };
 
 export default function RootLayout({ children }) {

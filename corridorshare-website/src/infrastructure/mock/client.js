@@ -49,10 +49,14 @@ const DEMO_SEED = Object.freeze({
     dropoff_location: 'POINT(90.407438 24.757082)',
     pickup_lat: 24.002284,
     pickup_lng: 90.425539,
+    dropoff_lat: 24.757082,
+    dropoff_lng: 90.407438,
     pickup_radius_meters: 2000,
     item_description: 'Box of Books (2kg)',
     weight_kg: 2,
     proposed_reward_minor: 25000,
+    recipient_phone: '+8801811223344',
+    recipient_name: 'Rahim Uddin',
     is_premium: false,
     status: 'pending',
     created_at: '2026-01-01T00:00:00.000Z',
@@ -162,11 +166,24 @@ function makeBuilder(table) {
       return builder;
     },
     update(fields) { state.updateFields = fields; return builder; },
-    insert: async (records) => {
-      const additions = (Array.isArray(records) ? records : [records]).map((record) => ({ ...record, id: record.id || createId() }));
-      setRows(table, [...getRows(table), ...additions]);
-      additions.filter((record) => table === 'messages').forEach(emitMessage);
-      return { data: additions, error: null };
+    insert(records) {
+      const additions = (Array.isArray(records) ? records : [records]).map((record) => ({
+        ...record,
+        id: record.id || createId(),
+        created_at: record.created_at || new Date().toISOString(),
+      }));
+      const run = () => {
+        setRows(table, [...getRows(table), ...additions]);
+        additions.filter((record) => table === 'messages').forEach(emitMessage);
+        return { data: additions, error: null };
+      };
+      const thenable = {
+        select() { return thenable; },
+        then(resolve, reject) {
+          try { resolve(run()); } catch (error) { if (reject) reject(error); }
+        },
+      };
+      return thenable;
     },
     then(resolve, reject) {
       try {
@@ -254,10 +271,17 @@ export const mockClient = {
       const trip = getRows('trips').find((item) => item.id === deal.trip_id);
       if (trip?.traveler_id !== currentUser()?.id) return { data: null, error: new Error('Only the trip traveler can verify and lock this deal.') };
       const packageRequest = getRows('packages').find((item) => item.id === deal.package_id);
+      const lockAmount = deal.final_agreed_price_minor ?? packageRequest?.proposed_reward_minor;
+      if (!Number.isSafeInteger(lockAmount) || lockAmount <= 0) {
+        return { data: null, error: new Error('Agreed package reward is missing.') };
+      }
+      if (params.p_amount_minor !== lockAmount) {
+        return { data: null, error: new Error(`Lock amount must equal agreed package reward (${lockAmount} poisha)`) };
+      }
       const accounts = getRows('wallet_accounts');
       const account = accounts.find((item) => item.profile_id === packageRequest.sender_id);
-      if (!account || account.available_balance_minor < params.p_amount_minor) return { data: null, error: new Error('Insufficient available wallet balance.') };
-      const updatedDeal = { ...deal, final_agreed_price_minor: params.p_amount_minor, inspection_photo_url: params.p_inspection_photo_url, open_box_verified: true, deal_locked: true, status: 'locked' };
+      if (!account || account.available_balance_minor < lockAmount) return { data: null, error: new Error('Insufficient available wallet balance.') };
+      const updatedDeal = { ...deal, final_agreed_price_minor: lockAmount, inspection_photo_url: params.p_inspection_photo_url, open_box_verified: true, deal_locked: true, status: 'locked' };
       setRows('chats_and_deals', deals.map((item) => item.id === deal.id ? updatedDeal : item));
       setRows('wallet_accounts', accounts.map((item) => item.profile_id === account.profile_id
         ? { ...item, available_balance_minor: item.available_balance_minor - params.p_amount_minor, held_balance_minor: item.held_balance_minor + params.p_amount_minor }
@@ -272,6 +296,94 @@ export const mockClient = {
         created_at: new Date().toISOString(),
       }]);
       return { data: updatedDeal, error: null };
+    }
+    if (functionName === 'issue_delivery_otp') {
+      const deals = getRows('chats_and_deals');
+      const deal = deals.find((item) => item.id === params.p_deal_id);
+      if (!deal?.deal_locked) return { data: null, error: new Error('Locked deal not found or caller is not the sender') };
+      const packageRequest = getRows('packages').find((item) => item.id === deal.package_id);
+      if (packageRequest?.sender_id !== currentUser()?.id) return { data: null, error: new Error('Locked deal not found or caller is not the sender') };
+      const otp = '654321';
+      setRows('chats_and_deals', deals.map((item) => item.id === deal.id ? { ...item, delivery_otp_hash: `demo:${otp}`, status: 'locked' } : item));
+      return { data: otp, error: null };
+    }
+    if (functionName === 'wallet_release') {
+      const deals = getRows('chats_and_deals');
+      const deal = deals.find((item) => item.id === params.p_deal_id);
+      if (!deal?.deal_locked) return { data: null, error: new Error('Deal is not locked') };
+      const trip = getRows('trips').find((item) => item.id === deal.trip_id);
+      if (trip?.traveler_id !== currentUser()?.id) return { data: null, error: new Error('Deal not found or caller is not the traveler') };
+      const expected = deal.delivery_otp_hash?.startsWith('demo:') ? deal.delivery_otp_hash.slice(5) : null;
+      if (!expected || expected !== params.p_delivery_otp) return { data: null, error: new Error('Invalid delivery OTP') };
+      const packageRequest = getRows('packages').find((item) => item.id === deal.package_id);
+      const amount = deal.final_agreed_price_minor;
+      const accounts = getRows('wallet_accounts');
+      setRows('wallet_accounts', accounts.map((item) => {
+        if (item.profile_id === packageRequest.sender_id) {
+          return { ...item, held_balance_minor: item.held_balance_minor - amount };
+        }
+        if (item.profile_id === trip.traveler_id) {
+          return { ...item, available_balance_minor: item.available_balance_minor + amount };
+        }
+        return item;
+      }));
+      const updatedDeal = { ...deal, status: 'completed', completed_at: new Date().toISOString() };
+      setRows('chats_and_deals', deals.map((item) => item.id === deal.id ? updatedDeal : item));
+      return { data: updatedDeal, error: null };
+    }
+    if (functionName === 'wallet_refund') {
+      const deals = getRows('chats_and_deals');
+      const deal = deals.find((item) => item.id === params.p_deal_id);
+      if (!deal) return { data: null, error: new Error('Deal not found or caller is unauthorized') };
+      const packageRequest = getRows('packages').find((item) => item.id === deal.package_id);
+      const user = currentUser();
+      if (packageRequest?.sender_id !== user?.id && user?.role !== 'admin') {
+        return { data: null, error: new Error('Deal not found or caller is unauthorized') };
+      }
+      if (deal.status === 'completed') return { data: null, error: new Error('Completed deals cannot be refunded') };
+      if (deal.deal_locked && deal.final_agreed_price_minor) {
+        const amount = deal.final_agreed_price_minor;
+        setRows('wallet_accounts', getRows('wallet_accounts').map((item) => item.profile_id === packageRequest.sender_id
+          ? { ...item, held_balance_minor: item.held_balance_minor - amount, available_balance_minor: item.available_balance_minor + amount }
+          : item));
+      }
+      const updatedDeal = { ...deal, status: 'cancelled', deal_locked: false };
+      setRows('chats_and_deals', deals.map((item) => item.id === deal.id ? updatedDeal : item));
+      return { data: updatedDeal, error: null };
+    }
+    if (functionName === 'admin_credit_wallet') {
+      const admin = currentUser();
+      if (admin?.role !== 'admin') return { data: null, error: new Error('Admin role required.') };
+      if (!Number.isSafeInteger(params.p_amount_minor) || params.p_amount_minor <= 0) {
+        return { data: null, error: new Error('Credit amount must be a positive whole number of poisha.') };
+      }
+      if (!params.p_idempotency_key) return { data: null, error: new Error('An idempotency key is required.') };
+      const existing = getRows('wallet_transactions').find((tx) => tx.idempotency_key === params.p_idempotency_key);
+      if (existing) {
+        const account = getRows('wallet_accounts').find((item) => item.profile_id === params.p_profile_id);
+        return { data: account, error: null };
+      }
+      const accounts = getRows('wallet_accounts');
+      let account = accounts.find((item) => item.profile_id === params.p_profile_id);
+      if (!account) {
+        account = { profile_id: params.p_profile_id, available_balance_minor: 0, held_balance_minor: 0 };
+        accounts.push(account);
+      }
+      const updated = accounts.map((item) => item.profile_id === params.p_profile_id
+        ? { ...item, available_balance_minor: item.available_balance_minor + params.p_amount_minor }
+        : item);
+      setRows('wallet_accounts', updated);
+      setRows('wallet_transactions', [...getRows('wallet_transactions'), {
+        id: createId(),
+        profile_id: params.p_profile_id,
+        deal_id: null,
+        kind: 'credit',
+        amount_minor: params.p_amount_minor,
+        idempotency_key: params.p_idempotency_key,
+        description: params.p_note || 'Admin wallet credit',
+        created_at: new Date().toISOString(),
+      }]);
+      return { data: updated.find((item) => item.profile_id === params.p_profile_id), error: null };
     }
     if (functionName !== 'match_packages_within_corridor') return { data: null, error: new Error(`Unsupported demo RPC: ${functionName}`) };
     const trip = getRows('trips').find((item) => item.id === params.traveler_trip_id);
@@ -300,6 +412,19 @@ export const mockClient = {
       })),
       error: null,
     };
+  },
+  storage: {
+    from(bucket) {
+      return {
+        async upload(path, file) {
+          const url = typeof file === 'string' ? file : `demo://${bucket}/${path}`;
+          return { data: { path }, error: null, __demoUrl: url };
+        },
+        getPublicUrl(path) {
+          return { data: { publicUrl: `demo://${bucket}/${path}` } };
+        },
+      };
+    },
   },
   channel(name) {
     let messageHandler = null;

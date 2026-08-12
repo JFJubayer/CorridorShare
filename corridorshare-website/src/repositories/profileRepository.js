@@ -14,9 +14,11 @@ export const profileRepository = {
     return data ?? [];
   },
   async updateOwnDetails(id, fields) {
-    const unsafeField = Object.keys(fields).find((field) => !SAFE_SELF_PROFILE_FIELDS.has(field));
+    const cleaned = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
+    const unsafeField = Object.keys(cleaned).find((field) => !SAFE_SELF_PROFILE_FIELDS.has(field));
     if (unsafeField) throw new Error(`${unsafeField} is managed by a server-side workflow.`);
-    const { error } = await supabase.from('profiles').update(fields).eq('id', id);
+    if (Object.keys(cleaned).length === 0) return true;
+    const { error } = await supabase.from('profiles').update(cleaned).eq('id', id);
     if (error) throw error;
     return true;
   },

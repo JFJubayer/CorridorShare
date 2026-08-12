@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import { isMockDataSource } from '@/config/supabaseClient';
+import { profileRepository } from '@/repositories/profileRepository';
+import { uploadUserFile, STORAGE_BUCKETS } from '@/infrastructure/storage/upload';
 import { 
   ShieldCheck, Phone, KeyRound, ArrowRight, X, Lock, User, Mail, 
   Car, Package, CheckCircle2, Sparkles, Compass, UploadCloud, ChevronLeft 
 } from 'lucide-react';
 
 export default function AuthModal({ isOpen, onClose, title = "Welcome to CorridorShare" }) {
-  const { requestOtp, verifyOtp } = useUser();
+  const { requestOtp, verifyOtp, userId, refreshProfile } = useUser();
   const [isSignUp, setIsSignUp] = useState(true);
   const [step, setStep] = useState(1); // Steps 1 to 4 for progressive onboarding
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,6 +26,8 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
   const [authError, setAuthError] = useState('');
   const [selectedCorridors, setSelectedCorridors] = useState(['N3 Dhaka ↔ Mymensingh']);
   const [nidUploaded, setNidUploaded] = useState(false);
+  const [nidPhotoUrl, setNidPhotoUrl] = useState('');
+  const [nidUploading, setNidUploading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -82,13 +86,56 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
     setStep(4);
   };
 
+  const handleNidFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!userId) {
+      setAuthError('Verify your phone before uploading an NID photo.');
+      return;
+    }
+    setNidUploading(true);
+    setAuthError('');
+    try {
+      const url = await uploadUserFile({
+        bucket: STORAGE_BUCKETS.nid,
+        folder: `profiles/${userId}`,
+        file,
+      });
+      await profileRepository.updateOwnDetails(userId, {
+        full_name: fullName.trim() || undefined,
+        nid_photo_url: url,
+      });
+      setNidPhotoUrl(url);
+      setNidUploaded(true);
+      if (refreshProfile) await refreshProfile();
+    } catch (error) {
+      setAuthError(error.message || 'Unable to upload your NID photo.');
+      setNidUploaded(false);
+    } finally {
+      setNidUploading(false);
+      e.target.value = '';
+    }
+  };
+
   const handleCompleteRegistration = async (e) => {
     e.preventDefault();
+    if (!nidUploaded || !nidPhotoUrl) {
+      setAuthError('Upload a real NID photo before finishing registration.');
+      return;
+    }
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setAuthError('');
+    try {
+      if (userId && fullName.trim()) {
+        await profileRepository.updateOwnDetails(userId, { full_name: fullName.trim(), nid_photo_url: nidPhotoUrl });
+        if (refreshProfile) await refreshProfile();
+      }
       if (onClose) onClose();
-    }, 1000);
+    } catch (error) {
+      setAuthError(error.message || 'Unable to finish profile setup.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleQuickLogin = async (e) => {
@@ -466,17 +513,17 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
                     <p className="text-[10px] text-on-surface-variant mt-0.5">Supports JPG, PNG or PDF (Max 5MB)</p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setNidUploaded(!nidUploaded)}
-                    className={`px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${
-                      nidUploaded 
-                        ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30' 
+                  <label className={`inline-flex px-4 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${
+                      nidUploaded
+                        ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
                         : 'bg-orange-500/15 text-orange-600 border border-orange-500/30'
-                    }`}
-                  >
-                    {nidUploaded ? '✓ Demo NID Uploaded' : '+ Attach Demo NID'}
-                  </button>
+                    }`}>
+                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleNidFileChange} disabled={nidUploading || !userId} />
+                    {nidUploading ? 'Uploading NID...' : nidUploaded ? '✓ NID Photo Uploaded' : '+ Upload NID Photo'}
+                  </label>
+                  {nidPhotoUrl && (
+                    <p className="text-[10px] text-on-surface-variant font-medium break-all px-2">Photo saved for admin review.</p>
+                  )}
                 </div>
 
                 <button
