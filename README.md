@@ -4,7 +4,7 @@ CorridorShare is a peer-to-peer crowd-shipping platform connecting parcel sender
 
 [![Website CI](https://github.com/JFJubayer/CorridorShare/actions/workflows/website-ci.yml/badge.svg)](https://github.com/JFJubayer/CorridorShare/actions/workflows/website-ci.yml)
 [![Mobile CI](https://github.com/JFJubayer/CorridorShare/actions/workflows/mobile-ci.yml/badge.svg)](https://github.com/JFJubayer/CorridorShare/actions/workflows/mobile-ci.yml)
-[Live website](https://corridorshare.vercel.app)
+[Live website](https://corridorshare-tan.vercel.app)
 
 ## Repository layout
 

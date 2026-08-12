@@ -5,6 +5,6 @@ export default function robots() {
       allow: '/',
       disallow: ['/admin-portal', '/admin/'],
     },
-    sitemap: 'https://corridorshare.vercel.app/sitemap.xml',
+    sitemap: 'https://corridorshare-tan.vercel.app/sitemap.xml',
   };
 }

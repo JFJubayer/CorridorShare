@@ -5,12 +5,12 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
-import { Bell, ShieldCheck, Home, Compass, MessageSquare, User, ShieldAlert, Sun, Moon, LogOut } from 'lucide-react';
+import { Bell, ShieldCheck, Home, Compass, MessageSquare, ShieldAlert, Sun, Moon, LogOut } from 'lucide-react';
 import AuthModal from '@/features/auth/AuthModal';
 
 export default function NavWrapper({ children }) {
   const pathname = usePathname();
-  const { profile, role, toggleRole, theme, toggleTheme, logout, isAuthenticated } = useUser();
+  const { profile, theme, toggleTheme, logout, isAuthenticated } = useUser();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
 
@@ -58,16 +58,17 @@ export default function NavWrapper({ children }) {
 
   // Hide default navigation if we are on the admin portal
   const isAdmin = pathname.startsWith('/admin') || pathname.startsWith('/admin-portal');
+  const isDealChat = pathname.startsWith('/chat/');
   const hasUnread = notifications.some(n => !n.read);
 
   return (
     <div className="flex flex-col min-h-screen transition-colors duration-300 bg-background text-on-surface">
       {/* Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 w-full h-16 z-40 flex justify-between items-center px-6 bg-surface/85 backdrop-blur-md border-b border-outline-variant/80 shadow-xs transition-colors duration-300">
+      <nav className="fixed top-0 left-0 w-full h-16 z-40 flex justify-between items-center px-6 bg-surface/90 backdrop-blur-md border-b border-outline-variant transition-colors duration-300">
         <div className="flex items-center gap-2.5">
-          <span className="text-xl font-black bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent tracking-tight font-display">CorridorShare</span>
-          <span className="text-[9px] bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 px-2.5 py-0.5 rounded-full font-black uppercase tracking-widest">
-            HIGHWAY P2P
+          <span className="text-xl font-semibold tracking-tight font-display text-on-surface">CorridorShare</span>
+          <span className="eyebrow !py-0.5 !px-2 !text-[9px] !tracking-[0.14em]">
+            Highway P2P
           </span>
         </div>
 
@@ -75,7 +76,7 @@ export default function NavWrapper({ children }) {
           {/* Theme Toggler */}
           <button 
             onClick={toggleTheme}
-            className="p-2 text-on-surface-variant hover:bg-slate-50 dark:hover:bg-slate-900 rounded-full transition-colors cursor-pointer"
+            className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors cursor-pointer tactile-btn"
             title="Toggle Theme"
             aria-label="Toggle light and dark theme"
           >
@@ -92,23 +93,23 @@ export default function NavWrapper({ children }) {
           <div className="relative" ref={notificationRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 text-on-surface-variant hover:bg-slate-50 dark:hover:bg-slate-900 rounded-full transition-colors relative cursor-pointer"
+              className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors relative cursor-pointer tactile-btn"
               title="Notifications"
             >
               <Bell className="w-5 h-5" />
               {hasUnread && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full animate-ping"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full"></span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-surface border border-orange-500/25 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-4 py-2.5 border-b border-outline-variant/60 flex justify-between items-center">
-                  <span className="font-black text-xs text-on-surface uppercase tracking-wider font-display">Notifications</span>
+              <div className="absolute right-0 mt-2 w-80 bg-surface border border-outline rounded-xl shadow-lg py-2 z-50 animate-enter">
+                <div className="px-4 py-2.5 border-b border-outline-variant flex justify-between items-center">
+                  <span className="font-semibold text-xs text-on-surface uppercase tracking-[0.12em] font-display">Notifications</span>
                   {notifications.length > 0 && (
                     <button 
                       onClick={() => updateNotifications([])}
-                      className="text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:underline outline-none cursor-pointer"
+                      className="text-[10px] font-semibold text-primary hover:underline outline-none cursor-pointer"
                     >
                       Clear All
                     </button>
@@ -131,11 +132,9 @@ export default function NavWrapper({ children }) {
                           updateNotifications(notifications.map(item => item.id === n.id ? { ...item, read: true } : item));
                           setShowNotifications(false);
                         }}
-                        className={`block px-4 py-3 hover:bg-orange-500/10 transition-colors text-left ${
-                          !n.read ? 'bg-orange-500/5' : ''
-                        }`}
+                        className={`block px-4 py-3 hover:bg-primary/8 transition-colors text-left ${ !n.read ? 'bg-primary/5' : '' }`}
                       >
-                        <p className="text-xs text-on-surface leading-normal font-bold">{n.text}</p>
+                        <p className="text-xs text-on-surface leading-normal font-semibold">{n.text}</p>
                         <span className="text-[10px] text-on-surface-variant/80 mt-1 block font-medium">{n.time}</span>
                       </Link>
                     ))
@@ -146,12 +145,12 @@ export default function NavWrapper({ children }) {
           </div>
           
           {isAuthenticated && profile ? (
-            <div className="relative flex items-center gap-2 pl-2 border-l border-slate-100 dark:border-slate-800">
+            <div className="relative flex items-center gap-2 pl-2 border-l border-outline-variant">
               <div className="text-right hidden sm:block">
-                <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                <p className="text-[11px] font-semibold text-on-surface leading-tight">
                   {profile?.phone_number ? `${profile.phone_number.slice(0, 7)}...` : 'User'}
                 </p>
-                <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold">
+                <p className="text-[9px] text-on-surface-variant font-semibold tracking-wide">
                   {profile?.nid_status ? profile.nid_status.toUpperCase() : 'UNVERIFIED'}
                 </p>
               </div>
@@ -185,7 +184,7 @@ export default function NavWrapper({ children }) {
           ) : (
             <button
               onClick={() => setShowAuthModal(true)}
-              className="bg-gradient-to-r from-orange-600 to-amber-500 text-white text-xs font-black px-4 py-2 rounded-full shadow-md hover:from-orange-500 hover:to-amber-400 transition-all cursor-pointer"
+              className="bg-primary text-white text-xs font-semibold px-4 py-2 rounded-full shadow-sm hover:bg-primary-700 transition-all cursor-pointer tactile-btn"
             >
               Sign In / Register
             </button>
@@ -205,15 +204,11 @@ export default function NavWrapper({ children }) {
       </main>
 
       {/* Bottom Navigation Bar (Mobile View & Base Layout) */}
-      {!isAdmin && (
-        <nav className="fixed bottom-0 left-0 w-full z-45 flex justify-around items-center py-2 pb-safe bg-white dark:bg-slate-950 border-t border-outline-variant dark:border-slate-800 shadow-lg md:hidden transition-colors duration-300">
+      {!isAdmin && !isDealChat && (
+        <nav className="fixed bottom-0 left-0 w-full z-45 flex justify-around items-center py-2 pb-safe bg-surface/95 backdrop-blur-md border-t border-outline-variant shadow-sm md:hidden transition-colors duration-300">
           <Link 
             href="/"
-            className={`flex flex-col items-center justify-center transition-all ${
-              pathname === '/' 
-                ? 'text-primary scale-105' 
-                : 'text-on-surface-variant hover:text-primary'
-            }`}
+            className={`flex flex-col items-center justify-center transition-all ${ pathname === '/' ? 'text-primary scale-105' : 'text-on-surface-variant hover:text-primary' }`}
           >
             <Home className="w-5 h-5" />
             <span className="text-[10px] font-bold mt-0.5">Home</span>
@@ -221,11 +216,7 @@ export default function NavWrapper({ children }) {
 
           <Link 
             href="/match"
-            className={`flex flex-col items-center justify-center transition-all ${
-              pathname.startsWith('/match') 
-                ? 'text-primary scale-105' 
-                : 'text-on-surface-variant hover:text-primary'
-            }`}
+            className={`flex flex-col items-center justify-center transition-all ${ pathname.startsWith('/match') ? 'text-primary scale-105' : 'text-on-surface-variant hover:text-primary' }`}
           >
             <Compass className="w-5 h-5" />
             <span className="text-[10px] font-bold mt-0.5">Matching</span>
@@ -233,11 +224,7 @@ export default function NavWrapper({ children }) {
 
           <Link 
             href="/chat"
-            className={`flex flex-col items-center justify-center transition-all ${
-              pathname === '/chat' 
-                ? 'text-primary scale-105' 
-                : 'text-on-surface-variant hover:text-primary'
-            }`}
+            className={`flex flex-col items-center justify-center transition-all ${ pathname.startsWith('/chat') ? 'text-primary scale-105' : 'text-on-surface-variant hover:text-primary' }`}
           >
             <MessageSquare className="w-5 h-5" />
             <span className="text-[10px] font-bold mt-0.5">Messages</span>
@@ -246,41 +233,29 @@ export default function NavWrapper({ children }) {
       )}
 
       {/* Desktop sidebar navigation links helper */}
-      {!isAdmin && (
-        <div className="hidden md:flex fixed top-16 left-0 h-[calc(100vh-64px)] w-48 border-r border-outline-variant bg-surface p-4 flex-col gap-2 transition-colors duration-300">
+      {!isAdmin && !isDealChat && (
+        <div className="hidden md:flex fixed top-16 left-0 h-[calc(100vh-64px)] w-48 border-r border-outline-variant bg-surface p-4 flex-col gap-1.5 transition-colors duration-300">
           <Link 
             href="/"
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs font-black transition-all ${
-              pathname === '/' 
-                ? 'bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 shadow-xs' 
-                : 'text-on-surface-variant hover:bg-orange-500/10'
-            }`}
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all ${ pathname === '/' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-on-surface-variant hover:bg-surface-container-low border border-transparent' }`}
           >
-            <Home className="w-4 h-4 text-orange-500" />
+            <Home className="w-4 h-4" />
             Home
           </Link>
 
           <Link 
             href="/match"
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs font-black transition-all ${
-              pathname.startsWith('/match') 
-                ? 'bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 shadow-xs' 
-                : 'text-on-surface-variant hover:bg-orange-500/10'
-            }`}
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all ${ pathname.startsWith('/match') ? 'bg-primary/10 text-primary border border-primary/20' : 'text-on-surface-variant hover:bg-surface-container-low border border-transparent' }`}
           >
-            <Compass className="w-4 h-4 text-orange-500" />
+            <Compass className="w-4 h-4" />
             Matching
           </Link>
 
           <Link 
             href="/chat"
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs font-black transition-all ${
-              pathname === '/chat' 
-                ? 'bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 shadow-xs' 
-                : 'text-on-surface-variant hover:bg-orange-500/10'
-            }`}
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all ${ pathname.startsWith('/chat') ? 'bg-primary/10 text-primary border border-primary/20' : 'text-on-surface-variant hover:bg-surface-container-low border border-transparent' }`}
           >
-            <MessageSquare className="w-4 h-4 text-orange-500" />
+            <MessageSquare className="w-4 h-4" />
             Messages
           </Link>
         </div>

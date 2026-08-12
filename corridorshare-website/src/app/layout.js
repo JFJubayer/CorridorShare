@@ -10,7 +10,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full flex flex-col bg-background text-on-surface">
+      <body className="min-h-full flex flex-col bg-background text-on-surface font-sans antialiased">
         <UserProvider>
           <NavWrapper>
             {children}

@@ -11,6 +11,7 @@ import WalletGuard from '@/features/auth/WalletGuard';
 import HeroBubbleShowcase from '@/features/landing/HeroBubbleShowcase';
 import { postPackage, postTrip } from '@/features/dashboard/actions';
 import { isMockDataSource } from '@/config/supabaseClient';
+import { toBdE164 } from '@/shared/phone/bdPhone';
 import { 
   Wallet, Plus, Navigation, ChevronRight, Package, Calendar, 
   MapPin, Clock, Weight, BadgeDollarSign, ShieldAlert, Sparkles, CheckCircle2,
@@ -52,7 +53,7 @@ export default function HomeExperience() {
       return;
     }
     try {
-      await requestOtp(phoneInput.startsWith('+880') ? phoneInput : `+88${phoneInput}`);
+      await requestOtp(toBdE164(phoneInput));
       setAuthError('');
       setOtpSent(true);
     } catch (error) {
@@ -70,7 +71,7 @@ export default function HomeExperience() {
     setAuthError('');
     
     try {
-      await verifyOtp(phoneInput.startsWith('+880') ? phoneInput : `+88${phoneInput}`, otpInput);
+      await verifyOtp(toBdE164(phoneInput), otpInput);
       setShowAuthModal(false);
       setOtpSent(false);
       setPhoneInput('');
@@ -161,17 +162,17 @@ export default function HomeExperience() {
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             className="lg:col-span-3 space-y-6"
           >
-            <span className="text-xs uppercase font-extrabold text-orange-700 dark:text-orange-300 bg-orange-500/10 px-4 py-1.5 rounded-full border border-orange-500/30 tracking-widest inline-flex items-center gap-2 shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping"></span>
-              PEER-TO-PEER HIGHWAY LOGISTICS
+            <span className="eyebrow">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              Peer-to-peer highway logistics
             </span>
-            <h1 className="text-4xl md:text-6xl font-black text-on-surface tracking-tight leading-[1.08]">
-              Share Highway Journeys.<br/>
-              <span className="bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent">Earn Surcharges.</span><br/>
-              Ship Securely.
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-on-surface tracking-tight leading-[1.12] font-display">
+              Share highway journeys.<br/>
+              <span className="text-primary">Earn surcharges.</span><br/>
+              Ship securely.
             </h1>
-            <p className="text-base text-on-surface-variant max-w-lg leading-relaxed font-medium">
-              Bangladesh&apos;s peer-to-peer logistics network matching highway travelers with package senders in real-time.
+            <p className="text-base md:text-lg text-on-surface-variant max-w-lg leading-relaxed">
+              Bangladesh&apos;s corridor network matching highway travelers with package senders — escrow-held, NID-reviewed, practical.
             </p>
             <div className="flex flex-wrap sm:flex-nowrap gap-3 pt-2">
               <Button 
@@ -180,9 +181,9 @@ export default function HomeExperience() {
                   setAuthMode('signup');
                   setShowAuthModal(true);
                 }}
-                className="py-4 px-8 text-sm font-black uppercase tracking-wider shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 max-w-xs"
+                className="py-3.5 px-7 text-sm font-semibold tracking-wide shadow-sm flex items-center justify-center gap-2 max-w-xs"
               >
-                Get Started Free
+                Get started
                 <ArrowRight className="w-4 h-4" />
               </Button>
               <Button 
@@ -191,9 +192,9 @@ export default function HomeExperience() {
                   setAuthMode('login');
                   setShowAuthModal(true);
                 }}
-                className="py-4 px-8 text-sm font-bold border border-outline hover:bg-orange-500/10 max-w-xs rounded-full"
+                className="py-3.5 px-7 text-sm font-semibold border border-outline max-w-xs rounded-full"
               >
-                Sign In to Account
+                Sign in
               </Button>
             </div>
           </motion.div>
@@ -218,15 +219,12 @@ export default function HomeExperience() {
             transition={{ duration: 0.5 }}
             className="text-center max-w-3xl mx-auto mb-12 space-y-3"
           >
-            <span className="text-xs md:text-sm font-black uppercase text-orange-600 dark:text-orange-400 bg-orange-500/15 px-5 py-2 rounded-full border border-orange-500/30 tracking-widest inline-flex items-center gap-2 shadow-xs">
-              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-ping" />
-              SIMPLE 3-STEP PROCESS
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black text-on-surface tracking-tight font-display">
-              How CorridorShare Works
+            <span className="eyebrow">Simple 3-step process</span>
+            <h2 className="text-3xl md:text-4xl font-semibold text-on-surface tracking-tight font-display">
+              How CorridorShare works
             </h2>
-            <p className="text-base md:text-lg text-on-surface-variant leading-relaxed font-semibold max-w-2xl mx-auto">
-              A 3-step geofenced delivery model connecting verified travelers with highway-corridor packages.
+            <p className="text-base md:text-lg text-on-surface-variant leading-relaxed max-w-2xl mx-auto">
+              A clear geofenced delivery model connecting travelers with highway-corridor packages.
             </p>
           </motion.div>
 
@@ -255,14 +253,12 @@ export default function HomeExperience() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.15 }}
               >
-                <Card className="border-2 border-orange-500/25 hover:border-orange-500/60 bg-surface flex flex-col items-center text-center p-8 md:p-10 space-y-6 h-full rounded-[36px] transition-all shadow-xl hover:shadow-2xl hover:-translate-y-2 group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-br from-orange-500/15 to-amber-500/5 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
-
-                  <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-orange-600 via-orange-500 to-amber-500 text-white rounded-full flex items-center justify-center font-black text-2xl md:text-3xl shadow-xl shadow-orange-500/35 border-4 border-white/20 group-hover:scale-110 transition-transform duration-300">
+                <Card className="border border-outline hover:border-primary/30 bg-surface flex flex-col items-center text-center p-8 md:p-10 space-y-5 h-full rounded-xl transition-all group relative overflow-hidden">
+                  <div className="w-14 h-14 bg-primary text-white rounded-xl flex items-center justify-center font-semibold text-lg font-display tracking-tight">
                     {item.step}
                   </div>
 
-                  <h3 className="font-black text-on-surface text-xl md:text-2xl tracking-tight font-display leading-tight">
+                  <h3 className="font-semibold text-on-surface text-xl md:text-2xl tracking-tight font-display leading-tight">
                     {item.title}
                   </h3>
 
@@ -284,10 +280,8 @@ export default function HomeExperience() {
             transition={{ duration: 0.5 }}
             className="text-center max-w-xl mx-auto mb-8"
           >
-            <span className="text-[10px] uppercase font-extrabold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-3.5 py-1 rounded-full border border-orange-500/20 tracking-widest inline-block mb-2">
-              REAL-TIME FARE CALCULATOR
-            </span>
-            <h2 className="text-3xl font-black text-on-surface tracking-tight">Micro-Surcharge Estimator</h2>
+            <span className="eyebrow mb-2">Fare calculator</span>
+            <h2 className="text-3xl font-semibold text-on-surface tracking-tight font-display">Micro-surcharge estimator</h2>
             <p className="text-sm text-on-surface-variant mt-1.5 font-medium">
               Input cargo details and detour parameters to calculate a recommended peer-to-peer delivery fee instantly.
             </p>
@@ -298,21 +292,21 @@ export default function HomeExperience() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="max-w-3xl mx-auto bg-surface border border-orange-500/30 rounded-[32px] p-6 md:p-8 shadow-xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center transition-colors duration-300 relative overflow-hidden"
+            className="max-w-3xl mx-auto bg-surface border border-primary/25 rounded-2xl p-6 md:p-8 shadow-xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center transition-colors duration-300 relative overflow-hidden"
           >
-            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-orange-500/10 to-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/8 rounded-full blur-2xl pointer-events-none" />
 
             {/* Controls */}
             <div className="space-y-6 relative z-10">
               <div className="space-y-2">
                 <div className="flex justify-between text-xs sm:text-sm font-bold text-on-surface">
                   <span>Luggage Weight Limit</span>
-                  <span className="text-orange-600 dark:text-orange-400 font-mono font-black text-base">{calcWeight.toFixed(1)} KG</span>
+                  <span className="text-primary font-mono font-black text-base">{calcWeight.toFixed(1)} KG</span>
                 </div>
                 <input 
                   type="range" min="0.5" max="15.0" step="0.5"
                   value={calcWeight} onChange={(e) => setCalcWeight(parseFloat(e.target.value))}
-                  className="w-full h-3 bg-orange-500/15 rounded-full appearance-none cursor-pointer accent-orange-500 transition-all"
+                  className="w-full h-3 bg-primary/10 rounded-full appearance-none cursor-pointer accent-primary transition-all"
                 />
                 <div className="flex justify-between text-[10px] text-on-surface-variant uppercase font-extrabold tracking-wider">
                   <span>0.5 kg</span>
@@ -323,12 +317,12 @@ export default function HomeExperience() {
               <div className="space-y-2">
                 <div className="flex justify-between text-xs sm:text-sm font-bold text-on-surface">
                   <span>Detour Travel Distance</span>
-                  <span className="text-orange-600 dark:text-orange-400 font-mono font-black text-base">{calcDetour.toFixed(0)} KM</span>
+                  <span className="text-primary font-mono font-black text-base">{calcDetour.toFixed(0)} KM</span>
                 </div>
                 <input 
                   type="range" min="0" max="25" step="1"
                   value={calcDetour} onChange={(e) => setCalcDetour(parseInt(e.target.value))}
-                  className="w-full h-3 bg-orange-500/15 rounded-full appearance-none cursor-pointer accent-orange-500 transition-all"
+                  className="w-full h-3 bg-primary/10 rounded-full appearance-none cursor-pointer accent-primary transition-all"
                 />
                 <div className="flex justify-between text-[10px] text-on-surface-variant uppercase font-extrabold tracking-wider">
                   <span>0 km (Direct)</span>
@@ -338,8 +332,8 @@ export default function HomeExperience() {
             </div>
 
             {/* Display widget with dynamic price pop animation */}
-            <div className="bg-gradient-to-br from-orange-500/15 to-amber-500/10 border border-orange-500/30 rounded-[28px] p-6 text-center space-y-3 shadow-inner relative z-10">
-              <span className="text-[10px] uppercase font-black tracking-widest text-orange-600 dark:text-orange-400 block">Recommended Surcharge</span>
+            <div className="bg-primary/8 border border-primary/25 rounded-xl p-6 text-center space-y-3 shadow-inner relative z-10">
+              <span className="text-[10px] uppercase font-black tracking-widest text-primary block">Recommended Surcharge</span>
               <div className="flex items-baseline justify-center gap-1.5 overflow-hidden py-1">
                 <AnimatePresence mode="popLayout">
                   <motion.span 
@@ -353,7 +347,7 @@ export default function HomeExperience() {
                     {estimatedSurcharge}
                   </motion.span>
                 </AnimatePresence>
-                <span className="text-base font-black text-orange-600 dark:text-orange-400">BDT</span>
+                <span className="text-base font-black text-primary">BDT</span>
               </div>
               <p className="text-xs text-on-surface-variant leading-relaxed max-w-xs mx-auto font-medium">
                 Includes platform escrow protection, fuel/detour compensation, and traveler cargo carry fees.
@@ -364,7 +358,7 @@ export default function HomeExperience() {
                   setAuthMode('signup');
                   setShowAuthModal(true);
                 }}
-                className="py-3.5 w-full text-xs font-black uppercase tracking-wider mt-2 shadow-lg shadow-orange-500/25"
+                className="py-3.5 w-full text-xs font-black uppercase tracking-wider mt-2 shadow-sm"
               >
                 Ship For This Surcharge
               </Button>
@@ -384,9 +378,9 @@ export default function HomeExperience() {
         {/* Footnotes */}
         <footer className="text-center py-6 border-t border-outline-variant/35 text-[10px] text-on-surface-variant font-bold space-y-2">
           <div className="flex justify-center gap-4">
-            <Link href="/terms" className="hover:text-orange-600 dark:hover:text-orange-400">Terms</Link>
-            <Link href="/privacy" className="hover:text-orange-600 dark:hover:text-orange-400">Privacy</Link>
-            <Link href="/support" className="hover:text-orange-600 dark:hover:text-orange-400">Support</Link>
+            <Link href="/terms" className="hover:text-primary dark:hover:text-primary">Terms</Link>
+            <Link href="/privacy" className="hover:text-primary dark:hover:text-primary">Privacy</Link>
+            <Link href="/support" className="hover:text-primary dark:hover:text-primary">Support</Link>
           </div>
           <p>&copy; {new Date().getFullYear()} CorridorShare P2P Logistics. Bangladesh.</p>
         </footer>
@@ -398,7 +392,7 @@ export default function HomeExperience() {
             <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)}></div>
             
             {/* Form Box */}
-            <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-2xl p-6 w-full max-w-sm relative z-10 animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-lg p-6 w-full max-w-sm relative z-10 animate-in fade-in zoom-in-95 duration-200">
               <div className="mb-5 text-center">
                 <h3 className="font-extrabold text-on-surface text-lg">
                   {authMode === 'login' ? 'Welcome Back!' : 'Create CorridorShare Account'}
@@ -494,16 +488,16 @@ export default function HomeExperience() {
       {/* Top Banner Greeting */}
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight">
-            Hello, Friend! 👋
+          <h1 className="text-3xl font-semibold text-on-surface tracking-tight font-display">
+            Hello, friend
           </h1>
           <p className="text-xs text-on-surface-variant mt-1 max-w-xl">
             Welcome to the CorridorShare logistics portal. Share corridor travel paths, match with local senders, and secure micro-surcharges.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] uppercase font-bold text-orange-700 dark:text-orange-300 bg-orange-500/10 px-3.5 py-1.5 rounded-full border border-orange-500/30 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+          <span className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-3.5 py-1.5 rounded-full border border-primary/25 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-primary"></span>
             Account Connected
           </span>
         </div>
@@ -512,7 +506,7 @@ export default function HomeExperience() {
       {/* Select Active Role Cards */}
       <section className="mb-8">
         <h2 className="text-xs uppercase font-extrabold tracking-widest text-on-surface-variant mb-4 flex items-center gap-1">
-          <ArrowLeftRight className="w-4 h-4 text-orange-500" />
+          <ArrowLeftRight className="w-4 h-4 text-primary" />
           Select Your Active Role
         </h2>
         
@@ -520,22 +514,14 @@ export default function HomeExperience() {
           {/* Traveler Card */}
           <div 
             onClick={() => setRole('traveler')}
-            className={`cursor-pointer rounded-[28px] p-6 border transition-all duration-300 relative overflow-hidden flex flex-col gap-4 group hover:-translate-y-1 hover:shadow-lg ${
-              role === 'traveler' 
-                ? 'bg-orange-500/10 dark:bg-orange-500/20 border-orange-500 ring-2 ring-orange-500/40 shadow-md' 
-                : 'bg-surface-container-lowest border-outline-variant hover:border-orange-500/30 shadow-sm'
-            }`}
+            className={`cursor-pointer rounded-xl p-6 border transition-all duration-300 relative overflow-hidden flex flex-col gap-4 group hover:-translate-y-1 hover:shadow-lg ${ role === 'traveler' ? 'bg-primary/10 dark:bg-primary/15 border-primary ring-2 ring-primary/30 shadow-md' : 'bg-surface-container-lowest border-outline-variant hover:border-primary/25 shadow-sm' }`}
           >
             <div aria-hidden="true" className="absolute right-4 bottom-2 text-6xl font-black opacity-0 select-none pointer-events-none tracking-wider">
               TRAVELER
             </div>
 
             <div className="flex items-start gap-4">
-              <div className={`p-4 rounded-2xl transition-all duration-300 ${
-                role === 'traveler' 
-                  ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white scale-110 shadow-md shadow-orange-500/30' 
-                  : 'bg-surface-container-low text-on-surface-variant group-hover:bg-orange-500/10'
-              }`}>
+              <div className={`p-4 rounded-2xl transition-all duration-300 ${ role === 'traveler' ? 'bg-primary text-white scale-110 shadow-sm' : 'bg-surface-container-low text-on-surface-variant group-hover:bg-primary/10' }`}>
                 <Car className="w-7 h-7" />
               </div>
               
@@ -543,9 +529,9 @@ export default function HomeExperience() {
                 <div className="flex items-center justify-between">
                   <h3 className="font-black text-lg text-on-surface">Traveler Mode</h3>
                   {role === 'traveler' ? (
-                    <span className="text-[9px] bg-gradient-to-r from-orange-500 to-amber-500 text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-xs">Active Mode</span>
+                    <span className="text-[9px] bg-primary text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-xs">Active Mode</span>
                   ) : (
-                    <span className="text-[9px] bg-surface-container-low text-on-surface-variant px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider group-hover:text-orange-500">Select</span>
+                    <span className="text-[9px] bg-surface-container-low text-on-surface-variant px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider group-hover:text-primary">Select</span>
                   )}
                 </div>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
@@ -556,13 +542,13 @@ export default function HomeExperience() {
 
             <div className="pt-3 border-t border-outline-variant/40 grid grid-cols-1 sm:grid-cols-3 gap-2">
               <span className="text-[10px] text-on-surface-variant font-bold flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-orange-500" /> Earn micro-fees
+                <Check className="w-3.5 h-3.5 text-primary" /> Earn micro-fees
               </span>
               <span className="text-[10px] text-on-surface-variant font-bold flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-orange-500" /> Flexible schedules
+                <Check className="w-3.5 h-3.5 text-primary" /> Flexible schedules
               </span>
               <span className="text-[10px] text-on-surface-variant font-bold flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-orange-500" /> Custom detour fees
+                <Check className="w-3.5 h-3.5 text-primary" /> Custom detour fees
               </span>
             </div>
           </div>
@@ -570,22 +556,14 @@ export default function HomeExperience() {
           {/* Sender/Receiver Card */}
           <div 
             onClick={() => setRole('sender')}
-            className={`cursor-pointer rounded-[28px] p-6 border transition-all duration-300 relative overflow-hidden flex flex-col gap-4 group hover:-translate-y-1 hover:shadow-lg ${
-              role === 'sender' 
-                ? 'bg-orange-500/10 dark:bg-orange-500/20 border-orange-500 ring-2 ring-orange-500/40 shadow-md' 
-                : 'bg-surface-container-lowest border-outline-variant hover:border-orange-500/30 shadow-sm'
-            }`}
+            className={`cursor-pointer rounded-xl p-6 border transition-all duration-300 relative overflow-hidden flex flex-col gap-4 group hover:-translate-y-1 hover:shadow-lg ${ role === 'sender' ? 'bg-primary/10 dark:bg-primary/15 border-primary ring-2 ring-primary/30 shadow-md' : 'bg-surface-container-lowest border-outline-variant hover:border-primary/25 shadow-sm' }`}
           >
             <div aria-hidden="true" className="absolute right-4 bottom-2 text-6xl font-black opacity-0 select-none pointer-events-none tracking-wider">
               SENDER
             </div>
 
             <div className="flex items-start gap-4">
-              <div className={`p-4 rounded-2xl transition-all duration-300 ${
-                role === 'sender' 
-                  ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white scale-110 shadow-md shadow-orange-500/30' 
-                  : 'bg-surface-container-low text-on-surface-variant group-hover:bg-orange-500/10'
-              }`}>
+              <div className={`p-4 rounded-2xl transition-all duration-300 ${ role === 'sender' ? 'bg-primary text-white scale-110 shadow-sm' : 'bg-surface-container-low text-on-surface-variant group-hover:bg-primary/10' }`}>
                 <Package className="w-7 h-7" />
               </div>
               
@@ -593,9 +571,9 @@ export default function HomeExperience() {
                 <div className="flex items-center justify-between">
                   <h3 className="font-black text-lg text-on-surface">Sender & Receiver Mode</h3>
                   {role === 'sender' ? (
-                    <span className="text-[9px] bg-gradient-to-r from-orange-500 to-amber-500 text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-xs">Active Mode</span>
+                    <span className="text-[9px] bg-primary text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-xs">Active Mode</span>
                   ) : (
-                    <span className="text-[9px] bg-surface-container-low text-on-surface-variant px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider group-hover:text-orange-500">Select</span>
+                    <span className="text-[9px] bg-surface-container-low text-on-surface-variant px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider group-hover:text-primary">Select</span>
                   )}
                 </div>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
@@ -606,13 +584,13 @@ export default function HomeExperience() {
 
             <div className="pt-3 border-t border-outline-variant/40 grid grid-cols-1 sm:grid-cols-3 gap-2">
               <span className="text-[10px] text-on-surface-variant font-bold flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-orange-500" /> Escrow secured
+                <Check className="w-3.5 h-3.5 text-primary" /> Escrow secured
               </span>
               <span className="text-[10px] text-on-surface-variant font-bold flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-orange-500" /> Snapped matching
+                <Check className="w-3.5 h-3.5 text-primary" /> Snapped matching
               </span>
               <span className="text-[10px] text-on-surface-variant font-bold flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-orange-500" /> Verified travel paths
+                <Check className="w-3.5 h-3.5 text-primary" /> Verified travel paths
               </span>
             </div>
           </div>
@@ -629,7 +607,7 @@ export default function HomeExperience() {
               <h2 className="text-lg font-bold text-on-surface tracking-tight">
                 {role === 'traveler' ? 'Your Upcoming & Active Journeys' : 'Your Ongoing Shipments'}
               </h2>
-              <Link href="/match" className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-0.5 hover:underline">
+              <Link href="/match" className="text-xs font-bold text-primary flex items-center gap-0.5 hover:underline">
                 Matching Portal <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -637,28 +615,24 @@ export default function HomeExperience() {
             <div className="space-y-4">
               {role === 'traveler' ? (
                 upcomingTrips.map((trip) => (
-                  <Card key={trip.id} className="relative group overflow-hidden border border-outline-variant rounded-[24px]">
+                  <Card key={trip.id} className="relative group overflow-hidden border border-outline-variant rounded-xl">
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <span className="text-[10px] font-bold text-on-surface-variant block uppercase">Trip ID: {trip.id}</span>
                         <span className="font-bold text-on-surface text-base mt-1 block">{trip.route}</span>
                       </div>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
-                        trip.status === 'Active' 
-                          ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30' 
-                          : 'bg-surface-container-low text-on-surface-variant border border-outline-variant'
-                      }`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${ trip.status === 'Active' ? 'bg-primary/10 text-primary border border-primary/25' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant' }`}>
                         {trip.status}
                       </span>
                     </div>
 
                     <div className="pt-2.5 border-t border-outline-variant flex justify-between items-center text-xs text-on-surface-variant font-medium">
                       <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-orange-500" />
+                        <Clock className="w-4 h-4 text-primary" />
                         <span>{trip.time}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Weight className="w-4 h-4 text-orange-500" />
+                        <Weight className="w-4 h-4 text-primary" />
                         <span>{trip.capacity}</span>
                       </div>
                     </div>
@@ -666,13 +640,13 @@ export default function HomeExperience() {
                 ))
               ) : (
                 activeDeliveries.map((pkg) => (
-                  <Card key={pkg.id} className="overflow-hidden border border-outline-variant rounded-[24px]">
+                  <Card key={pkg.id} className="overflow-hidden border border-outline-variant rounded-xl">
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <span className="text-[10px] font-bold text-on-surface-variant block uppercase">Package ID: {pkg.id}</span>
                         <span className="font-bold text-on-surface text-base mt-1 block">{pkg.route}</span>
                       </div>
-                      <span className="bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
+                      <span className="bg-primary/10 text-primary border border-primary/25 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
                         {pkg.status}
                       </span>
                     </div>
@@ -680,26 +654,25 @@ export default function HomeExperience() {
                     {/* Progress Visual Tracker */}
                     <div className="space-y-2 py-2">
                       <div className="flex justify-between text-[9px] font-bold text-on-surface-variant uppercase tracking-wide">
-                        <span className={pkg.progress >= 33 ? 'text-orange-600 dark:text-orange-400 font-bold' : ''}>Matched</span>
-                        <span className={pkg.progress >= 66 ? 'text-orange-600 dark:text-orange-400 font-bold' : ''}>In Transit</span>
-                        <span className={pkg.progress >= 100 ? 'text-orange-600 dark:text-orange-400 font-bold' : ''}>Delivered</span>
+                        <span className={pkg.progress >= 33 ? 'text-primary font-bold' : ''}>Matched</span>
+                        <span className={pkg.progress >= 66 ? 'text-primary font-bold' : ''}>In Transit</span>
+                        <span className={pkg.progress >= 100 ? 'text-primary font-bold' : ''}>Delivered</span>
                       </div>
-                      <div className="w-full h-2 bg-orange-500/15 rounded-full overflow-hidden flex border border-orange-500/20">
+                      <div className="w-full h-2 bg-primary/10 rounded-full overflow-hidden flex border border-outline">
                         <div 
-                          className="h-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-500 relative"
+                          className="h-full bg-primary transition-all duration-500 relative"
                           style={{ width: `${pkg.progress}%` }}
                         >
-                          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-white/40 animate-pulse"></div>
-                        </div>
+                                                  </div>
                       </div>
                     </div>
 
                     <div className="pt-2.5 border-t border-outline-variant flex justify-between items-center text-xs text-on-surface-variant font-medium">
                       <div className="flex items-center gap-1.5">
-                        <Package className="w-4 h-4 text-orange-500" />
+                        <Package className="w-4 h-4 text-primary" />
                         <span>{pkg.item}</span>
                       </div>
-                      <span className="text-orange-600 dark:text-orange-400 font-extrabold text-xs">{pkg.eta}</span>
+                      <span className="text-primary font-extrabold text-xs">{pkg.eta}</span>
                     </div>
                   </Card>
                 ))
@@ -708,8 +681,8 @@ export default function HomeExperience() {
           </section>
 
           {/* Quick Info Guides */}
-          <section className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-[24px] p-5 flex items-start gap-4">
-            <ShieldCheck className="w-6 h-6 text-orange-500 flex-shrink-0 mt-0.5" />
+          <section className="bg-primary/8 border border-outline rounded-xl p-5 flex items-start gap-4">
+            <ShieldCheck className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h3 className="font-extrabold text-sm text-on-surface">Escrow Safe Guarantee</h3>
               <p className="text-xs text-on-surface-variant leading-relaxed">
@@ -723,9 +696,8 @@ export default function HomeExperience() {
         <div className="space-y-6">
           {/* Balance Widget Card */}
           <section>
-            <Card className="bg-gradient-to-br from-orange-600 via-orange-500 to-amber-600 text-white relative overflow-hidden border-none shadow-xl rounded-[28px]">
-              <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-              <div className="absolute right-4 top-4 bg-white/20 backdrop-blur-md p-2.5 rounded-full">
+            <Card className="bg-primary text-white relative overflow-hidden border-none shadow-sm rounded-xl">
+              <div className="absolute right-4 top-4 bg-white/15 p-2.5 rounded-lg">
                 <Wallet className="w-5 h-5 text-white" />
               </div>
 
@@ -767,9 +739,9 @@ export default function HomeExperience() {
                   <Button
                     variant="primary"
                     onClick={() => setShowPostModal(true)}
-                    className="bg-white hover:bg-amber-50 text-orange-700 py-3 shadow-md w-full flex items-center justify-center gap-1.5 rounded-full font-black"
+                    className="bg-white hover:bg-primary-container text-primary py-3 shadow-sm w-full flex items-center justify-center gap-1.5 rounded-full font-semibold"
                   >
-                    <Navigation className="w-4 h-4 text-orange-600" />
+                    <Navigation className="w-4 h-4 text-primary" />
                     {role === 'traveler' ? 'Post New Trip' : 'Request Delivery'}
                   </Button>
                 </div>
@@ -779,15 +751,15 @@ export default function HomeExperience() {
 
           {/* Real-time Activity Feed */}
           <section>
-            <div className="bg-surface border border-orange-500/20 rounded-[28px] p-5 shadow-sm">
+            <div className="bg-surface border border-outline rounded-xl p-5 shadow-sm">
               <h3 className="font-extrabold text-xs text-on-surface uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-orange-500" />
+                <TrendingUp className="w-4 h-4 text-primary" />
                 Live Matching Corridor Activity
               </h3>
               <div className="space-y-4">
                 {platformFeed.map((f, i) => (
                   <div key={i} className="flex gap-2.5 text-xs border-b border-outline-variant/30 pb-3 last:border-b-0 last:pb-0">
-                    <div className="w-2 h-2 rounded-full bg-orange-500 mt-1.5 flex-shrink-0 animate-ping"></div>
+                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0"></div>
                     <div className="flex-grow space-y-0.5">
                       <p className="text-on-surface leading-normal font-medium">{f.text}</p>
                       <span className="text-[11px] text-on-surface-variant block font-medium">{f.time}</span>
@@ -810,7 +782,7 @@ export default function HomeExperience() {
       {showPostModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowPostModal(false)}></div>
-          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-2xl p-6 w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-lg p-6 w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-200">
             <h3 className="font-bold text-on-surface text-lg mb-4">
               {role === 'traveler' ? 'Post Upcoming Trip Details' : 'Request Package Shipment'}
             </h3>

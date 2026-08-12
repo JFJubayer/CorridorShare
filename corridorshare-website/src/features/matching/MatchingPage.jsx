@@ -117,17 +117,13 @@ function MatchPageContent() {
       <div className="flex md:hidden border-b border-outline-variant bg-surface-container-lowest transition-colors duration-300">
         <button
           onClick={() => setActiveTab('list')}
-          className={`flex-1 py-3 text-xs font-black text-center border-b-2 transition-all ${
-            activeTab === 'list' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-on-surface-variant'
-          }`}
+          className={`flex-1 py-3 text-xs font-semibold text-center border-b-2 transition-all ${ activeTab === 'list' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant' }`}
         >
           Match Results
         </button>
         <button
           onClick={() => setActiveTab('map')}
-          className={`flex-1 py-3 text-xs font-black text-center border-b-2 transition-all ${
-            activeTab === 'map' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-on-surface-variant'
-          }`}
+          className={`flex-1 py-3 text-xs font-semibold text-center border-b-2 transition-all ${ activeTab === 'map' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant' }`}
         >
           Interactive Map
         </button>
@@ -141,17 +137,17 @@ function MatchPageContent() {
         />
 
         <div className="absolute top-4 left-4 right-4 z-20 max-w-sm hidden lg:block">
-          <div className="bg-surface p-5 rounded-[28px] shadow-xl border border-orange-500/25 transition-colors duration-300">
-            <h2 className="text-xs font-black text-orange-600 dark:text-orange-400 mb-3 flex items-center gap-2">
-              <Navigation className="w-4 h-4 text-orange-500" />
+          <div className="bg-surface p-5 rounded-xl shadow-xl border border-outline transition-colors duration-300">
+            <h2 className="text-xs font-semibold text-primary mb-3 flex items-center gap-2">
+              <Navigation className="w-4 h-4 text-primary" />
               YOUR ACTIVE TRIP
             </h2>
             <div className="space-y-3">
               <div className="flex gap-2">
                 <div className="flex-grow">
-                  <label className="block text-[9px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Start Point</label>
-                  <div className="flex items-center bg-surface-container-low px-3 py-2 rounded-full border border-orange-500/20">
-                    <MapPin className="w-4 h-4 text-orange-500 mr-1.5" />
+                  <label className="block text-[9px] font-bold text-on-surface-variant tracking-wide mb-1">Start Point</label>
+                  <div className="flex items-center bg-surface-container-low px-3 py-2 rounded-full border border-outline">
+                    <MapPin className="w-4 h-4 text-primary mr-1.5" />
                     <input
                       type="text" value={startPoint} readOnly
                       className="bg-transparent border-none p-0 text-xs w-full focus:ring-0 text-on-surface outline-none font-medium"
@@ -159,8 +155,8 @@ function MatchPageContent() {
                   </div>
                 </div>
                 <div className="w-18">
-                  <label className="block text-[9px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Radius</label>
-                  <div className="flex items-center bg-surface-container-low px-2 py-2 rounded-full border border-orange-500/20">
+                  <label className="block text-[9px] font-bold text-on-surface-variant tracking-wide mb-1">Radius</label>
+                  <div className="flex items-center bg-surface-container-low px-2 py-2 rounded-full border border-outline">
                     <input
                       type="number" value={startRadius} onChange={(e) => setStartRadius(e.target.value)}
                       className="bg-transparent border-none p-0 text-xs w-full text-center focus:ring-0 text-on-surface outline-none font-bold"
@@ -172,8 +168,8 @@ function MatchPageContent() {
 
               <div className="flex gap-2">
                 <div className="flex-grow">
-                  <label className="block text-[9px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Destination</label>
-                  <div className="flex items-center bg-surface-container-low px-3 py-2 rounded-full border border-orange-500/20">
+                  <label className="block text-[9px] font-bold text-on-surface-variant tracking-wide mb-1">Destination</label>
+                  <div className="flex items-center bg-surface-container-low px-3 py-2 rounded-full border border-outline">
                     <Flag className="w-4 h-4 text-amber-500 mr-1.5" />
                     <input
                       type="text" value={destination} readOnly
@@ -182,8 +178,8 @@ function MatchPageContent() {
                   </div>
                 </div>
                 <div className="w-18">
-                  <label className="block text-[9px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Radius</label>
-                  <div className="flex items-center bg-surface-container-low px-2 py-2 rounded-full border border-orange-500/20">
+                  <label className="block text-[9px] font-bold text-on-surface-variant tracking-wide mb-1">Radius</label>
+                  <div className="flex items-center bg-surface-container-low px-2 py-2 rounded-full border border-outline">
                     <input
                       type="number" value={destRadius} onChange={(e) => setDestRadius(e.target.value)}
                       className="bg-transparent border-none p-0 text-xs w-full text-center focus:ring-0 text-on-surface outline-none font-bold"
@@ -197,42 +193,40 @@ function MatchPageContent() {
         </div>
       </div>
 
-      <aside className={`w-full md:w-[380px] lg:w-[420px] bg-surface border-l border-outline-variant flex flex-col h-full transition-colors duration-300 ${
-        activeTab === 'list' ? 'block' : 'hidden md:flex'
-      }`}>
+      <aside className={`w-full md:w-[380px] lg:w-[420px] bg-surface border-l border-outline-variant flex flex-col h-full transition-colors duration-300 ${ activeTab === 'list' ? 'block' : 'hidden md:flex' }`}>
         <div className="p-5 border-b border-outline-variant flex justify-between items-center bg-surface transition-colors duration-300">
           <div>
-            <h3 className="text-base font-black text-on-surface tracking-tight">Match Results</h3>
+            <h3 className="text-base font-semibold text-on-surface tracking-tight">Match Results</h3>
             <p className="text-xs text-on-surface-variant font-medium mt-0.5">{matches.length} Packages found along corridor</p>
           </div>
-          <button className="bg-surface-container-low border border-orange-500/20 text-on-surface p-2.5 rounded-full hover:bg-orange-500/10 transition-colors">
-            <Filter className="w-4 h-4 text-orange-500" />
+          <button className="bg-surface-container-low border border-outline text-on-surface p-2.5 rounded-full hover:bg-primary/10 transition-colors">
+            <Filter className="w-4 h-4 text-primary" />
           </button>
         </div>
 
-        {matchError && <p role="alert" className="mx-4 mt-4 rounded-2xl border border-orange-500/25 bg-orange-500/10 px-4 py-3 text-xs font-bold text-orange-700 dark:text-orange-300">{matchError}</p>}
+        {matchError && <p role="alert" className="mx-4 mt-4 rounded-2xl border border-outline bg-primary/10 px-4 py-3 text-xs font-bold text-primary">{matchError}</p>}
 
         <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar bg-surface-container-low transition-colors duration-300">
           {selectedPkg && (
-            <Card className="border-2 border-orange-500 bg-orange-500/10 p-5 relative animate-in fade-in zoom-in-95 duration-200 rounded-[28px]">
+            <Card className="border-2 border-primary bg-primary/10 p-5 relative animate-in fade-in zoom-in-95 duration-200 rounded-xl">
               <button
                 onClick={() => setSelectedPkg(null)}
-                className="absolute right-3.5 top-3.5 text-[10px] font-black text-on-surface-variant hover:text-on-surface uppercase outline-none"
+                className="absolute right-3.5 top-3.5 text-[10px] font-semibold text-on-surface-variant hover:text-on-surface uppercase outline-none"
               >
                 Close
               </button>
-              <span className="text-[9px] font-black bg-gradient-to-r from-orange-600 to-amber-500 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
+              <span className="text-[9px] font-semibold bg-primary text-white px-2.5 py-0.5 rounded-full tracking-wide shadow-xs">
                 Selected Package
               </span>
               <h4 className="font-extrabold text-on-surface mt-2 text-sm">{selectedPkg.item_description}</h4>
-              <p className="text-xs text-on-surface-variant mt-1 font-medium">Reward: <strong className="text-orange-600 dark:text-orange-400">{selectedPkg.proposed_reward} BDT</strong></p>
+              <p className="text-xs text-on-surface-variant mt-1 font-medium">Reward: <strong className="text-primary">{selectedPkg.proposed_reward} BDT</strong></p>
               <p className="text-xs text-on-surface-variant font-medium">Proximity: {selectedPkg.distance_from_corridor} meters from highway</p>
 
               <Button
                 variant="primary"
                 disabled={requestingId === (selectedPkg.package_id || selectedPkg.id)}
                 onClick={() => handleSendRequest(selectedPkg)}
-                className="mt-3 py-2.5 text-xs w-full flex items-center justify-center gap-1.5 rounded-full font-black"
+                className="mt-3 py-2.5 text-xs w-full flex items-center justify-center gap-1.5 rounded-full font-semibold"
               >
                 Go to Deal Chat
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -255,27 +249,25 @@ function MatchPageContent() {
                 className="space-y-1"
               >
                 {isNearMiss && (
-                  <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-1.5 rounded-t-2xl text-[9px] font-black text-center uppercase tracking-widest">
+                  <div className="bg-primary text-white p-1.5 rounded-t-2xl text-[9px] font-semibold text-center tracking-wide">
                     Near Match (outside route buffer)
                   </div>
                 )}
 
-                <div className={`bg-surface p-5 rounded-[28px] border border-orange-500/20 shadow-sm transition-all duration-300 relative hover:shadow-lg ${
-                  isNearMiss ? 'rounded-t-none border-t-0' : 'hover:border-orange-500/50'
-                } ${pkg.is_premium ? 'urgent-glow' : ''}`}>
+                <div className={`bg-surface p-5 rounded-xl border border-outline shadow-sm transition-all duration-300 relative hover:shadow-lg ${ isNearMiss ? 'rounded-t-none border-t-0' : 'hover:border-primary/35' } ${pkg.is_premium ? 'urgent-glow' : ''}`}>
                   {pkg.is_premium && (
-                    <div className="absolute top-3.5 right-3.5 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <div className="absolute top-3.5 right-3.5 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 px-2.5 py-0.5 rounded-full text-[9px] font-semibold tracking-wide flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-red-500 animate-pulse" />
                       URGENT
                     </div>
                   )}
 
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-orange-500/10 flex-shrink-0 flex items-center justify-center font-black text-xs text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center font-semibold text-xs text-primary border border-outline">
                       PKG
                     </div>
                     <div>
-                      <h4 className="font-black text-on-surface text-sm leading-tight">{pkg.item_type || pkg.item_description}</h4>
+                      <h4 className="font-semibold text-on-surface text-sm leading-tight">{pkg.item_type || pkg.item_description}</h4>
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className="bg-surface-container-low text-on-surface-variant text-[9px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide">
                           Package Match
@@ -285,25 +277,25 @@ function MatchPageContent() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-xs mb-4">
-                    <div className="bg-surface-container-low p-3 rounded-2xl border border-orange-500/15">
+                    <div className="bg-surface-container-low p-3 rounded-2xl border border-outline-variant">
                       <p className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider">Route Corridor</p>
-                      <p className="font-black text-orange-600 dark:text-orange-400 mt-0.5 truncate">{corridorLabel}</p>
+                      <p className="font-semibold text-primary mt-0.5 truncate">{corridorLabel}</p>
                     </div>
-                    <div className="bg-surface-container-low p-3 rounded-2xl border border-orange-500/15">
+                    <div className="bg-surface-container-low p-3 rounded-2xl border border-outline-variant">
                       <p className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider">Delivery Reward</p>
-                      <p className="font-black text-orange-600 dark:text-orange-400 mt-0.5">{pkg.proposed_reward} BDT</p>
+                      <p className="font-semibold text-primary mt-0.5">{pkg.proposed_reward} BDT</p>
                     </div>
                   </div>
 
                   {isNearMiss ? (
-                    <div className="bg-surface-container-low p-3.5 rounded-2xl border border-dashed border-orange-500/40 space-y-2.5">
+                    <div className="bg-surface-container-low p-3.5 rounded-2xl border border-dashed border-primary/30 space-y-2.5">
                       <p className="text-xs font-extrabold text-on-surface flex items-center gap-1">
-                        <ShieldAlert className="text-orange-500 w-4 h-4 flex-shrink-0" />
+                        <ShieldAlert className="text-primary w-4 h-4 flex-shrink-0" />
                         Propose detour bonus:
                       </p>
                       <div className="flex gap-2">
-                        <div className="flex-grow flex items-center bg-surface px-3 py-1.5 rounded-full border border-orange-500/20 focus-within:ring-2 focus-within:ring-orange-500 transition-all">
-                          <span className="text-orange-600 dark:text-orange-400 text-xs font-bold mr-1.5">BDT</span>
+                        <div className="flex-grow flex items-center bg-surface px-3 py-1.5 rounded-full border border-outline focus-within:ring-2 focus-within:ring-primary transition-all">
+                          <span className="text-primary text-xs font-bold mr-1.5">BDT</span>
                           <input
                             type="number" value={detourBonus} onChange={(e) => setDetourBonus(e.target.value)}
                             className="bg-transparent border-none p-0 text-xs font-bold w-full focus:ring-0 text-on-surface outline-none"
@@ -312,7 +304,7 @@ function MatchPageContent() {
                         <button
                           onClick={() => handleSendDetourOffer(pkg)}
                           disabled={requestingId === packageId}
-                          className="bg-gradient-to-r from-orange-600 to-amber-500 text-white font-black text-xs px-4 py-2 rounded-full hover:opacity-90 transition-all flex items-center gap-1 tactile-btn active:scale-95 shadow-md cursor-pointer"
+                          className="bg-primary text-white font-semibold text-xs px-4 py-2 rounded-full hover:opacity-90 transition-all flex items-center gap-1 tactile-btn active:scale-95 shadow-md cursor-pointer"
                         >
                           <Send className="w-3 h-3" />
                           Send Offer
@@ -324,7 +316,7 @@ function MatchPageContent() {
                       onClick={() => handleSendRequest(pkg)}
                       disabled={requestingId === packageId}
                       variant="primary"
-                      className="py-3 text-xs uppercase tracking-wider font-black rounded-full"
+                      className="py-3 text-xs tracking-wide font-semibold rounded-full"
                     >
                       {requestingId === packageId ? 'Opening chat...' : 'Send Delivery Request'}
                     </Button>

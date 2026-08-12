@@ -28,8 +28,8 @@ const getCustomIcon = (color) => {
 
 const pulseIcon = new L.DivIcon({
   html: `<span class="relative flex h-5 w-5">
-    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-    <span class="relative inline-flex rounded-full h-5 w-5 bg-orange-500 border-2 border-white shadow-md"></span>
+    <span class="absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-70"></span>
+    <span class="relative inline-flex rounded-full h-5 w-5 bg-primary border-2 border-white shadow-md"></span>
   </span>`,
   className: 'custom-pulse-icon',
   iconSize: [20, 20],
@@ -94,7 +94,7 @@ export default function MapCorridorInner({
         <Marker position={startPoint} icon={getCustomIcon(startIconColor)}>
           <Popup>
             <div className="font-sans text-xs">
-              <p className="font-extrabold text-orange-600 dark:text-orange-400">Departure Location</p>
+              <p className="font-extrabold text-primary">Departure Location</p>
               <p className="text-on-surface-variant font-medium">Start coordinates of traveler</p>
             </div>
           </Popup>
@@ -105,7 +105,7 @@ export default function MapCorridorInner({
         <Marker position={endPoint} icon={getCustomIcon(endIconColor)}>
           <Popup>
             <div className="font-sans text-xs">
-              <p className="font-extrabold text-orange-600 dark:text-orange-400">Destination Location</p>
+              <p className="font-extrabold text-primary">Destination Location</p>
               <p className="text-on-surface-variant font-medium">Ending coordinates of traveler</p>
             </div>
           </Popup>
@@ -114,15 +114,18 @@ export default function MapCorridorInner({
 
         {/* Packages Markers */}
         {packages.map((pkg) => {
-          const pkgPos = [pkg.pickup_lat, pkg.pickup_lng];
+          const lat = Number(pkg.pickup_lat);
+          const lng = Number(pkg.pickup_lng);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+          const pkgPos = [lat, lng];
           const isNearMiss = pkg.is_near_miss;
           
           return (
-            <React.Fragment key={pkg.package_id}>
+            <React.Fragment key={pkg.package_id || pkg.id}>
               {/* Draw matching/near miss connector line if near miss */}
-              {isNearMiss && (
+              {isNearMiss && endPoint && (
                 <Polyline 
-                  positions={[pkgPos, [24.757082, 90.407438]]}
+                  positions={[pkgPos, endPoint]}
                   pathOptions={{ color: '#f59e0b', weight: 2, dashArray: '5, 8', opacity: 0.8 }}
                 />
               )}
@@ -145,11 +148,11 @@ export default function MapCorridorInner({
                         </span>
                       )}
                     </div>
-                    <p className="text-on-surface-variant font-medium">Reward: <strong className="text-orange-600 dark:text-orange-400 font-black">{pkg.proposed_reward} BDT</strong></p>
+                    <p className="text-on-surface-variant font-medium">Reward: <strong className="text-primary font-black">{pkg.proposed_reward} BDT</strong></p>
                     <p className="text-on-surface-variant font-medium">Distance: {pkg.distance_from_corridor}m</p>
                     <button 
                       onClick={() => onSelectPackage && onSelectPackage(pkg)}
-                      className="mt-2 w-full bg-gradient-to-r from-orange-600 to-amber-500 text-white py-1.5 rounded-full text-center text-[10px] font-black uppercase tracking-wider hover:opacity-90 cursor-pointer shadow-xs"
+                      className="mt-2 w-full bg-primary text-white py-1.5 rounded-full text-center text-[10px] font-black uppercase tracking-wider hover:opacity-90 cursor-pointer shadow-xs"
                     >
                       View Deal Details
                     </button>
