@@ -16,3 +16,21 @@ enabled = true
 site_url = "https://corridorshare-tan.vercel.app"
 additional_redirect_urls = ["http://localhost:3000", "https://corridorshare-tan.vercel.app", "https://corridorshare-fahmid-hasans-projects.vercel.app"]
 
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = false
+
+# Friends-beta test numbers (E.164 without +). OTP is fixed; no real SMS is sent for these.
+[auth.sms.test_otp]
+8801712345678 = "123456"
+8801700000001 = "123456"
+8801700000002 = "123456"
+8801700000003 = "123456"
+
+# Hosted Auth still requires some SMS provider to be selected before test OTP works.
+# Textlocal is enabled as a stub; real SMS for non-test numbers still needs a real provider key in the dashboard.
+[auth.sms.textlocal]
+enabled = true
+sender = "CORRIDOR"
+api_key = "env(SUPABASE_AUTH_SMS_TEXTLOCAL_API_KEY)"

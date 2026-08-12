@@ -341,7 +341,7 @@ export default function AuthModal({ isOpen, onClose, title = "Welcome to Corrido
 
                 <div className="space-y-1 text-center">
                   <h4 className="text-lg font-semibold text-on-surface font-display">Verify Phone Number</h4>
-                  <p className="text-xs text-on-surface-variant font-medium">We send SMS verification codes for secure geofenced deals.</p>
+                  <p className="text-xs text-on-surface-variant font-medium">Friends beta: use +880 1712345678 (or 1700000001–0003). OTP is always 123456 — no real SMS yet.</p>
                 </div>
 
                 {!otpSent ? (

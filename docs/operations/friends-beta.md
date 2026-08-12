@@ -45,3 +45,14 @@ Only administrator JWTs can call admin_credit_wallet. Use the website Admin port
 ## Branch note
 
 Friends-beta website pack lives on friends-beta-pack. Do not mix payment-provider work into this trial scope.
+
+## Test phone OTP (friends beta)
+
+Phone SMS provider is not fully production-connected. For closed trials, these numbers use a fixed OTP and do not send SMS:
+
+- `+8801712345678` → OTP `123456`
+- `+8801700000001` → OTP `123456`
+- `+8801700000002` → OTP `123456`
+- `+8801700000003` → OTP `123456`
+
+Any other number still needs a real SMS provider (Twilio/Textlocal/etc.) in the Supabase Auth dashboard.
