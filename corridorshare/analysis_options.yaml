@@ -1,0 +1,25 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "lib/l10n/generated/**"
+  errors:
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    avoid_print: true
+    prefer_single_quotes: true
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_literals_to_create_immutables: true
+    require_trailing_commas: true
+    directives_ordering: true
+    avoid_relative_lib_imports: true
+    sort_constructors_first: true
+    sort_child_properties_last: true
+    unawaited_futures: true
+    use_super_parameters: true
+    use_full_hex_values_for_flutter_colors: true
