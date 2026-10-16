@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../core/geo/bangladesh_geo.dart';
+
 import '../core/config/app_config.dart';
+import '../core/geo/bangladesh_geo.dart';
+import '../core/theme/app_colors.dart';
 import '../models/trip_model.dart';
 import '../providers/user_provider.dart';
 import '../widgets/surcharge_calculator.dart';
-import 'match_screen.dart';
+import '../widgets/ui.dart';
 import 'deal_chat_screen.dart';
+import 'match_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
+  // ---------------------------------------------------------------------------
+  // Post trip / package
+  // ---------------------------------------------------------------------------
+
   void _showPostModal(BuildContext context, bool isTraveler) {
     final provider = Provider.of<UserProvider>(context, listen: false);
-    final descController = TextEditingController(text: 'Documents Envelope');
+    final descController = TextEditingController(text: 'Documents envelope');
     final rewardController = TextEditingController(text: '450');
     final weightController = TextEditingController(text: '5.0');
     final recipientController = TextEditingController();
@@ -22,20 +29,93 @@ class DashboardScreen extends StatelessWidget {
     String? destinationId = BangladeshGeo.places[1].id;
     String? pickupId = BangladeshGeo.places.first.id;
     String? dropoffId = BangladeshGeo.places[5].id;
+    String? formError;
 
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF0F172A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
+            Future<void> submit() async {
+              final capacity = double.tryParse(weightController.text);
+              final reward = double.tryParse(rewardController.text);
+              try {
+                if (isTraveler) {
+                  if (capacity == null || capacity <= 0) {
+                    throw ArgumentError('Capacity must be a positive number.');
+                  }
+                  final dep = BangladeshGeo.byId(departureId ?? '');
+                  final dest = BangladeshGeo.byId(destinationId ?? '');
+                  if (dep == null || dest == null) {
+                    throw ArgumentError('Select valid places.');
+                  }
+                  final route = BangladeshGeo.routeBetween(dep, dest);
+                  await provider.addTrip(
+                    departure: dep.label,
+                    destination: dest.label,
+                    date: 'soon',
+                    capacity: capacity,
+                    routePoints: route,
+                  );
+                } else {
+                  if (reward == null || reward <= 0) {
+                    throw ArgumentError('Reward must be a positive amount.');
+                  }
+                  if (capacity == null || capacity <= 0) {
+                    throw ArgumentError('Weight must be a positive number.');
+                  }
+                  final pickup = BangladeshGeo.byId(pickupId ?? '');
+                  final dropoff = BangladeshGeo.byId(dropoffId ?? '');
+                  if (pickup == null || dropoff == null) {
+                    throw ArgumentError(
+                        'Select valid pickup and dropoff places.');
+                  }
+                  if (pickup.id == dropoff.id) {
+                    throw ArgumentError('Dropoff must differ from pickup.');
+                  }
+                  final phone = recipientController.text.trim();
+                  if (phone.isEmpty) {
+                    throw ArgumentError('Recipient phone is required.');
+                  }
+                  await provider.addPackage(
+                    desc: descController.text,
+                    weight: capacity,
+                    reward: reward,
+                    pickup: pickup.point,
+                    dropoff: dropoff.point,
+                    routeInfo: '${pickup.label} → ${dropoff.label}',
+                    recipientPhone: phone,
+                  );
+                }
+              } on Object catch (error) {
+                if (!ctx.mounted) return;
+                setModalState(() => formError = '$error');
+                return;
+              }
+              if (!ctx.mounted || !context.mounted) return;
+              Navigator.of(ctx).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(isTraveler
+                        ? 'Trip posted.'
+                        : 'Delivery request posted.')),
+              );
+            }
+
+            List<DropdownMenuItem<String>> placeItems(
+                    {bool withRegion = false}) =>
+                [
+                  for (final p in BangladeshGeo.places)
+                    DropdownMenuItem(
+                      value: p.id,
+                      child: Text(
+                          withRegion ? '${p.label} (${p.region})' : p.label),
+                    ),
+                ];
+
             return Padding(
               padding: EdgeInsets.only(
-                top: 24,
                 left: 24,
                 right: 24,
                 bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
@@ -46,205 +126,111 @@ class DashboardScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isTraveler ? 'Post Bangladesh Highway Trip' : 'Request Parcel Shipping',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+                      isTraveler ? 'Post a trip' : 'Send a package',
+                      style: ctx.tt.headlineSmall,
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Geometry comes from your selected places — not a hardcoded N3 LINESTRING.',
-                      style: TextStyle(color: Colors.grey, fontSize: 11),
+                    Gap.xs,
+                    Text(
+                      isTraveler
+                          ? 'Your route is built from the places you choose.'
+                          : 'Travelers along this route can offer to carry it.',
+                      style: ctx.tt.bodyMedium,
                     ),
-                    const SizedBox(height: 16),
+                    Gap.lg,
                     if (isTraveler) ...[
                       DropdownButtonFormField<String>(
                         initialValue: departureId,
-                        dropdownColor: const Color(0xFF0F172A),
-                        decoration: const InputDecoration(
-                          labelText: 'Departure (Bangladesh)',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                        ),
-                        items: BangladeshGeo.places
-                            .map((p) => DropdownMenuItem(value: p.id, child: Text('${p.label} (${p.region})', style: const TextStyle(color: Colors.white, fontSize: 12))))
-                            .toList(),
+                        decoration:
+                            const InputDecoration(labelText: 'Departure'),
+                        items: placeItems(withRegion: true),
                         onChanged: (v) => setModalState(() => departureId = v),
                       ),
-                      const SizedBox(height: 12),
+                      Gap.md,
                       DropdownButtonFormField<String>(
                         initialValue: destinationId,
-                        dropdownColor: const Color(0xFF0F172A),
-                        decoration: const InputDecoration(
-                          labelText: 'Destination (Bangladesh)',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                        ),
-                        items: BangladeshGeo.places
-                            .map((p) => DropdownMenuItem(value: p.id, child: Text('${p.label} (${p.region})', style: const TextStyle(color: Colors.white, fontSize: 12))))
-                            .toList(),
-                        onChanged: (v) => setModalState(() => destinationId = v),
+                        decoration:
+                            const InputDecoration(labelText: 'Destination'),
+                        items: placeItems(withRegion: true),
+                        onChanged: (v) =>
+                            setModalState(() => destinationId = v),
                       ),
-                      const SizedBox(height: 12),
+                      Gap.md,
                       TextField(
                         controller: weightController,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
                         decoration: const InputDecoration(
-                          labelText: 'Available Capacity (KG)',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
+                          labelText: 'Available capacity',
+                          suffixText: 'kg',
                         ),
                       ),
                     ] else ...[
                       TextField(
                         controller: descController,
-                        style: const TextStyle(color: Colors.white),
                         decoration: const InputDecoration(
-                          labelText: 'Parcel Item Description',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
-                        ),
+                            labelText: 'What are you sending?'),
                       ),
-                      const SizedBox(height: 12),
+                      Gap.md,
                       DropdownButtonFormField<String>(
                         initialValue: pickupId,
-                        dropdownColor: const Color(0xFF0F172A),
-                        decoration: const InputDecoration(
-                          labelText: 'Pickup place',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                        ),
-                        items: BangladeshGeo.places
-                            .map((p) => DropdownMenuItem(value: p.id, child: Text(p.label, style: const TextStyle(color: Colors.white, fontSize: 12))))
-                            .toList(),
+                        decoration: const InputDecoration(labelText: 'Pickup'),
+                        items: placeItems(),
                         onChanged: (v) => setModalState(() => pickupId = v),
                       ),
-                      const SizedBox(height: 12),
+                      Gap.md,
                       DropdownButtonFormField<String>(
                         initialValue: dropoffId,
-                        dropdownColor: const Color(0xFF0F172A),
-                        decoration: const InputDecoration(
-                          labelText: 'Dropoff place (must differ)',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                        ),
-                        items: BangladeshGeo.places
-                            .map((p) => DropdownMenuItem(value: p.id, child: Text(p.label, style: const TextStyle(color: Colors.white, fontSize: 12))))
-                            .toList(),
+                        decoration: const InputDecoration(labelText: 'Dropoff'),
+                        items: placeItems(),
                         onChanged: (v) => setModalState(() => dropoffId = v),
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: rewardController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Proposed Surcharge Reward (BDT)',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orangeAccent)),
-                        ),
+                      Gap.md,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: rewardController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Reward',
+                                prefixText: '৳ ',
+                              ),
+                            ),
+                          ),
+                          Gap.md,
+                          Expanded(
+                            child: TextField(
+                              controller: weightController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Weight',
+                                suffixText: 'kg',
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: weightController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Weight (KG)',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
+                      Gap.md,
                       TextField(
                         controller: recipientController,
                         keyboardType: TextInputType.phone,
-                        style: const TextStyle(color: Colors.white),
                         decoration: const InputDecoration(
-                          labelText: 'Recipient phone (required)',
-                          labelStyle: TextStyle(color: Colors.grey),
-                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+                          labelText: 'Recipient phone',
+                          helperText: 'Used to issue the delivery OTP.',
                         ),
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    if (formError != null) ...[
+                      Gap.md,
+                      InlineNotice(formError!, tone: StatusTone.danger),
+                    ],
+                    Gap.lg,
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final capacity = double.tryParse(weightController.text);
-                          final reward = double.tryParse(rewardController.text);
-                          try {
-                            if (isTraveler) {
-                              if (capacity == null || capacity <= 0) {
-                                throw ArgumentError('Capacity must be a positive number.');
-                              }
-                              final dep = BangladeshGeo.byId(departureId ?? '');
-                              final dest = BangladeshGeo.byId(destinationId ?? '');
-                              if (dep == null || dest == null) {
-                                throw ArgumentError('Select valid Bangladesh places.');
-                              }
-                              final route = BangladeshGeo.routeBetween(dep, dest);
-                              await provider.addTrip(
-                                departure: dep.label,
-                                destination: dest.label,
-                                date: 'soon',
-                                capacity: capacity,
-                                routePoints: route,
-                              );
-                            } else {
-                              if (reward == null || reward <= 0) {
-                                throw ArgumentError('Reward must be a positive amount.');
-                              }
-                              if (capacity == null || capacity <= 0) {
-                                throw ArgumentError('Weight must be a positive number.');
-                              }
-                              final pickup = BangladeshGeo.byId(pickupId ?? '');
-                              final dropoff = BangladeshGeo.byId(dropoffId ?? '');
-                              if (pickup == null || dropoff == null) {
-                                throw ArgumentError('Select valid pickup and dropoff places.');
-                              }
-                              if (pickup.id == dropoff.id) {
-                                throw ArgumentError('Dropoff must differ from pickup.');
-                              }
-                              final phone = recipientController.text.trim();
-                              if (phone.isEmpty) {
-                                throw ArgumentError('Recipient phone is required.');
-                              }
-                              await provider.addPackage(
-                                desc: descController.text,
-                                weight: capacity,
-                                reward: reward,
-                                pickup: pickup.point,
-                                dropoff: dropoff.point,
-                                routeInfo: '${pickup.label} → ${dropoff.label}',
-                                recipientPhone: phone,
-                              );
-                            }
-                          } on Object catch (error) {
-                            if (!ctx.mounted) return;
-                            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('$error')));
-                            return;
-                          }
-                          if (!ctx.mounted || !context.mounted) return;
-                          Navigator.of(ctx).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(isTraveler ? 'Trip posted with live geometry!' : 'Delivery request posted!'),
-                              backgroundColor: const Color(0xFF059669),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
-                        child: Text(
-                          isTraveler ? 'POST TRIP' : 'SUBMIT REQUEST',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
+                      child: FilledButton(
+                        onPressed: submit,
+                        child: Text(isTraveler ? 'Post trip' : 'Post request'),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -260,110 +246,120 @@ class DashboardScreen extends StatelessWidget {
     });
   }
 
-  void _showTopUpDialog(BuildContext context, String providerName, Color themeColor) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final amountController = TextEditingController(text: '500');
+  // ---------------------------------------------------------------------------
+  // Wallet
+  // ---------------------------------------------------------------------------
 
-    showDialog<void>(
+  void _showTopUpSheet(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (userProvider.dataMode != AppDataMode.demo) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Live top-up is off in the beta. Ask an admin to credit your wallet.'),
+        ),
+      );
+      return;
+    }
+
+    final amountController = TextEditingController(text: '500');
+    var providerName = 'bKash';
+    String? error;
+
+    showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF0F172A),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: themeColor.withValues(alpha: 0.2), shape: BoxShape.circle),
-                child: Icon(Icons.account_balance_wallet, color: themeColor, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Text('$providerName Top Up', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Enter amount to deposit via $providerName mobile wallet:', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
-              const SizedBox(height: 14),
-              TextField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.amberAccent, fontSize: 20, fontWeight: FontWeight.w900),
-                decoration: InputDecoration(
-                  prefixText: '৳ ',
-                  prefixStyle: const TextStyle(color: Colors.amberAccent, fontSize: 20, fontWeight: FontWeight.w900),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: themeColor)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: themeColor, width: 2)),
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          Future<void> confirm() async {
+            final amt = double.tryParse(amountController.text);
+            if (amt == null || amt <= 0) {
+              setSheetState(() => error = 'Amount must be positive.');
+              return;
+            }
+            try {
+              if (providerName == 'bKash') {
+                await userProvider.topUpBkash(amt);
+              } else {
+                await userProvider.topUpNagad(amt);
+              }
+            } on Object catch (e) {
+              if (!ctx.mounted) return;
+              setSheetState(() => error = '$e');
+              return;
+            }
+            if (!ctx.mounted || !context.mounted) return;
+            Navigator.of(ctx).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(
+                      'Added ৳${amt.toStringAsFixed(0)} via $providerName.')),
+            );
+          }
+
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+                24, 0, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Add funds', style: ctx.tt.headlineSmall),
+                Gap.xs,
+                Text('Demo wallet only. No real charge is made.',
+                    style: ctx.tt.bodyMedium),
+                Gap.lg,
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'bKash', label: Text('bKash')),
+                    ButtonSegment(value: 'Nagad', label: Text('Nagad')),
+                  ],
+                  selected: {providerName},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (s) =>
+                      setSheetState(() => providerName = s.first),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final amt = double.tryParse(amountController.text);
-                if (amt == null || amt <= 0) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Top-up amount must be positive.')));
-                  return;
-                }
-                if (userProvider.dataMode == AppDataMode.supabase) {
-                  if (!ctx.mounted) return;
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Live $providerName top-up is blocked: no payment provider is configured. '
-                        'Escrow lock/release still work when the wallet is already funded.',
-                      ),
-                      backgroundColor: Colors.orangeAccent,
-                    ),
-                  );
-                  return;
-                }
-                try {
-                  if (providerName == 'bKash') {
-                    await userProvider.topUpBkash(amt);
-                  } else {
-                    await userProvider.topUpNagad(amt);
-                  }
-                } on Object catch (error) {
-                  if (!ctx.mounted) return;
-                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('$error')));
-                  return;
-                }
-                if (!ctx.mounted || !context.mounted) return;
-                Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Added ৳${amt.toStringAsFixed(0)} via $providerName!'),
-                    backgroundColor: const Color(0xFF059669),
+                Gap.md,
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  style: ctx.tt.headlineSmall,
+                  decoration: InputDecoration(
+                    prefixText: '৳ ',
+                    prefixStyle: ctx.tt.headlineSmall,
+                    errorText: error,
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: themeColor),
-              child: const Text('CONFIRM TOP UP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+                Gap.lg,
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                      onPressed: confirm, child: const Text('Add funds')),
+                ),
+              ],
             ),
-          ],
-        );
-      },
+          );
+        },
+      ),
     ).whenComplete(amountController.dispose);
   }
 
+  // ---------------------------------------------------------------------------
+  // NID
+  // ---------------------------------------------------------------------------
 
   Future<void> _uploadNidPhoto(BuildContext context) async {
     final provider = Provider.of<UserProvider>(context, listen: false);
     if (provider.dataMode != AppDataMode.supabase) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('NID photo upload requires live Supabase mode.')),
+        const SnackBar(content: Text('NID upload needs live mode.')),
       );
       return;
     }
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final file =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
     if (file == null) return;
     try {
       final bytes = await file.readAsBytes();
@@ -374,207 +370,116 @@ class DashboardScreen extends StatelessWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('NID photo uploaded to Storage and marked pending for admin review.'),
-          backgroundColor: Color(0xFF059669),
-        ),
+            content: Text('NID photo uploaded. An admin will review it.')),
       );
     } on Object catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
-
-
-  Widget _buildFriendsBetaChecklist(BuildContext context, UserProvider userProvider) {
-    final nidDone = userProvider.nidStatus == 'verified' || userProvider.nidStatus == 'pending';
-    final listingDone = userProvider.trips.isNotEmpty || userProvider.packages.isNotEmpty;
-    final dealDone = userProvider.deals.isNotEmpty;
-    final walletOk = userProvider.availableWalletBalance > 0;
-    if (nidDone && listingDone && dealDone && walletOk) {
-      return const SizedBox.shrink();
-    }
-    Widget row({
-      required bool done,
-      required String title,
-      required String subtitle,
-      required String cta,
-      required VoidCallback onTap,
-    }) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              done ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: done ? const Color(0xFF68DBA9) : Colors.orangeAccent,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                  Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11, height: 1.3)),
-                ],
-              ),
-            ),
-            if (!done)
-              TextButton(
-                onPressed: onTap,
-                child: Text(cta, style: const TextStyle(color: Color(0xFFF97316), fontSize: 11, fontWeight: FontWeight.bold)),
-              ),
-          ],
-        ),
-      );
-    }
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF1E293B)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Friends beta checklist', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          const Text(
-            'Complete these once so matching, deal chat, and escrow work for staging demos.',
-            style: TextStyle(color: Colors.grey, fontSize: 11, height: 1.35),
-          ),
-          const SizedBox(height: 14),
-          row(
-            done: nidDone,
-            title: 'Upload NID for admin review',
-            subtitle: 'Status: ${userProvider.nidStatus}',
-            cta: 'Upload',
-            onTap: () => _uploadNidPhoto(context),
-          ),
-          row(
-            done: walletOk,
-            title: 'Fund wallet via admin credit',
-            subtitle: 'No live top-up — ask an admin for admin_credit_wallet.',
-            cta: 'Account',
-            onTap: () => _showAccountSheet(context),
-          ),
-          row(
-            done: listingDone,
-            title: userProvider.isTraveler ? 'Post a corridor trip' : 'Request a package delivery',
-            subtitle: 'Lists stay empty until you create real listings.',
-            cta: 'Post',
-            onTap: () => _showPostModal(context, userProvider.isTraveler),
-          ),
-          row(
-            done: dealDone,
-            title: 'Open a deal from Matching',
-            subtitle: 'Deal chats appear under Messages after a match request.',
-            cta: 'Match',
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MatchScreen())),
-          ),
-        ],
-      ),
-    );
-  }
+  // ---------------------------------------------------------------------------
+  // Account sheet
+  // ---------------------------------------------------------------------------
 
   void _showAccountSheet(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Account', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 16),
-              _accountRow('NID status', userProvider.nidStatus),
-              _accountRow('Role', userProvider.isTraveler ? 'Traveler' : 'Sender'),
-              _accountRow('Wallet available', '৳ ${userProvider.availableWalletBalance.toStringAsFixed(2)}'),
-              _accountRow('Escrow held', '৳ ${userProvider.escrowLockedBalance.toStringAsFixed(2)}'),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.35)),
+        final userProvider = ctx.watch<UserProvider>();
+        final nid = userProvider.nidStatus;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Account', style: ctx.tt.headlineSmall),
+                Gap.md,
+                KeyValueGroup(
+                  children: [
+                    KeyValueRow(
+                        'Phone',
+                        userProvider.phone.isEmpty
+                            ? 'Not set'
+                            : userProvider.phone),
+                    KeyValueRow('NID status', _nidLabel(nid),
+                        valueColor: _nidColor(ctx, nid)),
+                    KeyValueRow('Available',
+                        '৳ ${userProvider.availableWalletBalance.toStringAsFixed(2)}'),
+                    KeyValueRow('In escrow',
+                        '৳ ${userProvider.escrowLockedBalance.toStringAsFixed(2)}'),
+                  ],
                 ),
-                child: const Text(
-                  'Private beta: live bKash/Nagad top-up is disabled. Staging wallets are funded by an admin via admin_credit_wallet.',
-                  style: TextStyle(color: Colors.amberAccent, fontSize: 11, height: 1.35),
+                Gap.md,
+                Text('Appearance', style: ctx.tt.labelMedium),
+                Gap.sm,
+                SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(
+                        value: ThemeMode.system, label: Text('System')),
+                    ButtonSegment(value: ThemeMode.light, label: Text('Light')),
+                    ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+                  ],
+                  selected: {userProvider.themeMode},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (s) => userProvider.setThemeMode(s.first),
                 ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _uploadNidPhoto(context);
-                  },
-                  icon: const Icon(Icons.badge_outlined, size: 16, color: Color(0xFF68DBA9)),
-                  label: const Text('Upload / update NID photo', style: TextStyle(color: Color(0xFF68DBA9))),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
+                Gap.lg,
+                if (nid != 'verified')
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                       onPressed: () {
-                        userProvider.toggleRole();
                         Navigator.pop(ctx);
+                        _uploadNidPhoto(context);
                       },
-                      child: Text(userProvider.isTraveler ? 'Switch to Sender' : 'Switch to Traveler'),
+                      icon: const Icon(Icons.badge_outlined, size: 18),
+                      label: Text(nid == 'pending'
+                          ? 'Replace NID photo'
+                          : 'Upload NID photo'),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        await userProvider.logout();
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                      child: const Text('Log out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
+                if (nid != 'verified') Gap.sm,
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      await userProvider.logout();
+                    },
+                    style: TextButton.styleFrom(
+                        foregroundColor: ctx.appColors.danger),
+                    child: const Text('Log out'),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _accountRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
+  static String _nidLabel(String status) => switch (status) {
+        'verified' => 'Verified',
+        'pending' => 'Under review',
+        'suspended' => 'Suspended',
+        _ => 'Not verified',
+      };
+
+  static Color? _nidColor(BuildContext context, String status) =>
+      switch (status) {
+        'verified' => context.appColors.ok,
+        'suspended' => context.appColors.danger,
+        _ => null,
+      };
+
+  // ---------------------------------------------------------------------------
+  // Request capacity on a trip
+  // ---------------------------------------------------------------------------
 
   void _requestCapacityOnTrip(BuildContext context, TripModel trip) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -586,29 +491,20 @@ class DashboardScreen extends StatelessWidget {
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF0F172A),
-          title: const Text('Post a package first', style: TextStyle(color: Colors.white)),
+          title: const Text('Post a package first'),
           content: const Text(
-            'You need at least one package request before you can open a deal on this trip. '
-            'Post a parcel from Dashboard, or browse Matching as a traveler.',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+            'You need a package request before you can open a deal on this trip.',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CLOSE', style: TextStyle(color: Colors.grey))),
-            ElevatedButton(
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel')),
+            FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 _showPostModal(context, false);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
-              child: const Text('POST PACKAGE', style: TextStyle(color: Colors.white)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => MatchScreen(initialTripId: trip.id)));
-              },
-              child: const Text('OPEN MATCHING', style: TextStyle(color: Colors.orangeAccent)),
+              child: const Text('Send a package'),
             ),
           ],
         ),
@@ -618,541 +514,473 @@ class DashboardScreen extends StatelessWidget {
 
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                child: Text(
                   'Choose a package for ${trip.departureCity} → ${trip.destinationCity}',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: ctx.tt.titleLarge,
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Opens a deal room with this trip id — never a random packages.first shortcut.',
-                  style: TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(ctx).size.height * 0.45),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: myPackages.length,
+                  separatorBuilder: (_, __) =>
+                      const Divider(indent: 24, endIndent: 24),
+                  itemBuilder: (_, idx) {
+                    final pkg = myPackages[idx];
+                    return ListTile(
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 24),
+                      title: Text(pkg.itemDescription),
+                      subtitle: Text(pkg.routeInfo),
+                      trailing: Text(
+                          '৳ ${pkg.proposedReward.toStringAsFixed(0)}',
+                          style: ctx.tt.titleSmall),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                DealChatScreen(package: pkg, tripId: trip.id),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
-                const SizedBox(height: 12),
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.45),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: myPackages.length,
-                    itemBuilder: (_, idx) {
-                      final pkg = myPackages[idx];
-                      return ListTile(
-                        title: Text(pkg.itemDescription, style: const TextStyle(color: Colors.white)),
-                        subtitle: Text('৳ ${pkg.proposedReward.toStringAsFixed(0)} • ${pkg.routeInfo}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                        trailing: const Icon(Icons.chevron_right, color: Colors.orangeAccent),
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => DealChatScreen(package: pkg, tripId: trip.id),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-                TextButton(
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: TextButton(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => MatchScreen(initialTripId: trip.id)));
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => MatchScreen(initialTripId: trip.id)),
+                    );
                   },
-                  child: const Text('Or open Matching for this trip', style: TextStyle(color: Colors.orangeAccent)),
+                  child: const Text('Open in Matching instead'),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
+    final isTraveler = userProvider.isTraveler;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF051424),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF051424),
-        elevation: 0,
-        toolbarHeight: 64,
-        title: Row(
-          children: [
-            GestureDetector(
-              onTap: () => _showAccountSheet(context),
-              child: const CircleAvatar(
-                radius: 18,
-                backgroundColor: Color(0xFF1C2B3C),
-                child: Icon(Icons.person, color: Color(0xFFFFB690), size: 20),
+        titleSpacing: 16,
+        title: const Text('CorridorShare'),
+        actions: [
+          IconButton(
+            onPressed: () => _showAccountSheet(context),
+            tooltip: 'Account',
+            icon: const Icon(Icons.person_outline),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        children: [
+          _RoleSwitch(
+            isTraveler: isTraveler,
+            onChanged: (role) => userProvider.setRole(role),
+          ),
+          Gap.lg,
+          _WalletSummary(
+            provider: userProvider,
+            onAddFunds: () => _showTopUpSheet(context),
+            onPrimary: () => _showPostModal(context, isTraveler),
+            primaryLabel: isTraveler ? 'Post a trip' : 'Send a package',
+          ),
+          Gap.xl,
+          _SetupChecklist(
+            provider: userProvider,
+            onUploadNid: () => _uploadNidPhoto(context),
+            onAccount: () => _showAccountSheet(context),
+            onPost: () => _showPostModal(context, isTraveler),
+            onMatch: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MatchScreen()),
+            ),
+          ),
+          SectionHeader(
+            'Trips on the corridor',
+            action: userProvider.trips.isEmpty ? null : 'See all',
+            onAction: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MatchScreen()),
+            ),
+          ),
+          Gap.sm,
+          if (userProvider.trips.isEmpty)
+            Panel(
+              child: Text(
+                isTraveler
+                    ? 'No trips yet. Post one to start receiving package requests.'
+                    : 'No trips yet. Post a package so travelers can find it.',
+                style: context.tt.bodyMedium,
+              ),
+            )
+          else
+            SizedBox(
+              height: 148,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                itemCount: userProvider.trips.length,
+                separatorBuilder: (_, __) => Gap.sm,
+                itemBuilder: (ctx, idx) => _TripCard(
+                  trip: userProvider.trips[idx],
+                  onRequest: () =>
+                      _requestCapacityOnTrip(context, userProvider.trips[idx]),
+                ),
               ),
             ),
-            const SizedBox(width: 10),
-            RichText(
-              text: const TextSpan(
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                children: [
-                  TextSpan(text: 'Corridor', style: TextStyle(color: Color(0xFFFFB690))),
-                  TextSpan(text: 'Share', style: TextStyle(color: Colors.white)),
-                ],
-              ),
+          Gap.xl,
+          if (isTraveler) ...[
+            const SectionHeader('Estimate earnings'),
+            Gap.sm,
+            SurchargeCalculatorWidget(
+                onShipPressed: () => _showPostModal(context, true)),
+            Gap.xl,
+          ],
+          const SectionHeader('How a delivery works'),
+          Gap.sm,
+          const _Steps(),
+        ],
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Pieces
+// -----------------------------------------------------------------------------
+
+class _RoleSwitch extends StatelessWidget {
+  const _RoleSwitch({required this.isTraveler, required this.onChanged});
+
+  final bool isTraveler;
+  final ValueChanged<AppRole> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<AppRole>(
+      segments: const [
+        ButtonSegment(
+          value: AppRole.sender,
+          label: Text('Sending'),
+          icon: Icon(Icons.inventory_2_outlined, size: 16),
+        ),
+        ButtonSegment(
+          value: AppRole.traveler,
+          label: Text('Travelling'),
+          icon: Icon(Icons.directions_car_outlined, size: 16),
+        ),
+      ],
+      selected: {isTraveler ? AppRole.traveler : AppRole.sender},
+      showSelectedIcon: false,
+      onSelectionChanged: (s) => onChanged(s.first),
+    );
+  }
+}
+
+class _WalletSummary extends StatelessWidget {
+  const _WalletSummary({
+    required this.provider,
+    required this.onAddFunds,
+    required this.onPrimary,
+    required this.primaryLabel,
+  });
+
+  final UserProvider provider;
+  final VoidCallback onAddFunds;
+  final VoidCallback onPrimary;
+  final String primaryLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final available = provider.availableWalletBalance;
+    final held = provider.escrowLockedBalance;
+    final liveMode = provider.dataMode != AppDataMode.demo;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Available balance', style: context.tt.labelMedium),
+        Gap.xs,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          switchInCurve: Curves.easeOutCubic,
+          transitionBuilder: (child, anim) => FadeTransition(
+            opacity: anim,
+            child: SlideTransition(
+              position: Tween(begin: const Offset(0, 0.15), end: Offset.zero)
+                  .animate(anim),
+              child: child,
+            ),
+          ),
+          child: Text(
+            '৳ ${available.toStringAsFixed(2)}',
+            key: ValueKey(available),
+            style: context.tt.headlineMedium?.copyWith(
+              fontSize: 36,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -1,
+            ),
+          ),
+        ),
+        Gap.sm,
+        Text(
+          held > 0
+              ? '৳ ${held.toStringAsFixed(2)} held in escrow'
+              : 'Nothing held in escrow',
+          style: context.tt.bodyMedium,
+        ),
+        if (liveMode) ...[
+          Gap.sm,
+          const InlineNotice(
+              'Live top-up is off. An admin credits beta wallets.'),
+        ],
+        Gap.md,
+        Row(
+          children: [
+            Expanded(
+              child:
+                  FilledButton(onPressed: onPrimary, child: Text(primaryLabel)),
+            ),
+            Gap.sm,
+            OutlinedButton(
+              onPressed: onAddFunds,
+              child: const Text('Add funds'),
             ),
           ],
         ),
-        actions: [
-          GestureDetector(
-            onTap: () => _uploadNidPhoto(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF68DBA9).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF68DBA9).withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.verified, color: Color(0xFF68DBA9), size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    'NID ${userProvider.nidStatus}',
-                    style: const TextStyle(color: Color(0xFF68DBA9), fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: TextButton.icon(
-              onPressed: userProvider.toggleRole,
-              style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFF1C2B3C),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              ),
-              icon: Icon(
-                userProvider.isTraveler ? Icons.directions_car : Icons.inventory_2,
-                color: const Color(0xFFF97316),
-                size: 16,
-              ),
-              label: Text(
-                userProvider.isTraveler ? 'Traveler' : 'Sender',
-                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
+      ],
+    );
+  }
+}
+
+class _SetupChecklist extends StatelessWidget {
+  const _SetupChecklist({
+    required this.provider,
+    required this.onUploadNid,
+    required this.onAccount,
+    required this.onPost,
+    required this.onMatch,
+  });
+
+  final UserProvider provider;
+  final VoidCallback onUploadNid;
+  final VoidCallback onAccount;
+  final VoidCallback onPost;
+  final VoidCallback onMatch;
+
+  @override
+  Widget build(BuildContext context) {
+    final nidDone =
+        provider.nidStatus == 'verified' || provider.nidStatus == 'pending';
+    final listingDone =
+        provider.trips.isNotEmpty || provider.packages.isNotEmpty;
+    final dealDone = provider.deals.isNotEmpty;
+    final walletOk = provider.availableWalletBalance > 0;
+    if (nidDone && listingDone && dealDone && walletOk) {
+      return const SizedBox.shrink();
+    }
+
+    final items = <_ChecklistItem>[
+      _ChecklistItem('Verify your NID', nidDone, 'Upload', onUploadNid),
+      _ChecklistItem('Fund your wallet', walletOk, 'Account', onAccount),
+      _ChecklistItem(
+        provider.isTraveler
+            ? 'Post your first trip'
+            : 'Post your first package',
+        listingDone,
+        'Post',
+        onPost,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      _ChecklistItem('Open a deal from Matching', dealDone, 'Match', onMatch),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader('Getting started'),
+        Gap.sm,
+        Panel(
+          padding: EdgeInsets.zero,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF122131)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0) const Divider(indent: 48),
+                ListTile(
+                  dense: true,
+                  leading: Icon(
+                    items[i].done ? Icons.check_circle : Icons.circle_outlined,
+                    size: 20,
+                    color: items[i].done
+                        ? context.appColors.ok
+                        : context.cs.onSurfaceVariant,
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF1E293B)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    RichText(
-                      text: const TextSpan(
-                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, height: 1.25),
-                        children: [
-                          TextSpan(text: 'Monetize Your ', style: TextStyle(color: Colors.white)),
-                          TextSpan(text: 'Journey.\n', style: TextStyle(color: Color(0xFFF97316))),
-                          TextSpan(text: 'Secure Your ', style: TextStyle(color: Colors.white)),
-                          TextSpan(text: 'Parcel.', style: TextStyle(color: Color(0xFFF97316))),
-                        ],
-                      ),
+                  title: Text(
+                    items[i].title,
+                    style: context.tt.bodyLarge?.copyWith(
+                      color: items[i].done
+                          ? context.cs.onSurfaceVariant
+                          : context.cs.onSurface,
+                      decoration:
+                          items[i].done ? TextDecoration.lineThrough : null,
                     ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Bangladesh\'s first secure peer-to-peer delivery network for daily commuters.',
-                      style: TextStyle(color: Color(0xFFE0C0B1), fontSize: 12, height: 1.4),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              SurchargeCalculatorWidget(
-                onShipPressed: () => _showPostModal(context, userProvider.isTraveler),
-              ),
-              const SizedBox(height: 20),
-              _buildFriendsBetaChecklist(context, userProvider),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF1E293B)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text('ESCROW BALANCE', style: TextStyle(color: Color(0xFFE0C0B1), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
-                        Icon(Icons.account_balance_wallet, color: Color(0xFFE0C0B1), size: 22),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '৳ ${userProvider.walletBalance.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1C2B3C),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF1E293B)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Active Escrow', style: TextStyle(color: Color(0xFFE0C0B1), fontSize: 10)),
-                                const SizedBox(height: 2),
-                                Text('৳ ${userProvider.escrowLockedBalance.toStringAsFixed(2)}', style: const TextStyle(color: Color(0xFF68DBA9), fontSize: 12, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1C2B3C),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFF1E293B)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Available', style: TextStyle(color: Color(0xFFE0C0B1), fontSize: 10)),
-                                const SizedBox(height: 2),
-                                Text('৳ ${(userProvider.walletBalance - userProvider.escrowLockedBalance).toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (userProvider.dataMode != AppDataMode.demo)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          'Live top-up blocked: no payment provider. Staging funding uses admin_credit_wallet.',
-                          style: TextStyle(color: Colors.amberAccent, fontSize: 11),
-                        ),
-                      ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: userProvider.dataMode.name == 'demo'
-                                ? () => _showTopUpDialog(context, 'bKash', Colors.pinkAccent)
-                                : () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Live top-up blocked: no payment provider. Ask an admin to run admin_credit_wallet.',
-                                        ),
-                                        backgroundColor: Colors.redAccent,
-                                      ),
-                                    );
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: const Text('Top Up via bKash', style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: userProvider.dataMode.name == 'demo'
-                                ? () => _showTopUpDialog(context, 'Nagad', Colors.deepOrangeAccent)
-                                : () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Live top-up blocked: no payment provider. Ask an admin to run admin_credit_wallet.',
-                                        ),
-                                        backgroundColor: Colors.redAccent,
-                                      ),
-                                    );
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF97316),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: const Text('Top Up via Nagad', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Dhaka-Mymensingh Corridor', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MatchScreen())),
-                    child: const Text('View All', style: TextStyle(color: Color(0xFFF97316), fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              SizedBox(
-                height: 175,
-                child: userProvider.trips.isEmpty
-                    ? Container(
-                        width: double.infinity,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1C2B3C),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF1E293B)),
+                  trailing: items[i].done
+                      ? null
+                      : TextButton(
+                          onPressed: items[i].onTap,
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(0, 32),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          child: Text(items[i].cta),
                         ),
-                        child: const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(
-                            'No corridor trips yet. Post a trip or package above — lists stay empty until real data loads.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey, fontSize: 12, height: 1.35),
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: userProvider.trips.length,
-                  itemBuilder: (ctx, idx) {
-                    final trip = userProvider.trips[idx];
-
-                    return Container(
-                      width: 250,
-                      margin: const EdgeInsets.only(right: 14),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1C2B3C),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF1E293B)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 14,
-                                      backgroundColor: const Color(0xFF0F172A),
-                                      child: Text(trip.travelerName[0], style: const TextStyle(color: Color(0xFF68DBA9), fontWeight: FontWeight.bold, fontSize: 11)),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(trip.travelerName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                          FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            alignment: Alignment.centerLeft,
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(Icons.star, color: Color(0xFF68DBA9), size: 10),
-                                                const SizedBox(width: 2),
-                                                Text(trip.travelerRatingLabel, style: const TextStyle(color: Color(0xFF68DBA9), fontSize: 9, fontWeight: FontWeight.bold)),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(color: const Color(0xFFF97316).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
-                                child: Text(trip.travelTimeLabel, style: const TextStyle(color: Color(0xFFFFB690), fontSize: 9, fontWeight: FontWeight.bold)),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on, color: Colors.grey, size: 12),
-                              const SizedBox(width: 4),
-                              Expanded(child: Text(trip.departureCity, style: const TextStyle(color: Colors.white, fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(Icons.navigation, color: Color(0xFFF97316), size: 12),
-                              const SizedBox(width: 4),
-                              Expanded(child: Text(trip.destinationCity, style: const TextStyle(color: Colors.white, fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                            ],
-                          ),
-
-                          const Spacer(),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Up to ${trip.weightCapacityKg.toStringAsFixed(0)}kg', style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                              GestureDetector(
-                                onTap: () => _requestCapacityOnTrip(context, trip),
-                                child: const Text('Request', style: TextStyle(color: Color(0xFFF97316), fontWeight: FontWeight.bold, fontSize: 11)),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              const Text('How It Works', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 14),
-              _buildStitchStepCard(
-                Icons.handshake,
-                '1. Match & Negotiate',
-                'Connect with verified travelers on your corridor and agree on terms.',
-              ),
-              const SizedBox(height: 10),
-              _buildStitchStepCard(
-                Icons.inventory_2,
-                '2. Open-Box Inspection',
-                'Both parties inspect and photograph items before locking the handover.',
-              ),
-              const SizedBox(height: 10),
-              _buildStitchStepCard(
-                Icons.verified_user,
-                '3. Secure Payout',
-                'Funds are released from escrow only after OTP confirmation at delivery.',
-              ),
-              const SizedBox(height: 24),
-
-              const Text('Safety & Verification Matrix', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 14),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.6,
-                children: [
-                  _buildMatrixTile(Icons.verified, 'NID Verification', const Color(0xFF68DBA9)),
-                  _buildMatrixTile(Icons.inventory_2, 'Open-Box Guarantee', const Color(0xFFF97316)),
-                  _buildMatrixTile(Icons.security, 'Escrow Security', const Color(0xFF68DBA9)),
-                  _buildMatrixTile(Icons.my_location, 'Real-time Tracking', const Color(0xFFF97316)),
-                ],
-              ),
+              ],
             ],
           ),
+        ),
+        Gap.xl,
+      ],
+    );
+  }
+}
+
+class _ChecklistItem {
+  const _ChecklistItem(this.title, this.done, this.cta, this.onTap);
+  final String title;
+  final bool done;
+  final String cta;
+  final VoidCallback onTap;
+}
+
+class _TripCard extends StatelessWidget {
+  const _TripCard({required this.trip, required this.onRequest});
+
+  final TripModel trip;
+  final VoidCallback onRequest;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 240,
+      child: Panel(
+        onTap: onRequest,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                InitialsAvatar(trip.travelerName, radius: 14),
+                Gap.sm,
+                Expanded(
+                  child: Text(
+                    trip.travelerName,
+                    style: context.tt.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(trip.travelerRatingLabel, style: context.tt.labelMedium),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              '${trip.departureCity} → ${trip.destinationCity}',
+              style:
+                  context.tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Gap.xs,
+            Text(
+              '${trip.travelTimeLabel} · up to ${trip.weightCapacityKg.toStringAsFixed(0)} kg',
+              style: context.tt.bodySmall,
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildStitchStepCard(IconData icon, String title, String desc) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E293B)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF97316).withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: const Color(0xFFF97316), size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
+class _Steps extends StatelessWidget {
+  const _Steps();
+
+  static const _steps = [
+    (
+      Icons.handshake_outlined,
+      'Match and agree',
+      'Find a traveler on your route and settle the price in chat.'
+    ),
+    (
+      Icons.inventory_2_outlined,
+      'Inspect and lock',
+      'Both sides photograph the open box, then funds lock in escrow.'
+    ),
+    (
+      Icons.verified_user_outlined,
+      'Deliver and release',
+      'The recipient shares a one-time code that releases payment.'
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < _steps.length; i++) ...[
+          if (i > 0) const Divider(indent: 36),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                const SizedBox(height: 2),
-                Text(desc, style: const TextStyle(color: Color(0xFFE0C0B1), fontSize: 11, height: 1.3)),
+                Icon(_steps[i].$1,
+                    size: 20, color: context.cs.onSurfaceVariant),
+                Gap.md,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_steps[i].$2, style: context.tt.titleSmall),
+                      Gap.xs,
+                      Text(_steps[i].$3, style: context.tt.bodyMedium),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMatrixTile(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E293B)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11), textAlign: TextAlign.center),
-        ],
-      ),
+      ],
     );
   }
 }

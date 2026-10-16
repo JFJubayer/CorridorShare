@@ -22,12 +22,10 @@ void main() {
     );
 
     expect(find.byType(RichText), findsWidgets);
-    expect(find.textContaining('NID'), findsWidgets);
-    expect(find.text('Earnings Estimator'), findsOneWidget);
-    expect(find.text('ESCROW BALANCE'), findsOneWidget);
-    expect(find.text('Top Up via bKash'), findsOneWidget);
-    expect(find.text('Top Up via Nagad'), findsOneWidget);
-    expect(find.text('How It Works'), findsOneWidget);
-    expect(find.text('Safety & Verification Matrix'), findsOneWidget);
+    expect(find.text('Available balance'), findsOneWidget);
+    expect(find.text('Add funds'), findsOneWidget);
+    expect(find.text('How a delivery works'), findsOneWidget);
+    expect(find.text('Sending'), findsOneWidget);
+    expect(find.text('Travelling'), findsOneWidget);
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode;
 
 import '../core/config/app_config.dart';
 import '../core/money/money.dart';
@@ -6,10 +7,10 @@ import '../features/deals/deals_controller.dart';
 import '../features/listings/listings_controller.dart';
 import '../features/session/session_controller.dart';
 import '../features/wallet/wallet_controller.dart';
+import '../infrastructure/supabase/supabase_backend_repository.dart';
 import '../models/deal_model.dart';
 import '../models/package_model.dart';
 import '../models/trip_model.dart';
-import '../infrastructure/supabase/supabase_backend_repository.dart';
 
 export '../features/session/session_controller.dart' show AppRole, NidStatus;
 
@@ -22,7 +23,8 @@ class UserProvider extends ChangeNotifier {
     ListingsController? listings,
     DealsController? deals,
   }) {
-    final resolvedConfig = config ?? const AppConfig(dataMode: AppDataMode.supabase);
+    final resolvedConfig =
+        config ?? const AppConfig(dataMode: AppDataMode.supabase);
     final resolvedWallet = wallet ?? WalletController(config: resolvedConfig);
     final liveRepository = BackendRepositoryFactory.create(resolvedConfig);
     return UserProvider._(
@@ -30,11 +32,12 @@ class UserProvider extends ChangeNotifier {
       session: session ?? SessionController(config: resolvedConfig),
       wallet: resolvedWallet,
       listings: listings ?? ListingsController(config: resolvedConfig),
-      deals: deals ?? DealsController(
-        config: resolvedConfig,
-        wallet: resolvedWallet,
-        liveRepository: liveRepository,
-      ),
+      deals: deals ??
+          DealsController(
+            config: resolvedConfig,
+            wallet: resolvedWallet,
+            liveRepository: liveRepository,
+          ),
       liveRepository: liveRepository,
     );
   }
@@ -79,6 +82,7 @@ class UserProvider extends ChangeNotifier {
   double get escrowLockedBalance => _wallet.escrowBalance.asBdt;
   String get nidStatus => _session.nidStatus.name;
   bool get isDarkMode => _session.isDarkMode;
+  ThemeMode get themeMode => _session.themeMode;
   String get userId => _session.userId;
   List<TripModel> get trips => _listings.trips;
   List<PackageModel> get packages => _listings.packages;
@@ -93,6 +97,7 @@ class UserProvider extends ChangeNotifier {
   void toggleRole() => _session.toggleRole();
   void setRole(AppRole role) => _session.setRole(role);
   void toggleTheme() => _session.toggleTheme();
+  void setThemeMode(ThemeMode mode) => _session.setThemeMode(mode);
 
   Future<void> bootstrapSession() async {
     await _session.bootstrap();
@@ -110,6 +115,7 @@ class UserProvider extends ChangeNotifier {
       await _hydrateLiveData(repository);
     }
   }
+
   void startDemoSession(String phone) => _session.startDemoSession(phone);
   Future<void> logout() => _session.logout();
 
@@ -192,7 +198,8 @@ class UserProvider extends ChangeNotifier {
   }) async {
     final repository = _liveRepository;
     if (repository == null) {
-      throw UnsupportedError('Inspection photo upload requires live Supabase mode.');
+      throw UnsupportedError(
+          'Inspection photo upload requires live Supabase mode.');
     }
     return repository.uploadEvidenceImage(
       folder: 'inspection',

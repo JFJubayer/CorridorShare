@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../core/theme/app_colors.dart';
 import '../providers/user_provider.dart';
+import 'ui.dart';
 
 class AuthModal extends StatefulWidget {
   const AuthModal({super.key});
@@ -14,11 +17,16 @@ class _AuthModalState extends State<AuthModal> {
   final TextEditingController _otpController = TextEditingController();
   bool _otpSent = false;
   bool _isLoading = false;
+  String? _error;
 
   Future<void> _sendOtp() async {
-    if (_phoneController.text.isEmpty) return;
+    if (_phoneController.text.trim().isEmpty) {
+      setState(() => _error = 'Enter your mobile number.');
+      return;
+    }
     setState(() {
       _isLoading = true;
+      _error = null;
     });
     try {
       await Provider.of<UserProvider>(context, listen: false)
@@ -30,17 +38,23 @@ class _AuthModalState extends State<AuthModal> {
       });
     } on Object catch (error) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
-      );
+      setState(() {
+        _isLoading = false;
+        _error = '$error';
+      });
     }
   }
 
   Future<void> _verifyOtp() async {
-    if (_otpController.text.length < 6) return;
+    if (_otpController.text.length < 6) {
+      setState(() => _error = 'Enter the six-digit code.');
+      return;
+    }
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       await userProvider.verifyOtp(
         phone: _phoneController.text,
@@ -48,19 +62,16 @@ class _AuthModalState extends State<AuthModal> {
       );
     } on Object catch (error) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
-      );
+      setState(() {
+        _isLoading = false;
+        _error = '$error';
+      });
       return;
     }
     if (!mounted) return;
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Successfully authenticated. NID status will be loaded from your profile.'),
-        backgroundColor: Color(0xFF059669),
-      ),
+      const SnackBar(content: Text('Signed in.')),
     );
   }
 
@@ -70,9 +81,7 @@ class _AuthModalState extends State<AuthModal> {
           .startDemoSession(_phoneController.text);
       Navigator.of(context).pop();
     } on Object catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
-      );
+      setState(() => _error = '$error');
     }
   }
 
@@ -85,107 +94,104 @@ class _AuthModalState extends State<AuthModal> {
 
   @override
   Widget build(BuildContext context) {
+    final isDemo = Provider.of<UserProvider>(context).dataMode.name == 'demo';
     return Dialog(
-      backgroundColor: const Color(0xFF0F172A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      insetPadding: const EdgeInsets.all(24),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.2), shape: BoxShape.circle),
-                  child: const Icon(Icons.shield, color: Colors.orangeAccent, size: 24),
+        padding: const EdgeInsets.all(24),
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_otpSent ? 'Enter the code' : 'Sign in',
+                  style: context.tt.headlineSmall),
+              Gap.xs,
+              Text(
+                _otpSent
+                    ? 'We sent a six-digit code to ${_phoneController.text.trim()}.'
+                    : 'We will text a one-time code to your Bangladesh mobile number.',
+                style: context.tt.bodyMedium,
+              ),
+              Gap.lg,
+              if (!_otpSent)
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  autofocus: true,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _sendOtp(),
+                  decoration: InputDecoration(
+                    labelText: 'Mobile number',
+                    helperText: 'Include the country code, e.g. +8801XXXXXXXXX',
+                    errorText: _error,
+                  ),
+                )
+              else
+                TextField(
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  autofocus: true,
+                  textAlign: TextAlign.center,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _verifyOtp(),
+                  style: context.tt.headlineSmall?.copyWith(letterSpacing: 8),
+                  decoration: InputDecoration(
+                    hintText: '••••••',
+                    counterText: '',
+                    errorText: _error,
+                  ),
                 ),
-                const SizedBox(width: 12),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('CorridorShare Auth', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-                    Text('National NID Verification', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                  ],
+              Gap.lg,
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed:
+                      _isLoading ? null : (_otpSent ? _verifyOtp : _sendOtp),
+                  child: _isLoading
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: context.cs.onSurfaceVariant,
+                          ),
+                        )
+                      : Text(_otpSent ? 'Verify and sign in' : 'Send code'),
+                ),
+              ),
+              if (_otpSent) ...[
+                Gap.sm,
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => setState(() {
+                              _otpSent = false;
+                              _error = null;
+                              _otpController.clear();
+                            }),
+                    child: const Text('Use a different number'),
+                  ),
                 ),
               ],
-            ),
-            const SizedBox(height: 20),
-
-            if (!_otpSent) ...[
-              const Text('Enter your Bangladesh mobile number:', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.phone, color: Colors.orangeAccent),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.orange.withValues(alpha: 0.5)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Colors.orange, width: 2),
+              if (isDemo && !_otpSent) ...[
+                Gap.sm,
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : _startDemoSession,
+                    child: const Text('Continue in demo mode'),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _sendOtp,
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
-                  child: _isLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('SEND SMS OTP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ] else ...[
-              const Text('Enter the 6-digit SMS OTP code:', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _otpController,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                style: const TextStyle(color: Colors.amberAccent, fontSize: 20, letterSpacing: 6, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.lock, color: Colors.amberAccent),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.amber.withValues(alpha: 0.5)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Colors.amber, width: 2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _verifyOtp,
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
-                  child: const Text('VERIFY & LOG IN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
+              ],
             ],
-            if (Provider.of<UserProvider>(context).dataMode.name == 'demo') ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : _startDemoSession,
-                  child: const Text('CONTINUE IN DEMO MODE'),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

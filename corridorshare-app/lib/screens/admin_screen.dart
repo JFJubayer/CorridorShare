@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/config/app_config.dart';
+import '../core/theme/app_colors.dart';
 import '../providers/user_provider.dart';
+import '../widgets/ui.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -34,7 +36,8 @@ class _AdminScreenState extends State<AdminScreen> {
         setState(() {
           _profiles = const [];
           _loading = false;
-          _error = 'Admin NID review uses live profiles via admin_set_nid_status. Switch to DATA_MODE=supabase.';
+          _error =
+              'NID review needs live mode. Start the app with DATA_MODE=supabase.';
         });
         return;
       }
@@ -64,13 +67,12 @@ class _AdminScreenState extends State<AdminScreen> {
       await _load();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('NID status set to $status'), backgroundColor: const Color(0xFF059669)),
+        SnackBar(content: Text('NID status set to $status.')),
       );
     } on Object catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -79,69 +81,71 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   Widget build(BuildContext context) {
     final pending = _profiles.where((p) => p['nid_status'] == 'pending').length;
-    final verified = _profiles.where((p) => p['nid_status'] == 'verified').length;
-    final suspended = _profiles.where((p) => p['nid_status'] == 'suspended').length;
+    final verified =
+        _profiles.where((p) => p['nid_status'] == 'verified').length;
+    final suspended =
+        _profiles.where((p) => p['nid_status'] == 'suspended').length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF051424),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
-        title: const Text('Safety & Verification Console', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        title: const Text('Safety'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.orangeAccent),
-            onPressed: _busy ? null : _load,
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh),
+            onPressed: _busy || _loading ? null : _load,
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Colors.orangeAccent))
+          ? const SkeletonList()
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                 children: [
-                  if (_error != null)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.redAccent),
-                      ),
-                      child: Text('$_error', style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                    ),
-                  const Text('Live NID queue (no fake metrics)', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 12),
+                  if (_error != null) ...[
+                    InlineNotice('$_error', tone: StatusTone.danger),
+                    Gap.lg,
+                  ],
                   Row(
                     children: [
-                      Expanded(child: _metric('Profiles', '${_profiles.length}', Icons.people, Colors.lightBlueAccent)),
-                      const SizedBox(width: 10),
-                      Expanded(child: _metric('Pending', '$pending', Icons.hourglass_top, Colors.amberAccent)),
+                      _Metric('Profiles', _profiles.length),
+                      _Metric('Pending', pending),
+                      _Metric('Verified', verified),
+                      _Metric('Suspended', suspended),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(child: _metric('Verified', '$verified', Icons.verified_user, const Color(0xFF059669))),
-                      const SizedBox(width: 10),
-                      Expanded(child: _metric('Suspended', '$suspended', Icons.gpp_bad, Colors.redAccent)),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  const Text('National NID review', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
+                  Gap.xl,
+                  const SectionHeader('NID review queue'),
+                  Gap.sm,
                   if (_profiles.isEmpty)
-                    const Text('No profiles visible for this session. Admin role is required by RLS.', style: TextStyle(color: Colors.grey))
+                    Panel(
+                      child: Text(
+                        _error == null
+                            ? 'No profiles are visible to this session. The admin role is required.'
+                            : 'Nothing to review.',
+                        style: context.tt.bodyMedium,
+                      ),
+                    )
                   else
-                    ..._profiles.map(_profileCard),
+                    Panel(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < _profiles.length; i++) ...[
+                            if (i > 0) const Divider(indent: 16, endIndent: 16),
+                            _profileRow(_profiles[i]),
+                          ],
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
     );
   }
-
 
   Future<void> _creditWallet(String profileId) async {
     final amountController = TextEditingController(text: '500');
@@ -149,44 +153,34 @@ class _AdminScreenState extends State<AdminScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F172A),
-        title: const Text('admin_credit_wallet', style: TextStyle(color: Colors.white, fontSize: 16)),
+        title: const Text('Credit wallet'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Manual staging funding only — not a payment provider.',
-              style: TextStyle(color: Colors.amberAccent, fontSize: 12),
-            ),
-            const SizedBox(height: 12),
+            const Text('Manual staging credit. This is not a payment.'),
+            Gap.md,
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Amount (BDT)',
-                labelStyle: TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-              ),
+              autofocus: true,
+              decoration:
+                  const InputDecoration(labelText: 'Amount', prefixText: '৳ '),
             ),
-            const SizedBox(height: 10),
+            Gap.md,
             TextField(
               controller: noteController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Note',
-                labelStyle: TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-              ),
+              decoration: const InputDecoration(labelText: 'Note'),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL', style: TextStyle(color: Colors.grey))),
-          ElevatedButton(
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
-            child: const Text('CREDIT', style: TextStyle(color: Colors.white)),
+            child: const Text('Credit'),
           ),
         ],
       ),
@@ -203,7 +197,7 @@ class _AdminScreenState extends State<AdminScreen> {
     if (bdt == null || bdt <= 0) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Amount must be a positive BDT value.'), backgroundColor: Colors.redAccent),
+        const SnackBar(content: Text('Amount must be a positive value.')),
       );
       return;
     }
@@ -215,119 +209,133 @@ class _AdminScreenState extends State<AdminScreen> {
       await repository.adminCreditWallet(
         profileId: profileId,
         amountMinor: (bdt * 100).round(),
-        idempotencyKey: 'admin-credit-$profileId-${DateTime.now().microsecondsSinceEpoch}',
+        idempotencyKey:
+            'admin-credit-$profileId-${DateTime.now().microsecondsSinceEpoch}',
         note: note.isEmpty ? null : note,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Credited ৳${bdt.toStringAsFixed(0)} via admin_credit_wallet'), backgroundColor: const Color(0xFF059669)),
+        SnackBar(content: Text('Credited ৳${bdt.toStringAsFixed(0)}.')),
       );
     } on Object catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$error'), backgroundColor: Colors.redAccent),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Widget _metric(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 10),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        ],
-      ),
-    );
-  }
-
-  Widget _profileCard(Map<String, dynamic> profile) {
+  Widget _profileRow(Map<String, dynamic> profile) {
     final status = (profile['nid_status'] as String?) ?? 'unverified';
-    final statusColor = switch (status) {
-      'verified' => const Color(0xFF059669),
-      'pending' => Colors.amber,
-      'suspended' => Colors.redAccent,
-      _ => Colors.grey,
+    final tone = switch (status) {
+      'verified' => StatusTone.ok,
+      'pending' => StatusTone.pending,
+      'suspended' => StatusTone.danger,
+      _ => StatusTone.neutral,
     };
     final name = (profile['full_name'] as String?)?.trim().isNotEmpty == true
         ? profile['full_name'] as String
         : 'Unnamed member';
     final phone = (profile['phone_number'] as String?) ?? 'No phone';
     final photo = profile['nid_photo_url'] as String?;
+    final id = profile['id'] as String;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: statusColor.withValues(alpha: 0.15),
-                backgroundImage: photo != null && photo.isNotEmpty ? NetworkImage(photo) : null,
-                child: photo == null || photo.isEmpty ? Icon(Icons.person, color: statusColor, size: 18) : null,
+              InitialsAvatar(
+                name,
+                image: photo != null && photo.isNotEmpty
+                    ? NetworkImage(photo)
+                    : null,
               ),
-              const SizedBox(width: 12),
+              Gap.md,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                    Text('$phone • ${profile['id']}', style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                    Text(name, style: context.tt.titleSmall),
+                    Text(phone, style: context.tt.bodySmall),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
-                child: Text(status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
+              StatusText(_statusLabel(status), tone: tone),
             ],
           ),
-          const SizedBox(height: 12),
+          Gap.md,
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
+              if (status != 'verified')
+                FilledButton(
+                  onPressed: _busy ? null : () => _setStatus(id, 'verified'),
+                  style: _compact,
+                  child: const Text('Verify'),
+                ),
+              if (status != 'pending')
+                OutlinedButton(
+                  onPressed: _busy ? null : () => _setStatus(id, 'pending'),
+                  style: _compact,
+                  child: const Text('Mark pending'),
+                ),
               OutlinedButton(
-                onPressed: _busy ? null : () => _setStatus(profile['id'] as String, 'pending'),
-                child: const Text('Mark pending'),
+                onPressed: _busy ? null : () => _creditWallet(id),
+                style: _compact,
+                child: const Text('Credit wallet'),
               ),
-              ElevatedButton(
-                onPressed: _busy ? null : () => _setStatus(profile['id'] as String, 'verified'),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669)),
-                child: const Text('Verify', style: TextStyle(color: Colors.white)),
-              ),
-              ElevatedButton(
-                onPressed: _busy ? null : () => _setStatus(profile['id'] as String, 'suspended'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                child: const Text('Suspend', style: TextStyle(color: Colors.white)),
-              ),
-              OutlinedButton.icon(
-                onPressed: _busy ? null : () => _creditWallet(profile['id'] as String),
-                icon: const Icon(Icons.account_balance_wallet, size: 14),
-                label: const Text('Credit wallet'),
-              ),
+              if (status != 'suspended')
+                TextButton(
+                  onPressed: _busy ? null : () => _setStatus(id, 'suspended'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.appColors.danger,
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  child: const Text('Suspend'),
+                ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  static final _compact = ButtonStyle(
+    minimumSize: const WidgetStatePropertyAll(Size(0, 36)),
+    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14)),
+    textStyle: WidgetStatePropertyAll(
+      const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+    ),
+  );
+
+  static String _statusLabel(String status) => switch (status) {
+        'verified' => 'Verified',
+        'pending' => 'Pending',
+        'suspended' => 'Suspended',
+        _ => 'Unverified',
+      };
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric(this.label, this.value);
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('$value', style: context.tt.headlineSmall),
+          Text(label, style: context.tt.labelSmall),
         ],
       ),
     );

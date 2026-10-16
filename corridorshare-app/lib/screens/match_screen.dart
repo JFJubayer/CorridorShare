@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/theme/app_colors.dart';
 import '../models/package_model.dart';
 import '../models/trip_model.dart';
 import '../providers/user_provider.dart';
 import '../widgets/map_corridor.dart';
+import '../widgets/ui.dart';
 import 'deal_chat_screen.dart';
 
 class MatchScreen extends StatefulWidget {
@@ -37,9 +39,12 @@ class _MatchScreenState extends State<MatchScreen> {
         }
       }
     }
-    final myTrips = provider.trips.where((t) => t.travelerId == provider.userId).toList();
+    final myTrips =
+        provider.trips.where((t) => t.travelerId == provider.userId).toList();
     final fallback = preferred ??
-        (myTrips.isNotEmpty ? myTrips.first : (provider.trips.isNotEmpty ? provider.trips.first : null));
+        (myTrips.isNotEmpty
+            ? myTrips.first
+            : (provider.trips.isNotEmpty ? provider.trips.first : null));
     if (_selectedTrip == null && fallback != null) {
       _selectedTrip = fallback;
       WidgetsBinding.instance.addPostFrameCallback((_) => _runMatch());
@@ -60,7 +65,8 @@ class _MatchScreenState extends State<MatchScreen> {
       _error = null;
     });
     try {
-      final matches = await context.read<UserProvider>().matchPackagesForTrip(trip.id);
+      final matches =
+          await context.read<UserProvider>().matchPackagesForTrip(trip.id);
       if (!mounted) return;
       setState(() {
         _matches = matches;
@@ -76,78 +82,91 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   void _showDetourDialog(PackageModel pkg) {
-    final offerController = TextEditingController(text: (pkg.proposedReward + 100).toStringAsFixed(0));
+    final offerController = TextEditingController(
+        text: (pkg.proposedReward + 100).toStringAsFixed(0));
+    String? error;
 
     showDialog<void>(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF0F172A),
-          title: const Row(
-            children: [
-              Icon(Icons.alt_route, color: Colors.orangeAccent, size: 22),
-              SizedBox(width: 8),
-              Text('Near-Miss Detour Offer', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'This package is ${pkg.distanceFromCorridor.toStringAsFixed(0)} meters off your corridor. Propose a detour compensation bonus:',
-                style: TextStyle(color: Colors.grey[400], fontSize: 12),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: offerController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.amberAccent, fontSize: 20, fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  prefixText: '৳ ',
-                  prefixStyle: TextStyle(color: Colors.amberAccent, fontSize: 20, fontWeight: FontWeight.bold),
-                  labelText: 'Offered Reward (BDT)',
-                  labelStyle: TextStyle(color: Colors.grey),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: const Text('Offer a detour price'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This pickup is ${pkg.distanceFromCorridor.toStringAsFixed(0)} m off your route. '
+                  'Propose a price that covers the detour.',
                 ),
+                Gap.md,
+                TextField(
+                  controller: offerController,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  style: ctx.tt.headlineSmall,
+                  decoration: InputDecoration(
+                    prefixText: '৳ ',
+                    prefixStyle: ctx.tt.headlineSmall,
+                    errorText: error,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final offer = double.tryParse(offerController.text);
+                  if (offer == null || offer <= 0) {
+                    setDialogState(() => error = 'Enter a positive amount.');
+                    return;
+                  }
+                  final tripId = _selectedTrip?.id;
+                  if (tripId == null) {
+                    setDialogState(() => error = 'Select a trip first.');
+                    return;
+                  }
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => DealChatScreen(
+                        package: pkg,
+                        tripId: tripId,
+                        agreedReward: offer,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Send offer'),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final offer = double.tryParse(offerController.text);
-                if (offer == null || offer <= 0) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Offer must be a positive amount.')));
-                  return;
-                }
-                final tripId = _selectedTrip?.id;
-                if (tripId == null) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Select a trip before sending an offer.')));
-                  return;
-                }
-                Navigator.of(ctx).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => DealChatScreen(
-                      package: pkg,
-                      tripId: tripId,
-                      agreedReward: offer,
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
-              child: const Text('SEND OFFER', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
         );
       },
     ).whenComplete(offerController.dispose);
+  }
+
+  void _openDeal(PackageModel pkg) {
+    if (pkg.isNearMiss) {
+      _showDetourDialog(pkg);
+      return;
+    }
+    final tripId = _selectedTrip?.id;
+    if (tripId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a trip before opening a deal.')),
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+          builder: (_) => DealChatScreen(package: pkg, tripId: tripId)),
+    );
   }
 
   @override
@@ -156,46 +175,34 @@ class _MatchScreenState extends State<MatchScreen> {
     final tripOptions = userProvider.trips;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF051424),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
-        title: Text(
-          _selectedTrip == null
-              ? 'Bangladesh corridor matching'
-              : '${_selectedTrip!.departureCity} → ${_selectedTrip!.destinationCity}',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-        ),
+        title: const Text('Matching'),
         actions: [
           IconButton(
+            tooltip: 'Refresh matches',
             onPressed: _loading ? null : _runMatch,
-            icon: const Icon(Icons.refresh, color: Colors.orangeAccent),
+            icon: const Icon(Icons.refresh),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: DropdownButtonFormField<String>(
               initialValue: _selectedTrip?.id,
-              dropdownColor: const Color(0xFF0F172A),
-              decoration: const InputDecoration(
-                labelText: 'Match against your trip (RPC)',
-                labelStyle: TextStyle(color: Colors.grey),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.orange)),
-              ),
-              items: tripOptions
-                  .map(
-                    (trip) => DropdownMenuItem(
-                      value: trip.id,
-                      child: Text(
-                        '${trip.departureCity} → ${trip.destinationCity}',
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+              decoration: const InputDecoration(labelText: 'Your trip'),
+              items: [
+                for (final trip in tripOptions)
+                  DropdownMenuItem(
+                    value: trip.id,
+                    child: Text(
+                      '${trip.departureCity} → ${trip.destinationCity}',
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  )
-                  .toList(),
+                  ),
+              ],
               onChanged: (id) {
                 TripModel? trip;
                 for (final candidate in tripOptions) {
@@ -209,135 +216,155 @@ class _MatchScreenState extends State<MatchScreen> {
               },
             ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.36,
-            child: MapCorridorWidget(
-              packages: _matches,
-              routePoints: _selectedTrip?.routePoints ?? const [],
-              onPackageTap: (pkg) => setState(() => _selectedPackage = pkg),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.32,
+              child: MapCorridorWidget(
+                packages: _matches,
+                routePoints: _selectedTrip?.routePoints ?? const [],
+                onPackageTap: (pkg) => setState(() => _selectedPackage = pkg),
+              ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(14),
-            color: const Color(0xFF0F172A),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.flash_on, color: Colors.orangeAccent, size: 20),
-                    const SizedBox(width: 6),
-                    Text(
-                      _loading ? 'Matching…' : '${_matches.length} RPC Matches',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF059669).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
+                Expanded(
+                  child: Text(
+                    _loading
+                        ? 'Finding packages'
+                        : '${_matches.length} ${_matches.length == 1 ? 'package' : 'packages'} on this route',
+                    style: context.tt.titleMedium,
                   ),
-                  child: const Text('match_packages_within_corridor', style: TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
+                if (_loading)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
               ],
             ),
           ),
           if (_error != null)
             Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text('$_error', style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: InlineNotice('$_error', tone: StatusTone.danger),
             ),
           Expanded(
-            child: _matches.isEmpty && !_loading
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        tripOptions.isEmpty
-                            ? 'No trips yet. Post a trip from Dashboard, then match packages along your corridor.'
+            child: _loading && _matches.isEmpty
+                ? const SkeletonList(rows: 3)
+                : _matches.isEmpty
+                    ? EmptyState(
+                        icon: Icons.alt_route,
+                        title: tripOptions.isEmpty
+                            ? 'No trips yet'
+                            : 'No packages matched',
+                        message: tripOptions.isEmpty
+                            ? 'Post a trip from Home, then come back to see packages along it.'
                             : (_error == null
-                                ? 'No packages matched this corridor yet. Pull refresh or widen the trip selection.'
-                                : 'Matching failed. Fix the error above and retry.'),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
+                                ? 'Nothing is waiting on this route right now. Refresh or pick another trip.'
+                                : 'Fix the error above and try again.'),
+                        actionLabel: tripOptions.isEmpty ? null : 'Refresh',
+                        onAction: tripOptions.isEmpty ? null : _runMatch,
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        itemCount: _matches.length,
+                        separatorBuilder: (_, __) => const Divider(),
+                        itemBuilder: (ctx, idx) {
+                          final pkg = _matches[idx];
+                          final isSelected = _selectedPackage?.id == pkg.id;
+                          return _MatchRow(
+                            package: pkg,
+                            selected: isSelected,
+                            onTap: () => setState(() => _selectedPackage = pkg),
+                            onOpen: () => _openDeal(pkg),
+                          );
+                        },
                       ),
-                    ),
-                  )
-                : ListView.builder(
-              padding: const EdgeInsets.all(14),
-              itemCount: _matches.length,
-              itemBuilder: (ctx, idx) {
-                final pkg = _matches[idx];
-                final isSelected = _selectedPackage?.id == pkg.id;
-                return Card(
-                  color: isSelected ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(
-                      color: pkg.isNearMiss ? Colors.amber : (isSelected ? Colors.orange : Colors.white10),
-                      width: isSelected ? 2 : 1,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(pkg.itemDescription, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                            ),
-                            Text('৳ ${pkg.proposedReward.toStringAsFixed(0)}', style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.w900, fontSize: 16)),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text('Route: ${pkg.routeInfo} • ${pkg.etaLabel}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if (pkg.isNearMiss)
-                              Text('⚠️ Detour: +${pkg.distanceFromCorridor.toStringAsFixed(0)}m', style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.bold))
-                            else
-                              const Text('Within corridor buffer', style: TextStyle(color: Color(0xFF059669), fontSize: 11, fontWeight: FontWeight.bold)),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (pkg.isNearMiss) {
-                                  _showDetourDialog(pkg);
-                                } else {
-                                  final tripId = _selectedTrip?.id;
-                                  if (tripId == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Select a trip before opening a deal room.')),
-                                    );
-                                    return;
-                                  }
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => DealChatScreen(package: pkg, tripId: tripId),
-                                    ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF97316)),
-                              child: Text(pkg.isNearMiss ? 'PROPOSE OFFER' : 'DEAL ROOM', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MatchRow extends StatelessWidget {
+  const _MatchRow({
+    required this.package,
+    required this.selected,
+    required this.onTap,
+    required this.onOpen,
+  });
+
+  final PackageModel package;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: selected ? context.cs.surfaceContainerLow : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(package.itemDescription,
+                        style: context.tt.titleSmall),
+                  ),
+                  Gap.md,
+                  Text('৳ ${package.proposedReward.toStringAsFixed(0)}',
+                      style: context.tt.titleMedium),
+                ],
+              ),
+              Gap.xs,
+              Text('${package.routeInfo} · ${package.etaLabel}',
+                  style: context.tt.bodySmall),
+              Gap.md,
+              Row(
+                children: [
+                  Expanded(
+                    child: package.isNearMiss
+                        ? StatusText(
+                            '${package.distanceFromCorridor.toStringAsFixed(0)} m detour',
+                            tone: StatusTone.pending,
+                            icon: Icons.alt_route,
+                          )
+                        : const StatusText('On your route',
+                            tone: StatusTone.ok),
+                  ),
+                  OutlinedButton(
+                    onPressed: onOpen,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      textStyle: context.tt.labelMedium,
+                    ),
+                    child:
+                        Text(package.isNearMiss ? 'Make offer' : 'Open deal'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

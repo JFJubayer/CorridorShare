@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/app_colors.dart';
+import 'ui.dart';
+
 class SurchargeCalculatorWidget extends StatefulWidget {
   final VoidCallback? onShipPressed;
   const SurchargeCalculatorWidget({super.key, this.onShipPressed});
 
   @override
-  State<SurchargeCalculatorWidget> createState() => _SurchargeCalculatorWidgetState();
+  State<SurchargeCalculatorWidget> createState() =>
+      _SurchargeCalculatorWidgetState();
 }
 
 class _SurchargeCalculatorWidgetState extends State<SurchargeCalculatorWidget> {
@@ -16,145 +20,91 @@ class _SurchargeCalculatorWidgetState extends State<SurchargeCalculatorWidget> {
     return (200 + weightKg * 40 + radiusKm * 25).round();
   }
 
+  Widget _slider({
+    required String label,
+    required String value,
+    required double current,
+    required double min,
+    required double max,
+    required int divisions,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(label, style: context.tt.bodyMedium)),
+            Text(value, style: context.tt.titleSmall),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+          ),
+          child: Slider(
+            value: current,
+            min: min,
+            max: max,
+            divisions: divisions,
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A), // Stitch surface container
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E293B)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFF97316).withValues(alpha: 0.15),
-            blurRadius: 15,
-            spreadRadius: 1,
-          )
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
+    return Panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
-              Icon(Icons.calculate, color: Color(0xFFF97316), size: 22),
-              SizedBox(width: 8),
-              Text(
-                'Earnings Estimator',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+          _slider(
+            label: 'Parcel weight',
+            value: '${weightKg.toStringAsFixed(0)} kg',
+            current: weightKg,
+            min: 1,
+            max: 20,
+            divisions: 19,
+            onChanged: (v) => setState(() => weightKg = v),
           ),
-          const SizedBox(height: 16),
-
-          // Parcel Weight slider
-          Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Parcel Weight', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                  Text(
-                    '${weightKg.toStringAsFixed(0)} kg',
-                    style: const TextStyle(color: Color(0xFFF97316), fontSize: 14, fontWeight: FontWeight.w900),
-                  ),
-                ],
-              ),
-              Slider(
-                value: weightKg,
-                min: 1.0,
-                max: 20.0,
-                divisions: 19,
-                activeColor: const Color(0xFFF97316),
-                inactiveColor: const Color(0xFF273647),
-                onChanged: (val) {
-                  setState(() {
-                    weightKg = val;
-                  });
-                },
-              ),
-
-              // Detour Radius slider
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Detour Radius', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                  Text(
-                    '${radiusKm.toStringAsFixed(0)} km',
-                    style: const TextStyle(color: Color(0xFFF97316), fontSize: 14, fontWeight: FontWeight.w900),
-                  ),
-                ],
-              ),
-              Slider(
-                value: radiusKm,
-                min: 0.0,
-                max: 10.0,
-                divisions: 10,
-                activeColor: const Color(0xFFF97316),
-                inactiveColor: const Color(0xFF273647),
-                onChanged: (val) {
-                  setState(() {
-                    radiusKm = val;
-                  });
-                },
-              ),
-            ],
+          _slider(
+            label: 'Detour radius',
+            value: '${radiusKm.toStringAsFixed(0)} km',
+            current: radiusKm,
+            min: 0,
+            max: 10,
+            divisions: 10,
+            onChanged: (v) => setState(() => radiusKm = v),
           ),
-
-          const SizedBox(height: 12),
-          const Divider(color: Color(0xFF1E293B)),
-          const SizedBox(height: 8),
-
-          // Price result display
+          Gap.sm,
+          const Divider(),
+          Gap.md,
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Estimated Earning',
-                    style: TextStyle(
-                      color: Color(0xFFE0C0B1),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Text(
-                      '$estimatedEarning BDT',
-                      key: ValueKey(estimatedEarning),
-                      style: const TextStyle(
-                        color: Color(0xFFF97316),
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Estimated earning', style: context.tt.labelMedium),
+                    Gap.xs,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      switchInCurve: Curves.easeOutCubic,
+                      child: Text(
+                        '৳ $estimatedEarning',
+                        key: ValueKey(estimatedEarning),
+                        style: context.tt.headlineSmall,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              ElevatedButton(
+              FilledButton(
                 onPressed: widget.onShipPressed,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF97316),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                ),
-                child: const Text(
-                  'Post Trip',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
+                child: const Text('Post trip'),
               ),
             ],
           ),

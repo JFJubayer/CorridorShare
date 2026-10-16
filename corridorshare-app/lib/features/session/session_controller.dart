@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/app_config.dart';
@@ -14,7 +15,7 @@ class SessionController extends ChangeNotifier {
   bool _isAuthenticated = false;
   String _phone = '';
   NidStatus _nidStatus = NidStatus.unverified;
-  bool _isDarkMode = true;
+  ThemeMode _themeMode = ThemeMode.system;
   String _userId = '00000000-0000-4000-8000-000000000111';
 
   AppRole get role => _role;
@@ -22,7 +23,8 @@ class SessionController extends ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   String get phone => _phone;
   NidStatus get nidStatus => _nidStatus;
-  bool get isDarkMode => _isDarkMode;
+  ThemeMode get themeMode => _themeMode;
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
   String get userId => _userId;
 
   void toggleRole() {
@@ -36,9 +38,14 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleTheme() {
-    _isDarkMode = !_isDarkMode;
+  void setThemeMode(ThemeMode mode) {
+    if (_themeMode == mode) return;
+    _themeMode = mode;
     notifyListeners();
+  }
+
+  void toggleTheme() {
+    setThemeMode(isDarkMode ? ThemeMode.light : ThemeMode.dark);
   }
 
   Future<void> bootstrap() async {

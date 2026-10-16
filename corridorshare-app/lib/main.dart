@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'core/config/app_config.dart';
 import 'core/theme/app_colors.dart';
+import 'core/theme/app_theme.dart';
 import 'providers/user_provider.dart';
+import 'screens/admin_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/match_screen.dart';
 import 'screens/messages_screen.dart';
-import 'screens/admin_screen.dart';
 import 'widgets/auth_modal.dart';
+import 'widgets/ui.dart';
+
+// TEMP: set to false to re-enable the sign-in gate.
+const bool kDisableAuth = true;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,29 +46,11 @@ class CorridorShareApp extends StatelessWidget {
       child: Consumer<UserProvider>(
         builder: (context, userProvider, child) {
           return MaterialApp(
-            title: 'CorridorShare Mobile App',
+            title: 'CorridorShare',
             debugShowCheckedModeBanner: false,
-            themeMode: userProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            theme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.light,
-              scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.brand,
-                brightness: Brightness.light,
-              ),
-              textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
-            ),
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.dark,
-              scaffoldBackgroundColor: AppColors.canvasDark,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.brand,
-                brightness: Brightness.dark,
-              ),
-              textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-            ),
+            themeMode: userProvider.themeMode,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
             home: const SessionGate(),
           );
         },
@@ -96,8 +83,14 @@ class _SessionGateState extends State<SessionGate> {
   }
 
   Future<void> _bootstrap() async {
+    final provider = context.read<UserProvider>();
     try {
-      await context.read<UserProvider>().bootstrapSession();
+      await provider.bootstrapSession();
+      if (kDisableAuth &&
+          !provider.isAuthenticated &&
+          provider.dataMode == AppDataMode.demo) {
+        provider.startDemoSession('01700000000');
+      }
     } finally {
       if (mounted) setState(() => _bootstrapping = false);
     }
@@ -107,10 +100,16 @@ class _SessionGateState extends State<SessionGate> {
   Widget build(BuildContext context) {
     if (_bootstrapping) {
       return const Scaffold(
-        backgroundColor: AppColors.canvasDark,
-        body: Center(child: CircularProgressIndicator(color: AppColors.brand)),
+        body: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       );
     }
+    if (kDisableAuth) return const MainNavigationShell();
     return context.watch<UserProvider>().isAuthenticated
         ? const MainNavigationShell()
         : const SignInScreen();
@@ -122,33 +121,32 @@ class SignInScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.canvasDark,
-        body: Center(
+        body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 32),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.alt_route, color: AppColors.brand, size: 56),
-                const SizedBox(height: 16),
-                const Text(
-                  'Welcome to CorridorShare',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 24),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Sign in to post trips, discuss deals, and view your wallet.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.mutedText),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => showDialog<void>(
-                    context: context,
-                    builder: (_) => const AuthModal(),
+                Icon(Icons.alt_route, color: context.cs.onSurface, size: 32),
+                const Spacer(),
+                Text('CorridorShare', style: context.tt.headlineMedium),
+                Gap.sm,
+                Text(
+                  'Post trips, agree on deals, and hold payment in escrow until delivery is confirmed.',
+                  style: context.tt.bodyLarge?.copyWith(
+                    color: context.cs.onSurfaceVariant,
                   ),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.brand),
-                  child: const Text('SIGN IN', style: TextStyle(color: Colors.white)),
+                ),
+                Gap.xl,
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => const AuthModal(),
+                    ),
+                    child: const Text('Sign in'),
+                  ),
                 ),
               ],
             ),
@@ -211,24 +209,24 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         children: [
           if (_bannerReady && _showPrivateBetaBanner)
             Material(
-              color: const Color(0xFF7C2D12),
+              color: context.cs.surfaceContainerLow,
               child: SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Friends private beta — OTP sign-in, matching, deal chat, meetup pins, and escrow OTP work. Live payments and continuous GPS are not included; use admin wallet credit for staging.',
-                          style: TextStyle(color: Colors.white, fontSize: 11, height: 1.3),
+                          'Private beta. Live payments and continuous GPS are off; wallets are funded by an admin.',
+                          style: context.tt.bodySmall,
                         ),
                       ),
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         onPressed: _dismissBanner,
-                        icon: const Icon(Icons.close, color: Colors.white70, size: 18),
-                        tooltip: 'Dismiss friends beta banner',
+                        icon: const Icon(Icons.close, size: 18),
+                        tooltip: 'Dismiss',
                       ),
                     ],
                   ),
@@ -236,42 +234,32 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               ),
             ),
           Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: _pages,
-            ),
+            child: IndexedStack(index: _currentIndex, children: _pages),
           ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (idx) {
-          setState(() {
-            _currentIndex = idx;
-          });
-        },
-        backgroundColor: AppColors.surfaceDark,
-        indicatorColor: AppColors.brand.withValues(alpha: 0.2),
-        elevation: 10,
+        onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined, color: Colors.grey),
-            selectedIcon: Icon(Icons.dashboard, color: AppColors.brand),
-            label: 'Dashboard',
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.alt_route_outlined, color: Colors.grey),
-            selectedIcon: Icon(Icons.alt_route, color: AppColors.brand),
+            icon: Icon(Icons.alt_route_outlined),
+            selectedIcon: Icon(Icons.alt_route),
             label: 'Matching',
           ),
           NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline, color: Colors.grey),
-            selectedIcon: Icon(Icons.chat_bubble, color: AppColors.brand),
-            label: 'Messages',
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Deals',
           ),
           NavigationDestination(
-            icon: Icon(Icons.shield_outlined, color: Colors.grey),
-            selectedIcon: Icon(Icons.shield, color: AppColors.brand),
+            icon: Icon(Icons.shield_outlined),
+            selectedIcon: Icon(Icons.shield),
             label: 'Safety',
           ),
         ],
@@ -287,15 +275,22 @@ class ConfigurationErrorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
         home: Scaffold(
-          backgroundColor: AppColors.canvasDark,
           body: Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text(
-                'CorridorShare could not start.\n$error',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'CorridorShare could not start',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text('$error', textAlign: TextAlign.center),
+                ],
               ),
             ),
           ),
