@@ -9,6 +9,17 @@ abstract class AuthDataSource {
     required String verificationId,
     required String code,
   });
+  Future<Result<UserDto>> signInWithEmail({
+    required String email,
+    required String password,
+  });
+  Future<Result<UserDto>> signUpWithEmail({
+    required String email,
+    required String password,
+    String? name,
+  });
+  Future<Result<void>> sendPasswordResetEmail(String email);
   Future<void> signOut();
   Stream<UserDto?> authStateChanges();
+  UserDto? get currentUser;
 }

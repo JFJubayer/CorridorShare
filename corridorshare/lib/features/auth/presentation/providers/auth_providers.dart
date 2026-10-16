@@ -1,15 +1,20 @@
 import 'dart:async';
 
+import 'package:corridorshare/core/di/injection.dart';
 import 'package:corridorshare/core/errors/failure.dart';
 import 'package:corridorshare/core/utils/result.dart';
-import 'package:corridorshare/features/auth/data/datasources/auth_datasource.dart';
-import 'package:corridorshare/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:corridorshare/features/auth/domain/entities/auth_user.dart';
-import 'package:corridorshare/features/auth/domain/repositories/auth_repository.dart';
 import 'package:corridorshare/features/auth/domain/usecases/request_otp.dart';
+import 'package:corridorshare/features/auth/domain/usecases/send_password_reset.dart';
+import 'package:corridorshare/features/auth/domain/usecases/sign_in_with_email.dart';
+import 'package:corridorshare/features/auth/domain/usecases/sign_out.dart';
+import 'package:corridorshare/features/auth/domain/usecases/sign_up_with_email.dart';
 import 'package:corridorshare/features/auth/domain/usecases/verify_otp.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+export 'package:corridorshare/core/di/injection.dart'
+    show authDataSourceProvider, authRepositoryProvider;
 
 /// Auth state machine surfaced to widgets.
 sealed class AuthState {
@@ -49,26 +54,28 @@ extension AuthStateX on AuthState {
       };
 }
 
-/// Default data source used when the app boots without Firebase wired up.
-/// Real Firebase wiring replaces this in Increment 1, part 2.
-final Provider<AuthDataSource> authDataSourceProvider = Provider<AuthDataSource>(
-  (Ref ref) => throw UnimplementedError(
-    'Override authDataSourceProvider in ProviderScope for tests or with '
-    'FirebaseAuthDataSource when FIREBASE_ENABLED=true.',
-  ),
-);
-
-final Provider<AuthRepository> authRepositoryProvider =
-    Provider<AuthRepository>(
-  (Ref ref) => AuthRepositoryImpl(ref.watch(authDataSourceProvider)),
-);
-
 final Provider<RequestOtp> requestOtpProvider = Provider<RequestOtp>(
   (Ref ref) => RequestOtp(ref.watch(authRepositoryProvider)),
 );
 
 final Provider<VerifyOtp> verifyOtpProvider = Provider<VerifyOtp>(
   (Ref ref) => VerifyOtp(ref.watch(authRepositoryProvider)),
+);
+
+final Provider<SignInWithEmail> signInWithEmailProvider = Provider<SignInWithEmail>(
+  (Ref ref) => SignInWithEmail(ref.watch(authRepositoryProvider)),
+);
+
+final Provider<SignUpWithEmail> signUpWithEmailProvider = Provider<SignUpWithEmail>(
+  (Ref ref) => SignUpWithEmail(ref.watch(authRepositoryProvider)),
+);
+
+final Provider<SendPasswordReset> sendPasswordResetProvider = Provider<SendPasswordReset>(
+  (Ref ref) => SendPasswordReset(ref.watch(authRepositoryProvider)),
+);
+
+final Provider<SignOut> signOutProvider = Provider<SignOut>(
+  (Ref ref) => SignOut(ref.watch(authRepositoryProvider)),
 );
 
 /// Top-level auth controller. Owns the [AuthState] and reacts to repo
@@ -78,6 +85,10 @@ class AuthController extends StateNotifier<AuthState> {
     final Stream<AuthUser?> stream =
         _ref.read(authRepositoryProvider).authStateChanges();
     _sub = stream.listen(_onUserChanged);
+    final AuthUser? current = _ref.read(authRepositoryProvider).currentUser;
+    if (current != null) {
+      state = AuthAuthenticated(current);
+    }
   }
 
   final Ref _ref;
@@ -123,8 +134,7 @@ class AuthController extends StateNotifier<AuthState> {
     );
     result.fold(
       (user) {
-        // The repo stream will also fire; this is a fast-path so the UI can
-        // navigate immediately.
+        // Fast-path so the UI can navigate immediately.
         state = AuthAuthenticated(user);
       },
       (failure) {
@@ -137,8 +147,42 @@ class AuthController extends StateNotifier<AuthState> {
     );
   }
 
+  Future<Result<AuthUser>> signInWithEmail(String email, String password) async {
+    final Result<AuthUser> result = await _ref.read(signInWithEmailProvider)(
+      email: email,
+      password: password,
+    );
+    result.fold(
+      (user) => state = AuthAuthenticated(user),
+      (failure) => state = AuthUnauthenticated(lastFailure: failure),
+    );
+    return result;
+  }
+
+  Future<Result<AuthUser>> signUpWithEmail(
+    String email,
+    String password, {
+    String? name,
+  }) async {
+    final Result<AuthUser> result = await _ref.read(signUpWithEmailProvider)(
+      email: email,
+      password: password,
+      name: name,
+    );
+    result.fold(
+      (user) => state = AuthAuthenticated(user),
+      (failure) => state = AuthUnauthenticated(lastFailure: failure),
+    );
+    return result;
+  }
+
+  Future<Result<void>> sendPasswordReset(String email) async {
+    return _ref.read(sendPasswordResetProvider)(email);
+  }
+
   Future<void> signOut() async {
-    await _ref.read(authRepositoryProvider).signOut();
+    await _ref.read(signOutProvider)();
+    state = const AuthUnauthenticated();
   }
 
   @override
@@ -152,6 +196,12 @@ final StateNotifierProvider<AuthController, AuthState> authControllerProvider =
     StateNotifierProvider<AuthController, AuthState>(
   (Ref ref) => AuthController(ref),
 );
+
+/// Helper provider returning the currently authenticated user if logged in.
+final Provider<AuthUser?> currentUserProvider = Provider<AuthUser?>((Ref ref) {
+  final AuthState authState = ref.watch(authControllerProvider);
+  return authState.user;
+});
 
 /// Locale controller used by the language switch in the profile tab.
 class LocaleController extends StateNotifier<Locale> {

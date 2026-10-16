@@ -9,7 +9,8 @@ part 'user_dto.g.dart';
 abstract class UserDto with _$UserDto {
   const factory UserDto({
     required String id,
-    required String phone,
+    @Default('') String phone,
+    @Default('') String email,
     @Default('') String name,
     @Default(false) bool verified,
     @Default(0.0) double ratingAvg,

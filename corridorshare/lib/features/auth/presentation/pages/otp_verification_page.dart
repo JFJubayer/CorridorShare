@@ -1,7 +1,9 @@
+import 'package:corridorshare/core/router/app_router.dart';
 import 'package:corridorshare/features/auth/presentation/providers/auth_providers.dart';
 import 'package:corridorshare/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class OtpVerificationPage extends ConsumerStatefulWidget {
   const OtpVerificationPage({super.key});
@@ -27,8 +29,17 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
     }
     setState(() => _submitting = true);
     await ref.read(authControllerProvider.notifier).verifyOtp(_controller.text);
-    if (mounted) {
-      setState(() => _submitting = false);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _submitting = false);
+    final AuthState state = ref.read(authControllerProvider);
+    if (state is AuthAuthenticated) {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(AppRoutes.home);
+      }
     }
   }
 

@@ -105,6 +105,24 @@ assumed, what verification ran, and the three next tasks for the team.
    Chat is bound to deals and uses Firestore listeners, with messages
    stored under `deals/{id}/messages`.
 
+## Auth bypass (interim, 2026-10-11)
+
+While we focus on the first product features, the auth feature is parked
+but the code is kept. The router boots directly into the bottom-nav shell
+at `/home`, no redirect is wired, and `/auth` plus `/auth/otp` remain
+reachable from the profile tab as a "Sign in" tile. The phone entry page
+calls `context.go('/auth/otp')` after a successful `requestOtp` so the
+flow still works without the redirect.
+
+To re-enable auth gating when Firebase Phone OTP is wired in:
+
+- Restore the `redirect` and `refreshListenable` block in
+  `appRouterProvider` (the foundation commit has the original code).
+- Move `authDataSourceProvider.overrideWith(FakeAuthDataSource())` out
+  of `main.dart` and into test `ProviderScope` overrides.
+- Update the smoke test "boots into the bottom-nav shell by default" to
+  assert the opposite (it should land on `/auth`).
+
 ## Risks and follow-ups
 
 - **CI hoisting**: the workflow file is inside the subproject for now.

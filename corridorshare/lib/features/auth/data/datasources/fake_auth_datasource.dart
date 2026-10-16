@@ -42,12 +42,74 @@ class FakeAuthDataSource implements AuthDataSource {
       verified: false,
       ratingAvg: 0,
     );
+    _currentUser = user;
+    _controller.add(user);
+    return Ok<UserDto>(user);
+  }
+
+  UserDto? _currentUser;
+
+  @override
+  UserDto? get currentUser => _currentUser;
+
+  @override
+  Future<Result<UserDto>> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    if (email.isEmpty || !email.contains('@')) {
+      return const Err<UserDto>(ValidationFailure('Invalid email address'));
+    }
+    if (password.length < 6) {
+      return const Err<UserDto>(ValidationFailure('Password must be at least 6 characters'));
+    }
+    final UserDto user = UserDto(
+      id: 'fake-uid-${email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}',
+      email: email,
+      name: email.split('@').first,
+      verified: true,
+      ratingAvg: 5.0,
+    );
+    _currentUser = user;
     _controller.add(user);
     return Ok<UserDto>(user);
   }
 
   @override
+  Future<Result<UserDto>> signUpWithEmail({
+    required String email,
+    required String password,
+    String? name,
+  }) async {
+    if (email.isEmpty || !email.contains('@')) {
+      return const Err<UserDto>(ValidationFailure('Invalid email address'));
+    }
+    if (password.length < 6) {
+      return const Err<UserDto>(ValidationFailure('Password must be at least 6 characters'));
+    }
+    final UserDto user = UserDto(
+      id: 'fake-uid-${email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}',
+      email: email,
+      name: name ?? email.split('@').first,
+      verified: false,
+      ratingAvg: 5.0,
+    );
+    _currentUser = user;
+    _controller.add(user);
+    return Ok<UserDto>(user);
+  }
+
+  @override
+  Future<Result<void>> sendPasswordResetEmail(String email) async {
+    if (email.isEmpty || !email.contains('@')) {
+      return const Err<void>(ValidationFailure('Invalid email address'));
+    }
+    return const Ok<void>(null);
+  }
+
+  @override
   Future<void> signOut() async {
+    _currentUser = null;
     _controller.add(null);
   }
 

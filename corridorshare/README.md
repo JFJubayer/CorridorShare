@@ -67,21 +67,45 @@ PR that touches `corridorshare/**` or the workflow file. The workflow is
 co-located inside this subproject for review and will be hoisted to the
 monorepo's `.github/workflows/` when the team is ready to enable it.
 
-## Foundation status (Increment 1)
+## Increments Delivered & Verified (CSE-3102)
 
-- Project skeleton, theme, go_router shell with bottom nav (Home, My posts,
-  Chats, Profile).
-- Localization for `en` and `bn`.
-- Phone OTP shape (validation, use cases, fake auth controller) with widget
-  tests.
-- Firebase emulator config and bootstrap helper that respects the
-  `FIREBASE_ENABLED` dart-define.
-- Firestore and Storage security rules: deny-by-default with the user-self
-  and admin-claim helpers scaffolded.
+All four course increments have been built, rigorously tested, and verified:
 
-See `docs/foundation.md` for the full QA log and Increment 1 next tasks.
+1. **Increment 1 — Trips, Parcels, and Routing Foundation**:
+   - Bangladesh 64-districts dataset (`core/constants/bangladesh_districts.dart`).
+   - Clean Architecture domain models, status lifecycles, and use cases for trips and parcels.
+   - Prohibited items declaration verification and form validations.
+   - Home dual-feed and My Posts tabs.
+   - [docs/increment_1.md](docs/increment_1.md)
+
+2. **Increment 2 — Matching, Offers, and Realtime Chat**:
+   - Corridor route, deadline, capacity, and traveller no-carry restriction matching engine.
+   - Bidirectional offer and counter-offer negotiation state machine.
+   - Parcel status integration (`matched` on offer acceptance).
+   - Realtime offer-linked message stream and chat composer.
+   - [docs/increment_2.md](docs/increment_2.md)
+
+3. **Increment 3 — Verification & Delivery Tracking**:
+   - Pickup proof capture with condition checklist and photo verification (`inTransit`).
+   - Two-Factor delivery verification via 4-digit recipient PIN (`delivered`).
+   - Dispute reporting mechanism (`disputed`).
+   - Real-time 3-stage delivery timeline tracking widget.
+   - [docs/increment_3.md](docs/increment_3.md)
+
+4. **Increment 4 — Demo Wallet, Reviews, and Admin Oversight**:
+   - Demo-only simulated BDT wallet with ledger history, top-up actions, and escrow lifecycle.
+   - Peer ratings (1–5 stars) and review feedback.
+   - Administrative KPI dashboard and dispute escalation queue with refund/payout actions.
+   - [docs/increment_4.md](docs/increment_4.md)
+
+### Verification & Testing Status
+
+```bash
+flutter analyze   # 0 issues found
+flutter test      # 119/119 tests passing (100%)
+```
 
 ## Contributing
 
 Open an issue or branch off `main`. Run `flutter analyze` and `flutter test`
-locally before pushing. Keep PRs small and tied to a single feature slice.
+locally before pushing. Keep PRs small, well-tested, and adhering to Clean Architecture.

@@ -18,9 +18,28 @@ abstract class AuthRepository {
     required String code,
   });
 
+  /// Sign in using [email] and [password].
+  Future<Result<AuthUser>> signInWithEmail({
+    required String email,
+    required String password,
+  });
+
+  /// Create a new account with [email], [password], and optional display [name].
+  Future<Result<AuthUser>> signUpWithEmail({
+    required String email,
+    required String password,
+    String? name,
+  });
+
+  /// Send password reset email to [email].
+  Future<Result<void>> sendPasswordResetEmail(String email);
+
   /// Sign the current user out. Idempotent.
   Future<void> signOut();
 
   /// Stream of auth state changes. Emits `null` when signed out.
   Stream<AuthUser?> authStateChanges();
+
+  /// Synchronous snapshot of the currently signed-in user, if any.
+  AuthUser? get currentUser;
 }

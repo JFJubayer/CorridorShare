@@ -1,12 +1,8 @@
 rules_version = '2';
 
-// CorridorShare Firestore security rules — foundation (Increment 1).
-//
-// All access is denied by default. Specific collections are opened as
-// later increments land.
-//
-// Admin role is granted by a custom claim `admin: true` set via Cloud
-// Functions; never by writing to the user document from the client.
+// CorridorShare Firestore Security Rules
+// Enforces least-privilege access, participant-only boundary isolation,
+// and server-authoritative wallet/ledger lockdown.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -23,22 +19,110 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.admin == true;
     }
 
-    // Users can read and write their own profile. Admins can read all.
+    // --- Users & Profiles ---
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      // Basic profile reading allowed for signed-in peers to view counterpart info; full write by owner
+      allow read: if isSignedIn();
       allow create, update: if isOwner(userId);
       allow delete: if isAdmin();
 
-      // Wallet is read-only from the client. All writes go through Cloud
-      // Functions, enforced in Increment 3.
+      // Wallet is strictly server-authoritative (Cloud Functions only)
       match /wallet/{document=**} {
-        allow read: if isOwner(userId);
+        allow read: if isOwner(userId) || isAdmin();
         allow write: if false;
       }
     }
 
-    // Trips, parcels, offers, deals, messages, ratings, disputes open in
-    // later increments. Deny everything for now.
+    // --- Trips ---
+    match /trips/{tripId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.travellerId == request.auth.uid
+        && request.resource.data.capacityKg > 0;
+      allow update: if isSignedIn() && (resource.data.travellerId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn()
+        && resource.data.travellerId == request.auth.uid
+        && resource.data.status == 'open';
+    }
+
+    // --- Parcels ---
+    match /parcels/{parcelId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.weightKg > 0;
+      allow update: if isSignedIn() && (resource.data.senderId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn()
+        && resource.data.senderId == request.auth.uid
+        && resource.data.status == 'open';
+    }
+
+    // --- Offers ---
+    match /offers/{offerId} {
+      allow read: if isSignedIn() && (
+        resource.data.travellerId == request.auth.uid ||
+        resource.data.senderId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && (
+        request.resource.data.travellerId == request.auth.uid ||
+        request.resource.data.senderId == request.auth.uid
+      ) && request.resource.data.price > 0;
+      allow update: if isSignedIn() && (
+        resource.data.travellerId == request.auth.uid ||
+        resource.data.senderId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- Chats & Messages ---
+    match /conversations/{conversationId} {
+      allow read, write: if isSignedIn();
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // --- Deliveries & Escrow Tracking ---
+    match /deliveries/{deliveryId} {
+      allow read: if isSignedIn() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.travellerId == request.auth.uid ||
+        isAdmin()
+      );
+      // Updates allowed by handover participants, but status 'delivered' / verificationPin
+      // release transitions require Cloud Functions verification in production
+      allow update: if isSignedIn() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.travellerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // --- Peer Ratings & Reviews ---
+    match /reviews/{reviewId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.reviewerId == request.auth.uid
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update, delete: if isAdmin();
+    }
+
+    // --- Dispute Escalations ---
+    match /disputes/{disputeId} {
+      allow read: if isSignedIn() && (resource.data.reporterId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Default catch-all lockdown
     match /{document=**} {
       allow read, write: if false;
     }

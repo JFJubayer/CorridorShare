@@ -28,10 +28,32 @@ class _FakeRepository implements AuthRepository {
       const Err<AuthUser>(AuthFailure('not used'));
 
   @override
+  Future<Result<AuthUser>> signInWithEmail({
+    required String email,
+    required String password,
+  }) async =>
+      const Err<AuthUser>(AuthFailure('not used'));
+
+  @override
+  Future<Result<AuthUser>> signUpWithEmail({
+    required String email,
+    required String password,
+    String? name,
+  }) async =>
+      const Err<AuthUser>(AuthFailure('not used'));
+
+  @override
+  Future<Result<void>> sendPasswordResetEmail(String email) async =>
+      const Ok<void>(null);
+
+  @override
   Future<void> signOut() async {}
 
   @override
   Stream<AuthUser?> authStateChanges() => const Stream<AuthUser?>.empty();
+
+  @override
+  AuthUser? get currentUser => null;
 }
 
 void main() {

@@ -8,10 +8,6 @@
       "host": "127.0.0.1",
       "port": 8080
     },
-    "storage": {
-      "host": "127.0.0.1",
-      "port": 9199
-    },
     "functions": {
       "host": "127.0.0.1",
       "port": 5001
@@ -30,7 +26,39 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-  "storage": {
-    "rules": "storage.rules"
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
+    }
+  ],
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "corridorshare-dev",
+          "appId": "1:569959374750:android:89107cb63c93644d66008f",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "corridorshare-dev",
+          "configurations": {
+            "android": "1:569959374750:android:89107cb63c93644d66008f",
+            "ios": "1:569959374750:ios:daa8991c3b5428f166008f",
+            "macos": "1:569959374750:ios:daa8991c3b5428f166008f",
+            "web": "1:569959374750:web:26161091785665ca66008f",
+            "windows": "1:569959374750:web:8af9d951301ca58c66008f"
+          }
+        }
+      }
+    }
   }
 }

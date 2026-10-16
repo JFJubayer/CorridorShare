@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "569959374750",
+    "project_id": "corridorshare-dev",
+    "storage_bucket": "corridorshare-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569959374750:android:89107cb63c93644d66008f",
+        "android_client_info": {
+          "package_name": "com.example.corridorshare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAi6GEw16bYlcnqoLln_XnRakim0H54gOc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

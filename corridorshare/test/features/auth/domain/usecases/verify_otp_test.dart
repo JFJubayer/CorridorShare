@@ -29,10 +29,32 @@ class _FakeRepository implements AuthRepository {
   Future<Result<String>> requestOtp(PhoneNumber phone) async => const Ok<String>('v');
 
   @override
+  Future<Result<AuthUser>> signInWithEmail({
+    required String email,
+    required String password,
+  }) async =>
+      Ok<AuthUser>(user);
+
+  @override
+  Future<Result<AuthUser>> signUpWithEmail({
+    required String email,
+    required String password,
+    String? name,
+  }) async =>
+      Ok<AuthUser>(user);
+
+  @override
+  Future<Result<void>> sendPasswordResetEmail(String email) async =>
+      const Ok<void>(null);
+
+  @override
   Future<void> signOut() async {}
 
   @override
   Stream<AuthUser?> authStateChanges() => const Stream<AuthUser?>.empty();
+
+  @override
+  AuthUser? get currentUser => user;
 }
 
 void main() {

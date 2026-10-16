@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UserDto {
 
- String get id; String get phone; String get name; bool get verified; double get ratingAvg;
+ String get id; String get phone; String get email; String get name; bool get verified; double get ratingAvg;
 /// Create a copy of UserDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $UserDtoCopyWith<UserDto> get copyWith => _$UserDtoCopyWithImpl<UserDto>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,phone,name,verified,ratingAvg);
+int get hashCode => Object.hash(runtimeType,id,phone,email,name,verified,ratingAvg);
 
 @override
 String toString() {
-  return 'UserDto(id: $id, phone: $phone, name: $name, verified: $verified, ratingAvg: $ratingAvg)';
+  return 'UserDto(id: $id, phone: $phone, email: $email, name: $name, verified: $verified, ratingAvg: $ratingAvg)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $UserDtoCopyWith<$Res>  {
   factory $UserDtoCopyWith(UserDto value, $Res Function(UserDto) _then) = _$UserDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String phone, String name, bool verified, double ratingAvg
+ String id, String phone, String email, String name, bool verified, double ratingAvg
 });
 
 
@@ -65,10 +65,11 @@ class _$UserDtoCopyWithImpl<$Res>
 
 /// Create a copy of UserDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? phone = null,Object? name = null,Object? verified = null,Object? ratingAvg = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? phone = null,Object? email = null,Object? name = null,Object? verified = null,Object? ratingAvg = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,verified: null == verified ? _self.verified : verified // ignore: cast_nullable_to_non_nullable
 as bool,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
@@ -157,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String phone,  String name,  bool verified,  double ratingAvg)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String phone,  String email,  String name,  bool verified,  double ratingAvg)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserDto() when $default != null:
-return $default(_that.id,_that.phone,_that.name,_that.verified,_that.ratingAvg);case _:
+return $default(_that.id,_that.phone,_that.email,_that.name,_that.verified,_that.ratingAvg);case _:
   return orElse();
 
 }
@@ -178,10 +179,10 @@ return $default(_that.id,_that.phone,_that.name,_that.verified,_that.ratingAvg);
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String phone,  String name,  bool verified,  double ratingAvg)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String phone,  String email,  String name,  bool verified,  double ratingAvg)  $default,) {final _that = this;
 switch (_that) {
 case _UserDto():
-return $default(_that.id,_that.phone,_that.name,_that.verified,_that.ratingAvg);case _:
+return $default(_that.id,_that.phone,_that.email,_that.name,_that.verified,_that.ratingAvg);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +199,10 @@ return $default(_that.id,_that.phone,_that.name,_that.verified,_that.ratingAvg);
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String phone,  String name,  bool verified,  double ratingAvg)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String phone,  String email,  String name,  bool verified,  double ratingAvg)?  $default,) {final _that = this;
 switch (_that) {
 case _UserDto() when $default != null:
-return $default(_that.id,_that.phone,_that.name,_that.verified,_that.ratingAvg);case _:
+return $default(_that.id,_that.phone,_that.email,_that.name,_that.verified,_that.ratingAvg);case _:
   return null;
 
 }
@@ -213,11 +214,12 @@ return $default(_that.id,_that.phone,_that.name,_that.verified,_that.ratingAvg);
 @JsonSerializable()
 
 class _UserDto implements UserDto {
-  const _UserDto({required this.id, required this.phone, this.name = '', this.verified = false, this.ratingAvg = 0.0});
+  const _UserDto({required this.id, this.phone = '', this.email = '', this.name = '', this.verified = false, this.ratingAvg = 0.0});
   factory _UserDto.fromJson(Map<String, dynamic> json) => _$UserDtoFromJson(json);
 
 @override final  String id;
-@override final  String phone;
+@override@JsonKey() final  String phone;
+@override@JsonKey() final  String email;
 @override@JsonKey() final  String name;
 @override@JsonKey() final  bool verified;
 @override@JsonKey() final  double ratingAvg;
@@ -235,16 +237,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,phone,name,verified,ratingAvg);
+int get hashCode => Object.hash(runtimeType,id,phone,email,name,verified,ratingAvg);
 
 @override
 String toString() {
-  return 'UserDto(id: $id, phone: $phone, name: $name, verified: $verified, ratingAvg: $ratingAvg)';
+  return 'UserDto(id: $id, phone: $phone, email: $email, name: $name, verified: $verified, ratingAvg: $ratingAvg)';
 }
 
 
@@ -255,7 +257,7 @@ abstract mixin class _$UserDtoCopyWith<$Res> implements $UserDtoCopyWith<$Res> {
   factory _$UserDtoCopyWith(_UserDto value, $Res Function(_UserDto) _then) = __$UserDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String phone, String name, bool verified, double ratingAvg
+ String id, String phone, String email, String name, bool verified, double ratingAvg
 });
 
 
@@ -272,10 +274,11 @@ class __$UserDtoCopyWithImpl<$Res>
 
 /// Create a copy of UserDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? phone = null,Object? name = null,Object? verified = null,Object? ratingAvg = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? phone = null,Object? email = null,Object? name = null,Object? verified = null,Object? ratingAvg = null,}) {
   return _then(_UserDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,verified: null == verified ? _self.verified : verified // ignore: cast_nullable_to_non_nullable
 as bool,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
