@@ -542,4 +542,16 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get signOutConfirmMessage =>
       'আপনি কি নিশ্চিতভাবে আপনার অ্যাকাউন্ট থেকে লগ আউট করতে চান?';
+
+  @override
+  String get confirmPasswordLabel => 'পাসওয়ার্ড নিশ্চিত করুন';
+
+  @override
+  String get confirmPasswordHint => 'পুনরায় পাসওয়ার্ড লিখুন';
+
+  @override
+  String get passwordsDoNotMatch => 'পাসওয়ার্ড দুটি মেলেনি।';
+
+  @override
+  String get registeredDemoAccounts => 'নিবন্ধিত ডেমো অ্যাকাউন্ট';
 }

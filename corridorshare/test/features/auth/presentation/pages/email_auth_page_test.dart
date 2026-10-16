@@ -102,4 +102,86 @@ void main() {
 
     expect(find.text('Home Screen'), findsOneWidget);
   });
+
+  testWidgets('rejects unregistered email/id and stays on auth screen',
+      (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_harness());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Email'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.byKey(const Key('emailField')), 'unregistered@example.com');
+    await tester.enterText(
+        find.byKey(const Key('passwordField')), 'password123');
+    await tester.tap(find.byKey(const Key('emailSubmitButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home Screen'), findsNothing);
+    expect(
+      find.text(
+          'No registered account found. Please check your credentials or sign up.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('rejects incorrect password for registered user',
+      (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_harness());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Email'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.byKey(const Key('emailField')), 'test@example.com');
+    await tester.enterText(
+        find.byKey(const Key('passwordField')), 'wrongpassword');
+    await tester.tap(find.byKey(const Key('emailSubmitButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home Screen'), findsNothing);
+    expect(find.text('Incorrect password. Please try again.'), findsOneWidget);
+  });
+
+  testWidgets('signs up a new user via sign-up form and enters app',
+      (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_harness());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Email'));
+    await tester.pumpAndSettle();
+
+    // Switch to Sign Up via segment tab
+    await tester.tap(find.byKey(const Key('signUpSegmentTab')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('nameField')), findsOneWidget);
+    expect(find.byKey(const Key('confirmPasswordField')), findsOneWidget);
+
+    await tester.enterText(
+        find.byKey(const Key('nameField')), 'New Registered User');
+    await tester.enterText(
+        find.byKey(const Key('emailField')), 'brandnew@corridorshare.com');
+    await tester.enterText(
+        find.byKey(const Key('passwordField')), 'secretpass123');
+    await tester.enterText(
+        find.byKey(const Key('confirmPasswordField')), 'secretpass123');
+
+    await tester.tap(find.byKey(const Key('emailSubmitButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home Screen'), findsOneWidget);
+  });
 }
+

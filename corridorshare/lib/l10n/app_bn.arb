@@ -171,5 +171,9 @@
     "dontHaveAccount": "অ্যাকাউন্ট নেই? রেজিস্ট্রেশন করুন",
     "alreadyHaveAccount": "ইতিমধ্যে অ্যাকাউন্ট আছে? সাইন ইন করুন",
     "signOutConfirmTitle": "লগ আউট",
-    "signOutConfirmMessage": "আপনি কি নিশ্চিতভাবে আপনার অ্যাকাউন্ট থেকে লগ আউট করতে চান?"
+    "signOutConfirmMessage": "আপনি কি নিশ্চিতভাবে আপনার অ্যাকাউন্ট থেকে লগ আউট করতে চান?",
+    "confirmPasswordLabel": "পাসওয়ার্ড নিশ্চিত করুন",
+    "confirmPasswordHint": "পুনরায় পাসওয়ার্ড লিখুন",
+    "passwordsDoNotMatch": "পাসওয়ার্ড দুটি মেলেনি।",
+    "registeredDemoAccounts": "নিবন্ধিত ডেমো অ্যাকাউন্ট"
 }

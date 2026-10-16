@@ -22,6 +22,7 @@ import 'package:corridorshare/features/offers/data/datasources/in_memory_offer_d
 import 'package:corridorshare/features/offers/data/datasources/offer_datasource.dart';
 import 'package:corridorshare/features/offers/data/repositories/offer_repository_impl.dart';
 import 'package:corridorshare/features/offers/domain/repositories/offer_repository.dart';
+import 'package:corridorshare/features/parcels/data/datasources/firestore_parcel_datasource.dart';
 import 'package:corridorshare/features/parcels/data/datasources/in_memory_parcel_datasource.dart';
 import 'package:corridorshare/features/parcels/data/datasources/parcel_datasource.dart';
 import 'package:corridorshare/features/parcels/data/repositories/parcel_repository_impl.dart';
@@ -30,6 +31,7 @@ import 'package:corridorshare/features/reviews/data/datasources/in_memory_review
 import 'package:corridorshare/features/reviews/data/datasources/review_datasource.dart';
 import 'package:corridorshare/features/reviews/data/repositories/review_repository_impl.dart';
 import 'package:corridorshare/features/reviews/domain/repositories/review_repository.dart';
+import 'package:corridorshare/features/trips/data/datasources/firestore_trip_datasource.dart';
 import 'package:corridorshare/features/trips/data/datasources/in_memory_trip_datasource.dart';
 import 'package:corridorshare/features/trips/data/datasources/trip_datasource.dart';
 import 'package:corridorshare/features/trips/data/repositories/trip_repository_impl.dart';
@@ -55,6 +57,9 @@ final authRepositoryProvider = Provider<AuthRepository>(
 
 // --- Trips ---
 final tripDataSourceProvider = Provider<TripDataSource>((ref) {
+  if (Firebase.apps.isNotEmpty) {
+    return FirestoreTripDataSource();
+  }
   return InMemoryTripDataSource();
 });
 
@@ -65,6 +70,9 @@ final tripRepositoryProvider = Provider<TripRepository>((ref) {
 
 // --- Parcels ---
 final parcelDataSourceProvider = Provider<ParcelDataSource>((ref) {
+  if (Firebase.apps.isNotEmpty) {
+    return FirestoreParcelDataSource();
+  }
   return InMemoryParcelDataSource();
 });
 

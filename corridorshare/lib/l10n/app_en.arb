@@ -171,5 +171,9 @@
     "dontHaveAccount": "Don't have an account? Sign up",
     "alreadyHaveAccount": "Already have an account? Sign in",
     "signOutConfirmTitle": "Log Out",
-    "signOutConfirmMessage": "Are you sure you want to log out of your account?"
+    "signOutConfirmMessage": "Are you sure you want to log out of your account?",
+    "confirmPasswordLabel": "Confirm Password",
+    "confirmPasswordHint": "Re-enter your password",
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "registeredDemoAccounts": "Registered Demo Accounts"
 }

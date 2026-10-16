@@ -28,10 +28,13 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
   // Email controllers & state
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   bool _isSignUp = false;
   bool _emailSubmitting = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   String? _emailErrorMessage;
 
   @override
@@ -46,6 +49,7 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
     super.dispose();
   }
@@ -78,9 +82,57 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
       _emailErrorMessage = null;
     });
 
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final String email = _emailController.text.trim();
     final String password = _passwordController.text;
     final String name = _nameController.text.trim();
+    final String confirmPassword = _confirmPasswordController.text;
+
+    if (_isSignUp) {
+      if (name.isEmpty) {
+        setState(() {
+          _emailSubmitting = false;
+          _emailErrorMessage = l10n.nameInvalid;
+        });
+        return;
+      }
+      if (email.isEmpty || !email.contains('@')) {
+        setState(() {
+          _emailSubmitting = false;
+          _emailErrorMessage = l10n.emailInvalid;
+        });
+        return;
+      }
+      if (password.length < 6) {
+        setState(() {
+          _emailSubmitting = false;
+          _emailErrorMessage = l10n.passwordInvalid;
+        });
+        return;
+      }
+      if (confirmPassword.isNotEmpty && password != confirmPassword) {
+        setState(() {
+          _emailSubmitting = false;
+          _emailErrorMessage = l10n.passwordsDoNotMatch;
+        });
+        return;
+      }
+    } else {
+      if (email.isEmpty) {
+        setState(() {
+          _emailSubmitting = false;
+          _emailErrorMessage = l10n.emailInvalid;
+        });
+        return;
+      }
+      if (password.isEmpty) {
+        setState(() {
+          _emailSubmitting = false;
+          _emailErrorMessage = l10n.passwordInvalid;
+        });
+        return;
+      }
+    }
 
     Result<AuthUser> result;
     if (_isSignUp) {
@@ -321,6 +373,134 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        // Segmented Header: Sign In vs Sign Up
+        Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: InkWell(
+                  key: const Key('signInSegmentTab'),
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: _emailSubmitting
+                      ? null
+                      : () {
+                          if (_isSignUp) {
+                            setState(() {
+                              _isSignUp = false;
+                              _emailErrorMessage = null;
+                            });
+                          }
+                        },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: !_isSignUp
+                          ? theme.colorScheme.surface
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: !_isSignUp
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Icon(
+                          Icons.login_rounded,
+                          size: 18,
+                          color: !_isSignUp
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.signInAction,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: !_isSignUp
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: InkWell(
+                  key: const Key('signUpSegmentTab'),
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: _emailSubmitting
+                      ? null
+                      : () {
+                          if (!_isSignUp) {
+                            setState(() {
+                              _isSignUp = true;
+                              _emailErrorMessage = null;
+                            });
+                          }
+                        },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _isSignUp
+                          ? theme.colorScheme.surface
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: _isSignUp
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Icon(
+                          Icons.person_add_alt_1_rounded,
+                          size: 18,
+                          color: _isSignUp
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.signUpAction,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: _isSignUp
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         if (_emailErrorMessage != null) ...<Widget>[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -368,9 +548,9 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
           const SizedBox(height: 16),
         ],
 
-        // Email field
+        // Email / ID field
         Text(
-          l10n.emailLabel,
+          _isSignUp ? l10n.emailLabel : 'Email or User ID',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -382,7 +562,7 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
           decoration: InputDecoration(
-            hintText: l10n.emailHint,
+            hintText: _isSignUp ? l10n.emailHint : 'you@example.com or user ID',
             prefixIcon: const Icon(Icons.alternate_email),
           ),
         ),
@@ -415,6 +595,40 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
           ),
         ),
         const SizedBox(height: 8),
+
+        // Confirm Password field (Sign Up only)
+        if (_isSignUp) ...<Widget>[
+          const SizedBox(height: 8),
+          Text(
+            l10n.confirmPasswordLabel,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            key: const Key('confirmPasswordField'),
+            controller: _confirmPasswordController,
+            obscureText: _obscureConfirmPassword,
+            decoration: InputDecoration(
+              hintText: l10n.confirmPasswordHint,
+              prefixIcon: const Icon(Icons.lock_reset_outlined),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureConfirmPassword
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                onPressed: () {
+                  setState(() =>
+                      _obscureConfirmPassword = !_obscureConfirmPassword);
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
 
         // Forgot password link (Sign in mode only)
         if (!_isSignUp) ...<Widget>[
@@ -462,7 +676,68 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
             ),
           ),
         ),
+
+        // Registered Demo Accounts banner (Sign In mode)
+        if (!_isSignUp) ...<Widget>[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Icon(
+                      Icons.vpn_key_outlined,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      l10n.registeredDemoAccounts,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: <Widget>[
+                    _buildDemoAccountChip('admin@corridorshare.com', 'admin123', 'Admin'),
+                    _buildDemoAccountChip('rahim@corridorshare.com', 'password123', 'Rahim'),
+                    _buildDemoAccountChip('demo@corridorshare.com', 'demo1234', 'Demo'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildDemoAccountChip(String email, String pass, String label) {
+    return ActionChip(
+      avatar: const Icon(Icons.touch_app_outlined, size: 14),
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      onPressed: () {
+        setState(() {
+          _emailController.text = email;
+          _passwordController.text = pass;
+          _emailErrorMessage = null;
+        });
+      },
     );
   }
 

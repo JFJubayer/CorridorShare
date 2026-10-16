@@ -544,4 +544,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get signOutConfirmMessage =>
       'Are you sure you want to log out of your account?';
+
+  @override
+  String get confirmPasswordLabel => 'Confirm Password';
+
+  @override
+  String get confirmPasswordHint => 'Re-enter your password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match.';
+
+  @override
+  String get registeredDemoAccounts => 'Registered Demo Accounts';
 }
