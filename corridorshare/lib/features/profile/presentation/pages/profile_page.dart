@@ -1,4 +1,5 @@
 import 'package:corridorshare/core/router/app_router.dart';
+import 'package:corridorshare/core/theme/app_colors.dart';
 import 'package:corridorshare/features/auth/domain/entities/auth_user.dart';
 import 'package:corridorshare/features/auth/presentation/providers/auth_providers.dart';
 import 'package:corridorshare/features/reviews/presentation/widgets/reviews_list_widget.dart';
@@ -14,7 +15,6 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final ThemeData theme = Theme.of(context);
     final AuthUser? user = ref.watch(currentUserProvider);
     final String activeUserId = user?.id ?? '';
     final bool isSignedIn = user != null;
@@ -42,94 +42,115 @@ class ProfilePage extends ConsumerWidget {
     final bool isVerified = user?.verified ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.tabProfile)),
+      backgroundColor: AppColors.warmIvory,
+      appBar: AppBar(
+        backgroundColor: AppColors.warmIvory,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        title: Text(
+          l10n.tabProfile,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            color: AppColors.darkCharcoal,
+          ),
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
           // User Card
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: theme.colorScheme.outlineVariant),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.cardBorder, width: 1.2),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: <Widget>[
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    child: Text(
-                      initials.isEmpty ? 'CS' : initials,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onPrimaryContainer,
+            child: Row(
+              children: <Widget>[
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: AppColors.darkCharcoal,
+                  child: Text(
+                    initials.isEmpty ? 'CS' : initials,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.limeAccent,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.darkCharcoal,
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          displayName,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                      const SizedBox(height: 2),
+                      Text(
+                        displayContact,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ticketMutedText,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isVerified
+                              ? AppColors.limeAccent.withValues(alpha: 0.35)
+                              : AppColors.pillInactive,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.cardBorder,
+                            width: 1,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          displayContact,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isVerified
-                                ? Colors.green.shade50
-                                : Colors.amber.shade50,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Icon(
-                                isVerified ? Icons.verified : Icons.info_outline,
-                                size: 14,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Icon(
+                              isVerified ? Icons.verified : Icons.info_outline,
+                              size: 14,
+                              color: isVerified
+                                  ? AppColors.darkCharcoal
+                                  : AppColors.ticketMutedText,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isVerified
+                                  ? l10n.verifiedPeerBadge
+                                  : l10n.profileUnverified,
+                              style: TextStyle(
                                 color: isVerified
-                                    ? Colors.green.shade700
-                                    : Colors.amber.shade800,
+                                    ? AppColors.darkCharcoal
+                                    : AppColors.ticketMutedText,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isVerified
-                                    ? l10n.verifiedPeerBadge
-                                    : l10n.profileUnverified,
-                                style: TextStyle(
-                                  color: isVerified
-                                      ? Colors.green.shade900
-                                      : Colors.amber.shade900,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -142,45 +163,155 @@ class ProfilePage extends ConsumerWidget {
           ReviewsListWidget(userId: activeUserId),
           const SizedBox(height: 20),
 
-          // Admin Dashboard Tile
-          ListTile(
-            key: const Key('adminDashboardTile'),
-            leading: const Icon(Icons.admin_panel_settings_outlined, color: Colors.indigo),
-            title: Text(l10n.adminDashboardTitle),
-            subtitle: Text(l10n.adminDashboardSubtitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push(AppRoutes.admin),
-          ),
-          const Divider(),
-
-          // Language Picker
-          ListTile(
-            key: const Key('languagePickerTile'),
-            leading: const Icon(Icons.language),
-            title: Text('${l10n.languageEnglish} / ${l10n.languageBangla}'),
-            subtitle: const Text('English / বাংলা'),
-            onTap: () => _showLanguagePicker(context, ref),
-          ),
-          const Divider(),
-
-          // Sign In / Out
-          if (isSignedIn)
-            ListTile(
-              key: const Key('signOutTile'),
-              leading: Icon(Icons.logout, color: theme.colorScheme.error),
-              title: Text(
-                l10n.logout,
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
-              onTap: () => _confirmSignOut(context, ref, l10n),
-            )
-          else
-            ListTile(
-              key: const Key('signInTile'),
-              leading: const Icon(Icons.login),
-              title: Text(l10n.signIn),
-              onTap: () => context.go(AppRoutes.auth),
+          // Settings & Actions Group
+          Material(
+            color: Colors.white,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: AppColors.cardBorder, width: 1.2),
             ),
+            child: Column(
+              children: <Widget>[
+                // Admin Dashboard Tile
+                ListTile(
+                  key: const Key('adminDashboardTile'),
+                  leading: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
+                      color: AppColors.bannerBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.admin_panel_settings_outlined,
+                      color: AppColors.darkCharcoal,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    l10n.adminDashboardTitle,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkCharcoal,
+                    ),
+                  ),
+                  subtitle: Text(
+                    l10n.adminDashboardSubtitle,
+                    style: const TextStyle(
+                      color: AppColors.ticketMutedText,
+                      fontSize: 12,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.ticketMutedText,
+                  ),
+                  onTap: () => context.push(AppRoutes.admin),
+                ),
+                const Divider(height: 1, color: AppColors.cardBorder),
+
+                // Language Picker
+                ListTile(
+                  key: const Key('languagePickerTile'),
+                  leading: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
+                      color: AppColors.bannerBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.language,
+                      color: AppColors.darkCharcoal,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    '${l10n.languageEnglish} / ${l10n.languageBangla}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkCharcoal,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'English / বাংলা',
+                    style: TextStyle(
+                      color: AppColors.ticketMutedText,
+                      fontSize: 12,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.ticketMutedText,
+                  ),
+                  onTap: () => _showLanguagePicker(context, ref),
+                ),
+                const Divider(height: 1, color: AppColors.cardBorder),
+
+                // Sign In / Out
+                if (isSignedIn)
+                  ListTile(
+                    key: const Key('signOutTile'),
+                    leading: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.logout,
+                        color: AppColors.danger,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      l10n.logout,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.ticketMutedText,
+                    ),
+                    onTap: () => _confirmSignOut(context, ref, l10n),
+                  )
+                else
+                  ListTile(
+                    key: const Key('signInTile'),
+                    leading: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: const BoxDecoration(
+                        color: AppColors.bannerBg,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.login,
+                        color: AppColors.darkCharcoal,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      l10n.signIn,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.darkCharcoal,
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.ticketMutedText,
+                    ),
+                    onTap: () => context.go(AppRoutes.auth),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 80),
         ],
       ),
     );

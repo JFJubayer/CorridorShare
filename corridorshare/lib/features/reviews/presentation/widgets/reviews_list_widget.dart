@@ -1,3 +1,4 @@
+import 'package:corridorshare/core/theme/app_colors.dart';
 import 'package:corridorshare/features/reviews/presentation/providers/review_providers.dart';
 import 'package:corridorshare/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -28,8 +29,10 @@ class ReviewsListWidget extends ConsumerWidget {
           children: <Widget>[
             Text(
               l10n.reviewsTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: AppColors.darkCharcoal,
               ),
             ),
             avgRatingAsync.when(
@@ -78,12 +81,13 @@ class ReviewsListWidget extends ConsumerWidget {
                 final rev = reviews[index];
                 return Card(
                   elevation: 0,
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(color: AppColors.cardBorder, width: 1.2),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
@@ -91,7 +95,10 @@ class ReviewsListWidget extends ConsumerWidget {
                           children: <Widget>[
                             Text(
                               rev.reviewerName,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.darkCharcoal,
+                              ),
                             ),
                             const Spacer(),
                             Row(

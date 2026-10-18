@@ -343,6 +343,8 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage> {
                         color: AppColors.ticketMutedText,
                       ),
                       border: InputBorder.none,
+                      filled: false,
+                      fillColor: Colors.transparent,
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 18,
                         vertical: 16,
@@ -380,6 +382,8 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage> {
                       color: AppColors.ticketMutedText,
                     ),
                     border: InputBorder.none,
+                    filled: false,
+                    fillColor: Colors.transparent,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 18,
                       vertical: 16,
@@ -426,6 +430,8 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage> {
                       },
                     ),
                     border: InputBorder.none,
+                    filled: false,
+                    fillColor: Colors.transparent,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 18,
                       vertical: 16,
@@ -473,6 +479,8 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage> {
                         },
                       ),
                       border: InputBorder.none,
+                      filled: false,
+                      fillColor: Colors.transparent,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 18,
                         vertical: 16,

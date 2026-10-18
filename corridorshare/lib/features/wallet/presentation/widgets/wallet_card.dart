@@ -1,3 +1,4 @@
+import 'package:corridorshare/core/theme/app_colors.dart';
 import 'package:corridorshare/features/wallet/presentation/providers/wallet_providers.dart';
 import 'package:corridorshare/features/wallet/presentation/widgets/top_up_dialog.dart';
 import 'package:corridorshare/features/wallet/presentation/widgets/transaction_history_sheet.dart';
@@ -24,21 +25,25 @@ class WalletCard extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: AppColors.warmIvory,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       builder: (context) => TransactionHistorySheet(wallet: wallet),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final walletAsync = ref.watch(userWalletProvider(userId));
 
     return Card(
       elevation: 0,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.cardBorder, width: 1.2),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -52,15 +57,26 @@ class WalletCard extends ConsumerWidget {
                   children: <Widget>[
                     Row(
                       children: <Widget>[
-                        Icon(
-                          Icons.account_balance_wallet,
-                          color: theme.colorScheme.primary,
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: const BoxDecoration(
+                            color: AppColors.bannerBg,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.account_balance_wallet,
+                            color: AppColors.darkCharcoal,
+                            size: 20,
+                          ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Text(
                           l10n.walletDemoBalanceTitle,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.darkCharcoal,
                           ),
                         ),
                       ],
@@ -69,7 +85,13 @@ class WalletCard extends ConsumerWidget {
                       key: const Key('walletLedgerButton'),
                       onPressed: () => _openHistory(context, wallet),
                       icon: const Icon(Icons.history, size: 16),
-                      label: Text(l10n.walletLedgerAction),
+                      label: Text(
+                        l10n.walletLedgerAction,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.darkCharcoal,
+                      ),
                     ),
                   ],
                 ),
@@ -82,17 +104,20 @@ class WalletCard extends ConsumerWidget {
                         children: <Widget>[
                           Text(
                             l10n.walletAvailableBalance,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.ticketMutedText,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '৳ ${wallet.balance.toStringAsFixed(0)}',
                             key: const Key('walletBalanceDisplay'),
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.darkCharcoal,
                             ),
                           ),
                         ],
@@ -104,15 +129,18 @@ class WalletCard extends ConsumerWidget {
                         children: <Widget>[
                           Text(
                             l10n.walletEscrowHold,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.ticketMutedText,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '৳ ${wallet.escrowBalance.toStringAsFixed(0)}',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
                               color: Colors.orange.shade800,
                             ),
                           ),
@@ -124,11 +152,22 @@ class WalletCard extends ConsumerWidget {
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton.tonalIcon(
+                  child: FilledButton.icon(
                     key: const Key('openTopUpDialogButton'),
                     onPressed: () => _openTopUp(context),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.darkCharcoal,
+                      foregroundColor: AppColors.limeAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      minimumSize: const Size.fromHeight(46),
+                    ),
                     icon: const Icon(Icons.add, size: 18),
-                    label: Text(l10n.walletTopUpAction),
+                    label: Text(
+                      l10n.walletTopUpAction,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ),
               ],

@@ -443,6 +443,8 @@ class _MessageInputBar extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: hintText,
                 border: InputBorder.none,
+                filled: false,
+                fillColor: Colors.transparent,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 8,
