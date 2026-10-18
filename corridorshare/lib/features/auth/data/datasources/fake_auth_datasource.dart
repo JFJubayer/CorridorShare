@@ -103,17 +103,27 @@ class FakeAuthDataSource implements AuthDataSource {
     if (_registeredUsers.containsKey(clean)) {
       return _registeredUsers[clean];
     }
+    final String cleanDigits = _digitsOnly(clean);
     for (final RegisteredUserAccount user in _registeredUsers.values) {
       if (user.id.toLowerCase() == clean ||
-          user.email.split('@').first.toLowerCase() == clean ||
-          (user.phone.isNotEmpty &&
-              user.phone.replaceAll(RegExp(r'\D'), '') ==
-                  clean.replaceAll(RegExp(r'\D'), ''))) {
+          user.email.split('@').first.toLowerCase() == clean) {
         return user;
+      }
+      if (cleanDigits.length >= 10 && user.phone.isNotEmpty) {
+        final String userDigits = _digitsOnly(user.phone);
+        if (userDigits.length >= 10) {
+          final String userLast10 = userDigits.substring(userDigits.length - 10);
+          final String cleanLast10 = cleanDigits.substring(cleanDigits.length - 10);
+          if (userLast10 == cleanLast10) {
+            return user;
+          }
+        }
       }
     }
     return null;
   }
+
+  static String _digitsOnly(String s) => s.replaceAll(RegExp(r'\D'), '');
 
   /// Manually add a registered user (useful for test setup).
   static void registerUser(RegisteredUserAccount user) {

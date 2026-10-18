@@ -61,48 +61,25 @@ void main() {
     await tester.pumpWidget(_harness());
     await tester.pumpAndSettle();
 
-    // Auth screen is displayed with CorridorShare title and entry tabs
+    // Auth screen is displayed with CorridorShare title and unified login
     expect(find.text('CorridorShare'), findsOneWidget);
-    expect(find.text('Phone'), findsOneWidget);
-    expect(find.text('Email'), findsOneWidget);
     expect(find.byType(PhoneEntryPage), findsOneWidget);
+    expect(find.byKey(const Key('emailField')), findsOneWidget);
+    expect(find.byKey(const Key('passwordField')), findsOneWidget);
   });
 
-  testWidgets('rejects a malformed phone number', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      _harness(
-        initialLocation: AppRoutes.auth,
-        routerOverride: _authOnlyRouter(initialLocation: AppRoutes.auth),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byKey(const Key('phoneField')), '123');
-    await tester.tap(find.byKey(const Key('phoneContinue')));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text('Enter a valid Bangladeshi mobile number.'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('moves to the OTP page on a valid phone',
+  testWidgets('OtpVerificationPage renders and handles OTP verification',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       _harness(
-        initialLocation: AppRoutes.auth,
-        routerOverride: _authOnlyRouter(initialLocation: AppRoutes.auth),
+        initialLocation: AppRoutes.otp,
+        routerOverride: _authOnlyRouter(initialLocation: AppRoutes.otp),
       ),
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const Key('phoneField')), '01712345678');
-    await tester.tap(find.byKey(const Key('phoneContinue')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Enter the 6-digit code'), findsOneWidget);
-    expect(find.text('+880 171 2345678'), findsOneWidget);
+    expect(find.byKey(const Key('otpField')), findsOneWidget);
+    expect(find.byKey(const Key('otpVerify')), findsOneWidget);
   });
 
   testWidgets('AppLocalizations exposes the foundation keys in English',

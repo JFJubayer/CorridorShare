@@ -9,7 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Unified Authentication Page supporting both Phone OTP and Email/Password.
+/// Unified Authentication Page based on the reference design:
+/// - Single unified page (no Phone vs Email tab switcher)
+/// - Users can log in using either Email or Phone Number and Password
+/// - Fields styled with cool rounded corners (BorderRadius.circular(22))
+/// - Create Account button below login form to open sign up
+/// - Warm Ivory and Dark Charcoal homepage color theme
+/// - Preserves the current brand shipping truck icon header
 class PhoneEntryPage extends ConsumerStatefulWidget {
   const PhoneEntryPage({super.key});
 
@@ -17,73 +23,39 @@ class PhoneEntryPage extends ConsumerStatefulWidget {
   ConsumerState<PhoneEntryPage> createState() => _PhoneEntryPageState();
 }
 
-class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  // Phone controllers & state
-  final TextEditingController _phoneController = TextEditingController();
-  bool _phoneSubmitting = false;
-
-  // Email controllers & state
-  final TextEditingController _emailController = TextEditingController();
+class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage> {
+  final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+
   bool _isSignUp = false;
-  bool _emailSubmitting = false;
+  bool _submitting = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  String? _emailErrorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
+  String? _errorMessage;
 
   @override
   void dispose() {
-    _tabController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _nameController.dispose();
     super.dispose();
   }
 
-  Future<void> _submitPhone() async {
-    if (_phoneSubmitting) {
-      return;
-    }
-    setState(() => _phoneSubmitting = true);
-    final AuthState before = ref.read(authControllerProvider);
-    await ref
-        .read(authControllerProvider.notifier)
-        .requestOtp(_phoneController.text);
-    if (!mounted) {
-      return;
-    }
-    setState(() => _phoneSubmitting = false);
-    final AuthState after = ref.read(authControllerProvider);
-    if (before is! AuthOtpRequested && after is AuthOtpRequested) {
-      context.go(AppRoutes.otp);
-    }
-  }
-
-  Future<void> _submitEmail() async {
-    if (_emailSubmitting) {
+  Future<void> _submit() async {
+    if (_submitting) {
       return;
     }
     setState(() {
-      _emailSubmitting = true;
-      _emailErrorMessage = null;
+      _submitting = true;
+      _errorMessage = null;
     });
 
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final String email = _emailController.text.trim();
+    final String identifier = _identifierController.text.trim();
     final String password = _passwordController.text;
     final String name = _nameController.text.trim();
     final String confirmPassword = _confirmPasswordController.text;
@@ -91,44 +63,51 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
     if (_isSignUp) {
       if (name.isEmpty) {
         setState(() {
-          _emailSubmitting = false;
-          _emailErrorMessage = l10n.nameInvalid;
+          _submitting = false;
+          _errorMessage = l10n.nameInvalid;
         });
         return;
       }
-      if (email.isEmpty || !email.contains('@')) {
+      if (identifier.isEmpty) {
         setState(() {
-          _emailSubmitting = false;
-          _emailErrorMessage = l10n.emailInvalid;
+          _submitting = false;
+          _errorMessage = l10n.emailInvalid;
+        });
+        return;
+      }
+      if (identifier.contains('@') && !identifier.contains('.')) {
+        setState(() {
+          _submitting = false;
+          _errorMessage = l10n.emailInvalid;
         });
         return;
       }
       if (password.length < 6) {
         setState(() {
-          _emailSubmitting = false;
-          _emailErrorMessage = l10n.passwordInvalid;
+          _submitting = false;
+          _errorMessage = l10n.passwordInvalid;
         });
         return;
       }
       if (confirmPassword.isNotEmpty && password != confirmPassword) {
         setState(() {
-          _emailSubmitting = false;
-          _emailErrorMessage = l10n.passwordsDoNotMatch;
+          _submitting = false;
+          _errorMessage = l10n.passwordsDoNotMatch;
         });
         return;
       }
     } else {
-      if (email.isEmpty) {
+      if (identifier.isEmpty) {
         setState(() {
-          _emailSubmitting = false;
-          _emailErrorMessage = l10n.emailInvalid;
+          _submitting = false;
+          _errorMessage = l10n.emailInvalid;
         });
         return;
       }
       if (password.isEmpty) {
         setState(() {
-          _emailSubmitting = false;
-          _emailErrorMessage = l10n.passwordInvalid;
+          _submitting = false;
+          _errorMessage = l10n.passwordInvalid;
         });
         return;
       }
@@ -138,17 +117,17 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
     if (_isSignUp) {
       result = await ref
           .read(authControllerProvider.notifier)
-          .signUpWithEmail(email, password, name: name);
+          .signUpWithEmail(identifier, password, name: name);
     } else {
       result = await ref
           .read(authControllerProvider.notifier)
-          .signInWithEmail(email, password);
+          .signInWithEmail(identifier, password);
     }
 
     if (!mounted) {
       return;
     }
-    setState(() => _emailSubmitting = false);
+    setState(() => _submitting = false);
 
     result.fold(
       (AuthUser user) {
@@ -160,16 +139,16 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
       },
       (Failure failure) {
         setState(() {
-          _emailErrorMessage = failure.message;
+          _errorMessage = failure.message;
         });
       },
     );
   }
 
   Future<void> _forgotPassword() async {
-    final String email = _emailController.text.trim();
+    final String identifier = _identifierController.text.trim();
     final AppLocalizations l10n = AppLocalizations.of(context);
-    if (email.isEmpty || !email.contains('@')) {
+    if (identifier.isEmpty || !identifier.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.emailInvalid),
@@ -181,7 +160,7 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
 
     final Result<void> result = await ref
         .read(authControllerProvider.notifier)
-        .sendPasswordReset(email);
+        .sendPasswordReset(identifier);
 
     if (!mounted) {
       return;
@@ -207,25 +186,45 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
     );
   }
 
+  void _showSocialNotice(String provider) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$provider sign-in is coming soon for CorridorShare.'),
+        backgroundColor: AppColors.darkCharcoal,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
-    final AuthState state = ref.watch(authControllerProvider);
-    final String? phoneErrorText = _isInvalidPhone(state) ? l10n.phoneInvalid : null;
 
     return Scaffold(
+      backgroundColor: AppColors.warmIvory,
       appBar: AppBar(
-        title: Text(l10n.appTitle),
+        backgroundColor: AppColors.warmIvory,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        title: Text(
+          l10n.appTitle,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+            color: AppColors.darkCharcoal,
+          ),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              // Brand Hero Header
+              // Current Brand Hero Header (Preserved as requested)
               Center(
                 child: Container(
                   width: 68,
@@ -233,6 +232,17 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.cardBorder,
+                      width: 1.2,
+                    ),
+                    boxShadow: const <BoxShadow>[
+                      BoxShadow(
+                        color: Color(0x0A000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     Icons.local_shipping_rounded,
@@ -241,72 +251,592 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
+
+              // Title Header
               Text(
-                l10n.authTitle,
+                _isSignUp ? l10n.signUpAction : l10n.authTitle,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                  color: AppColors.darkCharcoal,
                 ),
               ),
               const SizedBox(height: 6),
+
+              // Subtitle
               Text(
-                l10n.authSubtitle,
+                _isSignUp
+                    ? 'Sign up to get started with your dashboard.'
+                    : 'Explore a modern experience built for speed and simplicity.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.ticketMutedText,
+                  height: 1.35,
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Segmented Tabs
-              Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.all(4),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
+              // Error banner if any
+              if (_errorMessage != null) ...<Widget>[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDE8E8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.danger.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.danger,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            color: Color(0xFF991B1B),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  dividerColor: Colors.transparent,
-                  labelColor: theme.colorScheme.primary,
-                  unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-                  tabs: <Widget>[
-                    Tab(
-                      icon: const Icon(Icons.phone_android, size: 20),
-                      text: l10n.tabPhone,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Sign Up / Login Form Fields
+              if (_isSignUp) ...<Widget>[
+                // Full Name
+                _buildFieldLabel(l10n.nameLabel),
+                const SizedBox(height: 8),
+                _buildInputContainer(
+                  child: TextField(
+                    key: const Key('nameField'),
+                    controller: _nameController,
+                    textCapitalization: TextCapitalization.words,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkCharcoal,
                     ),
-                    Tab(
-                      icon: const Icon(Icons.email_outlined, size: 20),
-                      text: l10n.tabEmail,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter your name',
+                      hintStyle: TextStyle(
+                        color: Color(0xFF9EA39F),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.person_outline,
+                        color: AppColors.ticketMutedText,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 16,
+                      ),
                     ),
-                  ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Email or Phone Number Field
+              _buildFieldLabel(
+                _isSignUp ? 'Email or Phone Number' : 'Email or Phone Number',
+              ),
+              const SizedBox(height: 8),
+              _buildInputContainer(
+                child: TextField(
+                  key: const Key('emailField'),
+                  controller: _identifierController,
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.darkCharcoal,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'Enter your email or phone number',
+                    hintStyle: TextStyle(
+                      color: Color(0xFF9EA39F),
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.alternate_email,
+                      color: AppColors.ticketMutedText,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 16,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Password Field
+              _buildFieldLabel(l10n.passwordLabel),
+              const SizedBox(height: 8),
+              _buildInputContainer(
+                child: TextField(
+                  key: const Key('passwordField'),
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.darkCharcoal,
+                  ),
+                  decoration: InputDecoration(
+                    hintText:
+                        _isSignUp ? 'Create a password' : 'Enter your password',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9EA39F),
+                      fontSize: 14,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                      color: AppColors.ticketMutedText,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: AppColors.ticketMutedText,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 16,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Confirm Password (Sign Up Mode)
+              if (_isSignUp) ...<Widget>[
+                const SizedBox(height: 16),
+                _buildFieldLabel(l10n.confirmPasswordLabel),
+                const SizedBox(height: 8),
+                _buildInputContainer(
+                  child: TextField(
+                    key: const Key('confirmPasswordField'),
+                    controller: _confirmPasswordController,
+                    obscureText: _obscureConfirmPassword,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkCharcoal,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Confirm your password',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF9EA39F),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.lock_reset_outlined,
+                        color: AppColors.ticketMutedText,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: AppColors.ticketMutedText,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setState(() => _obscureConfirmPassword =
+                              !_obscureConfirmPassword);
+                        },
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              // Forgot password link (Login Mode)
+              if (!_isSignUp) ...<Widget>[
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _submitting ? null : _forgotPassword,
+                    child: Text(
+                      l10n.forgotPasswordAction,
+                      style: const TextStyle(
+                        color: AppColors.brand,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ] else
+                const SizedBox(height: 16),
+
+              const SizedBox(height: 8),
+
+              // Action Pill Button (Sign In / Create Account)
+              SizedBox(
+                height: 52,
+                child: FilledButton(
+                  key: const Key('emailSubmitButton'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.darkCharcoal,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                  ),
+                  onPressed: _submitting ? null : _submit,
+                  child: _submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          _isSignUp ? l10n.signUpAction : l10n.signInAction,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Tab Views
-              AnimatedBuilder(
-                animation: _tabController,
-                builder: (BuildContext context, _) {
-                  return _tabController.index == 0
-                      ? _buildPhoneSection(l10n, theme, phoneErrorText)
-                      : _buildEmailSection(l10n, theme);
-                },
+              // Divider "─── Or ───"
+              _buildOrDivider(),
+              const SizedBox(height: 20),
+
+              // Social Logins Layout matching the reference:
+              // Login Mode: Full-width rounded pill buttons
+              // Sign Up Mode: Row of 3 circular buttons
+              if (!_isSignUp) ...<Widget>[
+                _buildSocialPillButton(
+                  label: 'Continue with Google',
+                  icon: const _GoogleLogo(),
+                  onTap: () => _showSocialNotice('Google'),
+                ),
+                const SizedBox(height: 12),
+                _buildSocialPillButton(
+                  label: 'Continue with Apple',
+                  icon: const Icon(Icons.apple, size: 22, color: Colors.black),
+                  onTap: () => _showSocialNotice('Apple'),
+                ),
+                const SizedBox(height: 12),
+                _buildSocialPillButton(
+                  label: 'Continue with Facebook',
+                  icon: const Icon(
+                    Icons.facebook,
+                    size: 22,
+                    color: Color(0xFF1877F2),
+                  ),
+                  onTap: () => _showSocialNotice('Facebook'),
+                ),
+              ] else ...<Widget>[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    _buildCircularSocialButton(
+                      icon: const _GoogleLogo(),
+                      onTap: () => _showSocialNotice('Google'),
+                    ),
+                    const SizedBox(width: 18),
+                    _buildCircularSocialButton(
+                      icon: const Icon(
+                        Icons.apple,
+                        size: 22,
+                        color: Colors.black,
+                      ),
+                      onTap: () => _showSocialNotice('Apple'),
+                    ),
+                    const SizedBox(width: 18),
+                    _buildCircularSocialButton(
+                      icon: const Icon(
+                        Icons.facebook,
+                        size: 22,
+                        color: Color(0xFF1877F2),
+                      ),
+                      onTap: () => _showSocialNotice('Facebook'),
+                    ),
+                  ],
+                ),
+              ],
+
+              const SizedBox(height: 24),
+
+              // "Create Account button should be below it, upon clicking it opens sign up form"
+              if (!_isSignUp) ...<Widget>[
+                Center(
+                  child: TextButton(
+                    key: const Key('toggleAuthModeButton'),
+                    onPressed: _submitting
+                        ? null
+                        : () {
+                            setState(() {
+                              _isSignUp = true;
+                              _errorMessage = null;
+                            });
+                          },
+                    child: RichText(
+                      text: const TextSpan(
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.ticketMutedText,
+                        ),
+                        children: <TextSpan>[
+                          TextSpan(text: "Don't have an account? "),
+                          TextSpan(
+                            text: 'Sign Up',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.brand,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...<Widget>[
+                Center(
+                  child: TextButton(
+                    key: const Key('toggleAuthModeButton'),
+                    onPressed: _submitting
+                        ? null
+                        : () {
+                            setState(() {
+                              _isSignUp = false;
+                              _errorMessage = null;
+                            });
+                          },
+                    child: RichText(
+                      text: const TextSpan(
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.ticketMutedText,
+                        ),
+                        children: <TextSpan>[
+                          TextSpan(text: 'Already have an account? '),
+                          TextSpan(
+                            text: 'Sign In',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.brand,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              // Registered Demo Accounts Banner (Quick testing access)
+              if (!_isSignUp) ...<Widget>[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.bannerBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.cardBorder,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          const Icon(
+                            Icons.vpn_key_outlined,
+                            size: 16,
+                            color: AppColors.brand,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            l10n.registeredDemoAccounts,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.darkCharcoal,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: <Widget>[
+                          _buildDemoAccountChip(
+                            'admin@corridorshare.com',
+                            'admin123',
+                            'Admin',
+                          ),
+                          _buildDemoAccountChip(
+                            'rahim@corridorshare.com',
+                            'password123',
+                            'Rahim',
+                          ),
+                          _buildDemoAccountChip(
+                            'demo@corridorshare.com',
+                            'demo1234',
+                            'Demo',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFieldLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: AppColors.darkCharcoal,
+        letterSpacing: -0.1,
+      ),
+    );
+  }
+
+  /// Input container with cool rounded radius (22px)
+  Widget _buildInputContainer({required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.cardBorder,
+          width: 1.2,
+        ),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildOrDivider() {
+    return const Row(
+      children: <Widget>[
+        Expanded(
+          child: Divider(
+            color: AppColors.cardBorder,
+            thickness: 1,
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Or',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ticketMutedText,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(
+            color: AppColors.cardBorder,
+            thickness: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSocialPillButton({
+    required String label,
+    required Widget icon,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: AppColors.cardBorder,
+          width: 1.2,
+        ),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: onTap,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              icon,
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.darkCharcoal,
+                ),
               ),
             ],
           ),
@@ -315,433 +845,133 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage>
     );
   }
 
-  Widget _buildPhoneSection(
-    AppLocalizations l10n,
-    ThemeData theme,
-    String? phoneErrorText,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          l10n.phoneLabel,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+  Widget _buildCircularSocialButton({
+    required Widget icon,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.cardBorder,
+          width: 1.2,
         ),
-        const SizedBox(height: 8),
-        TextField(
-          key: const Key('phoneField'),
-          controller: _phoneController,
-          keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
-            hintText: l10n.phoneHint,
-            prefixIcon: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    '🇧🇩 +880',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 8),
-                  VerticalDivider(width: 1, indent: 12, endIndent: 12),
-                ],
-              ),
-            ),
-            errorText: phoneErrorText,
-          ),
-        ),
-        const SizedBox(height: 24),
-        FilledButton(
-          key: const Key('phoneContinue'),
-          onPressed: _phoneSubmitting ? null : _submitPhone,
-          child: _phoneSubmitting
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.phoneContinue),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmailSection(AppLocalizations l10n, ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        // Segmented Header: Sign In vs Sign Up
-        Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: const EdgeInsets.all(4),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: InkWell(
-                  key: const Key('signInSegmentTab'),
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: _emailSubmitting
-                      ? null
-                      : () {
-                          if (_isSignUp) {
-                            setState(() {
-                              _isSignUp = false;
-                              _emailErrorMessage = null;
-                            });
-                          }
-                        },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: !_isSignUp
-                          ? theme.colorScheme.surface
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: !_isSignUp
-                          ? <BoxShadow>[
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        Icon(
-                          Icons.login_rounded,
-                          size: 18,
-                          color: !_isSignUp
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.signInAction,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: !_isSignUp
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: InkWell(
-                  key: const Key('signUpSegmentTab'),
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: _emailSubmitting
-                      ? null
-                      : () {
-                          if (!_isSignUp) {
-                            setState(() {
-                              _isSignUp = true;
-                              _emailErrorMessage = null;
-                            });
-                          }
-                        },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _isSignUp
-                          ? theme.colorScheme.surface
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: _isSignUp
-                          ? <BoxShadow>[
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        Icon(
-                          Icons.person_add_alt_1_rounded,
-                          size: 18,
-                          color: _isSignUp
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.signUpAction,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: _isSignUp
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        if (_emailErrorMessage != null) ...<Widget>[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.errorContainer,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: <Widget>[
-                Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    _emailErrorMessage!,
-                    style: TextStyle(
-                      color: theme.colorScheme.onErrorContainer,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        // Name field (only for Sign Up)
-        if (_isSignUp) ...<Widget>[
-          Text(
-            l10n.nameLabel,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            key: const Key('nameField'),
-            controller: _nameController,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              hintText: l10n.nameHint,
-              prefixIcon: const Icon(Icons.person_outline),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        // Email / ID field
-        Text(
-          _isSignUp ? l10n.emailLabel : 'Email or User ID',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          key: const Key('emailField'),
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
-          decoration: InputDecoration(
-            hintText: _isSignUp ? l10n.emailHint : 'you@example.com or user ID',
-            prefixIcon: const Icon(Icons.alternate_email),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Password field
-        Text(
-          l10n.passwordLabel,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          key: const Key('passwordField'),
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          decoration: InputDecoration(
-            hintText: l10n.passwordHint,
-            prefixIcon: const Icon(Icons.lock_outline),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              onPressed: () {
-                setState(() => _obscurePassword = !_obscurePassword);
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // Confirm Password field (Sign Up only)
-        if (_isSignUp) ...<Widget>[
-          const SizedBox(height: 8),
-          Text(
-            l10n.confirmPasswordLabel,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            key: const Key('confirmPasswordField'),
-            controller: _confirmPasswordController,
-            obscureText: _obscureConfirmPassword,
-            decoration: InputDecoration(
-              hintText: l10n.confirmPasswordHint,
-              prefixIcon: const Icon(Icons.lock_reset_outlined),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                onPressed: () {
-                  setState(() =>
-                      _obscureConfirmPassword = !_obscureConfirmPassword);
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-
-        // Forgot password link (Sign in mode only)
-        if (!_isSignUp) ...<Widget>[
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: _emailSubmitting ? null : _forgotPassword,
-              child: Text(l10n.forgotPasswordAction),
-            ),
-          ),
-        ] else
-          const SizedBox(height: 12),
-
-        const SizedBox(height: 12),
-
-        // Action submit button
-        FilledButton(
-          key: const Key('emailSubmitButton'),
-          onPressed: _emailSubmitting ? null : _submitEmail,
-          child: _emailSubmitting
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(_isSignUp ? l10n.signUpAction : l10n.signInAction),
-        ),
-        const SizedBox(height: 16),
-
-        // Toggle Sign In / Sign Up
-        Center(
-          child: TextButton(
-            key: const Key('toggleAuthModeButton'),
-            onPressed: _emailSubmitting
-                ? null
-                : () {
-                    setState(() {
-                      _isSignUp = !_isSignUp;
-                      _emailErrorMessage = null;
-                    });
-                  },
-            child: Text(
-              _isSignUp ? l10n.alreadyHaveAccount : l10n.dontHaveAccount,
-              style: TextStyle(color: theme.colorScheme.primary),
-            ),
-          ),
-        ),
-
-        // Registered Demo Accounts banner (Sign In mode)
-        if (!_isSignUp) ...<Widget>[
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Icon(
-                      Icons.vpn_key_outlined,
-                      size: 16,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      l10n.registeredDemoAccounts,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: <Widget>[
-                    _buildDemoAccountChip('admin@corridorshare.com', 'admin123', 'Admin'),
-                    _buildDemoAccountChip('rahim@corridorshare.com', 'password123', 'Rahim'),
-                    _buildDemoAccountChip('demo@corridorshare.com', 'demo1234', 'Demo'),
-                  ],
-                ),
-              ],
-            ),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
           ),
         ],
-      ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Center(child: icon),
+        ),
+      ),
     );
   }
 
   Widget _buildDemoAccountChip(String email, String pass, String label) {
     return ActionChip(
-      avatar: const Icon(Icons.touch_app_outlined, size: 14),
-      label: Text(label, style: const TextStyle(fontSize: 12)),
+      avatar: const Icon(
+        Icons.touch_app_outlined,
+        size: 14,
+        color: AppColors.darkCharcoal,
+      ),
+      backgroundColor: Colors.white,
+      side: const BorderSide(color: AppColors.cardBorder, width: 1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      label: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: AppColors.darkCharcoal,
+        ),
+      ),
       onPressed: () {
         setState(() {
-          _emailController.text = email;
+          _identifierController.text = email;
           _passwordController.text = pass;
-          _emailErrorMessage = null;
+          _errorMessage = null;
         });
       },
     );
   }
+}
 
-  bool _isInvalidPhone(AuthState state) {
-    return state is AuthUnauthenticated && state.lastFailure != null;
+/// Official 4-color Google G icon painter
+class _GoogleLogo extends StatelessWidget {
+  const _GoogleLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      width: 18,
+      height: 18,
+      child: CustomPaint(
+        painter: _GoogleLogoPainter(),
+      ),
+    );
   }
+}
+
+class _GoogleLogoPainter extends CustomPainter {
+  const _GoogleLogoPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double w = size.width;
+    final double h = size.height;
+    final double cx = w / 2;
+    final double cy = h / 2;
+    final double r = w / 2;
+
+    final Paint paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.22
+      ..strokeCap = StrokeCap.butt;
+
+    final Rect rect = Rect.fromCircle(
+      center: Offset(cx, cy),
+      radius: r - paint.strokeWidth / 2,
+    );
+
+    // Blue arc
+    paint.color = const Color(0xFF4285F4);
+    canvas.drawArc(rect, -0.6, 1.2, false, paint);
+
+    // Green arc
+    paint.color = const Color(0xFF34A853);
+    canvas.drawArc(rect, 0.6, 1.2, false, paint);
+
+    // Yellow arc
+    paint.color = const Color(0xFFFBBC05);
+    canvas.drawArc(rect, 1.8, 1.2, false, paint);
+
+    // Red arc
+    paint.color = const Color(0xFFEA4335);
+    canvas.drawArc(rect, 3.0, 1.5, false, paint);
+
+    // Horizontal blue bar
+    final Paint barPaint = Paint()
+      ..color = const Color(0xFF4285F4)
+      ..style = PaintingStyle.fill;
+    final double barH = paint.strokeWidth;
+    canvas.drawRect(
+      Rect.fromLTWH(cx - 1, cy - barH / 2, r * 0.95, barH),
+      barPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

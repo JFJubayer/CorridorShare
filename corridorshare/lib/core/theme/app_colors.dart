@@ -16,4 +16,15 @@ class AppColors {
   static const Color danger = Color(0xFFB3261E);
   static const Color surfaceMuted = Color(0xFFF1F4F2);
   static const Color outline = Color(0xFFCAD2CF);
+
+  // Attachment Warm Ivory & Lime Design Tokens
+  static const Color warmIvory = Color(0xFFF6F5EE);
+  static const Color darkCharcoal = Color(0xFF122017);
+  static const Color limeAccent = Color(0xFFBDDC37);
+  static const Color cardBorder = Color(0xFFE8E6DB);
+  static const Color bannerBg = Color(0xFFEFEEDA);
+  static const Color ticketYellow = Color(0xFFFAF7CC);
+  static const Color ticketDarkText = Color(0xFF122017);
+  static const Color ticketMutedText = Color(0xFF7E867B);
+  static const Color pillInactive = Color(0xFFEBE8DC);
 }

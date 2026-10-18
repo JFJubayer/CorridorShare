@@ -38,36 +38,27 @@ Widget _harness({FakeAuthDataSource? dataSource}) {
 }
 
 void main() {
-  testWidgets('renders phone and email tabs and allows switching',
+  testWidgets('renders single unified login page directly with email/phone & password',
       (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(_harness());
-    await tester.pumpAndSettle();
-
-    expect(find.text('Phone'), findsOneWidget);
-    expect(find.text('Email'), findsOneWidget);
-    expect(find.byKey(const Key('phoneField')), findsOneWidget);
-
-    // Tap Email tab
-    await tester.tap(find.text('Email'));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('emailField')), findsOneWidget);
     expect(find.byKey(const Key('passwordField')), findsOneWidget);
     expect(find.byKey(const Key('emailSubmitButton')), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Sign In'), findsOneWidget);
+    expect(find.byKey(const Key('nameField')), findsNothing);
   });
 
-  testWidgets('toggles between Sign In and Sign Up modes',
+  testWidgets('toggles between Sign In and Sign Up modes via Create Account button',
       (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(_harness());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Email'));
     await tester.pumpAndSettle();
 
     // Default is Sign In
@@ -80,6 +71,7 @@ void main() {
 
     expect(find.widgetWithText(FilledButton, 'Create Account'), findsOneWidget);
     expect(find.byKey(const Key('nameField')), findsOneWidget);
+    expect(find.byKey(const Key('confirmPasswordField')), findsOneWidget);
   });
 
   testWidgets('signs in successfully with email and navigates to home',
@@ -90,11 +82,27 @@ void main() {
     await tester.pumpWidget(_harness());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Email'));
-    await tester.pumpAndSettle();
-
     await tester.enterText(
         find.byKey(const Key('emailField')), 'test@example.com');
+    await tester.enterText(
+        find.byKey(const Key('passwordField')), 'password123');
+    await tester.tap(find.byKey(const Key('emailSubmitButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home Screen'), findsOneWidget);
+  });
+
+  testWidgets('signs in successfully with phone number and navigates to home',
+      (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_harness());
+    await tester.pumpAndSettle();
+
+    // Using Rahim's registered phone number and password
+    await tester.enterText(
+        find.byKey(const Key('emailField')), '01712345678');
     await tester.enterText(
         find.byKey(const Key('passwordField')), 'password123');
     await tester.tap(find.byKey(const Key('emailSubmitButton')));
@@ -109,9 +117,6 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(_harness());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Email'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -137,9 +142,6 @@ void main() {
     await tester.pumpWidget(_harness());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Email'));
-    await tester.pumpAndSettle();
-
     await tester.enterText(
         find.byKey(const Key('emailField')), 'test@example.com');
     await tester.enterText(
@@ -159,11 +161,8 @@ void main() {
     await tester.pumpWidget(_harness());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Email'));
-    await tester.pumpAndSettle();
-
-    // Switch to Sign Up via segment tab
-    await tester.tap(find.byKey(const Key('signUpSegmentTab')));
+    // Switch to Sign Up mode
+    await tester.tap(find.byKey(const Key('toggleAuthModeButton')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('nameField')), findsOneWidget);
@@ -184,4 +183,3 @@ void main() {
     expect(find.text('Home Screen'), findsOneWidget);
   });
 }
-

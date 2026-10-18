@@ -1,4 +1,5 @@
 import 'package:corridorshare/core/config/cloudinary_config.dart';
+import 'package:corridorshare/core/firebase/firebase_bootstrap.dart';
 import 'package:corridorshare/core/storage/cloudinary_storage_service.dart';
 import 'package:corridorshare/core/storage/in_memory_storage_service.dart';
 import 'package:corridorshare/core/storage/storage_service.dart';
@@ -8,6 +9,7 @@ import 'package:corridorshare/features/admin/domain/repositories/admin_repositor
 import 'package:corridorshare/features/auth/data/datasources/auth_datasource.dart';
 import 'package:corridorshare/features/auth/data/datasources/fake_auth_datasource.dart';
 import 'package:corridorshare/features/auth/data/datasources/firebase_auth_datasource.dart';
+import 'package:corridorshare/features/auth/data/datasources/rest_auth_datasource.dart';
 import 'package:corridorshare/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:corridorshare/features/auth/domain/repositories/auth_repository.dart';
 import 'package:corridorshare/features/chats/data/datasources/chat_datasource.dart';
@@ -48,6 +50,9 @@ final authDataSourceProvider = Provider<AuthDataSource>((ref) {
   if (Firebase.apps.isNotEmpty) {
     return FirebaseAuthDataSource();
   }
+  if (FirebaseBootstrap.isEnabled) {
+    return RestAuthDataSource();
+  }
   return FakeAuthDataSource();
 });
 
@@ -57,10 +62,10 @@ final authRepositoryProvider = Provider<AuthRepository>(
 
 // --- Trips ---
 final tripDataSourceProvider = Provider<TripDataSource>((ref) {
-  if (Firebase.apps.isNotEmpty) {
+  if (FirebaseBootstrap.isEnabled || Firebase.apps.isNotEmpty) {
     return FirestoreTripDataSource();
   }
-  return InMemoryTripDataSource();
+  return InMemoryTripDataSource(seed: true);
 });
 
 final tripRepositoryProvider = Provider<TripRepository>((ref) {
@@ -70,10 +75,10 @@ final tripRepositoryProvider = Provider<TripRepository>((ref) {
 
 // --- Parcels ---
 final parcelDataSourceProvider = Provider<ParcelDataSource>((ref) {
-  if (Firebase.apps.isNotEmpty) {
+  if (FirebaseBootstrap.isEnabled || Firebase.apps.isNotEmpty) {
     return FirestoreParcelDataSource();
   }
-  return InMemoryParcelDataSource();
+  return InMemoryParcelDataSource(seed: true);
 });
 
 final parcelRepositoryProvider = Provider<ParcelRepository>((ref) {
