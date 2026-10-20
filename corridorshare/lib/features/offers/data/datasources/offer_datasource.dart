@@ -16,4 +16,6 @@ abstract class OfferDataSource {
   Future<OfferDto> getOfferById(String offerId);
 
   Future<List<OfferDto>> getOffersForUser(String userId);
+
+  Future<List<OfferDto>> getOffersForParcel(String parcelId);
 }

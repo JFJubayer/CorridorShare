@@ -13,6 +13,8 @@ abstract class TripDataSource {
 
   Future<TripDto> getTripById(String id);
 
+  Future<TripDto> updateTrip(TripDto trip);
+
   Future<TripDto> updateTripStatus({
     required String id,
     required String status,

@@ -111,5 +111,40 @@ void main() {
     expect(find.text('Deal Agreed!'), findsOneWidget);
     // Action buttons should now disappear since offer is terminal
     expect(find.byKey(const Key('acceptOfferButton')), findsNothing);
+    // Verify system message is in chat stream
+    expect(find.text('Deal agreed! Offer of ৳450 accepted.'), findsOneWidget);
+  });
+
+  testWidgets(
+      'submitting a counter offer generates a default system message in chat with who and how much',
+      (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(_buildHarness(offerId: 'offer-1'));
+    await tester.pumpAndSettle();
+
+    // Tap Counter offer button
+    await tester.tap(find.byKey(const Key('counterOfferButton')));
+    await tester.pumpAndSettle();
+
+    // Verify counter dialog opens
+    expect(find.byKey(const Key('counterPriceField')), findsOneWidget);
+
+    // Enter counter price
+    await tester.enterText(find.byKey(const Key('counterPriceField')), '520');
+    await tester.pump();
+
+    // Submit counter offer
+    await tester.tap(find.byKey(const Key('submitCounterPriceButton')));
+    await tester.pumpAndSettle();
+
+    // Verify the system message is displayed in the chat message stream
+    expect(
+      find.textContaining('countered with an offer of ৳520'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
   });
 }
+

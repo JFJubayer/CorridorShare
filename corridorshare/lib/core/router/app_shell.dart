@@ -28,32 +28,32 @@ class AppShell extends StatelessWidget {
   // Each maps directly to its corresponding branchIndex in StatefulNavigationShell.
   static const List<_NavItemConfig> _navItems = <_NavItemConfig>[
     _NavItemConfig(
-      branchIndex: 2, // Chats
-      labelKey: 'chat',
-      defaultLabel: 'Chat',
-      icon: Icons.textsms_outlined,
-      activeIcon: Icons.textsms,
+      branchIndex: 0, // Home
+      labelKey: 'home',
+      defaultLabel: 'Home',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
     ),
     _NavItemConfig(
       branchIndex: 1, // My Posts
-      labelKey: 'me',
-      defaultLabel: 'Me',
-      icon: Icons.grid_view_rounded,
-      activeIcon: Icons.grid_view_rounded,
+      labelKey: 'my_posts',
+      defaultLabel: 'My posts',
+      icon: Icons.format_list_bulleted_rounded,
+      activeIcon: Icons.format_list_bulleted_rounded,
     ),
     _NavItemConfig(
-      branchIndex: 0, // Explore (Home)
-      labelKey: 'explore',
-      defaultLabel: 'Explore',
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore,
+      branchIndex: 2, // Chats
+      labelKey: 'chats',
+      defaultLabel: 'Chats',
+      icon: Icons.chat_bubble_outline_rounded,
+      activeIcon: Icons.chat_bubble_rounded,
     ),
     _NavItemConfig(
       branchIndex: 3, // Profile
       labelKey: 'profile',
       defaultLabel: 'Profile',
       icon: Icons.person_outline_rounded,
-      activeIcon: Icons.person,
+      activeIcon: Icons.person_rounded,
     ),
   ];
 
@@ -66,22 +66,15 @@ class AppShell extends StatelessWidget {
       backgroundColor: AppColors.warmIvory,
       body: navigationShell,
       bottomNavigationBar: Container(
-        color: AppColors.warmIvory,
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
-        child: Container(
-          height: 68,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(34),
-            border: Border.all(color: AppColors.cardBorder, width: 1.2),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x14122017),
-                blurRadius: 18,
-                offset: Offset(0, 6),
-              ),
-            ],
+        decoration: const BoxDecoration(
+          color: AppColors.warmIvory,
+          border: Border(
+            top: BorderSide(color: AppColors.cardBorder, width: 1.0),
           ),
+        ),
+        padding: EdgeInsets.fromLTRB(8, 8, 8, 8 + bottomInset),
+        child: SizedBox(
+          height: 60,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: _navItems.map((item) {
@@ -113,12 +106,12 @@ class AppShell extends StatelessWidget {
 
   String _resolveLabel(String labelKey, AppLocalizations l10n) {
     switch (labelKey) {
-      case 'chat':
-        return l10n.tabChats == 'Chats' ? 'Chat' : l10n.tabChats;
-      case 'me':
-        return l10n.tabMyPosts == 'My posts' ? 'Me' : l10n.tabMyPosts;
-      case 'explore':
-        return l10n.tabHome == 'Home' ? 'Explore' : l10n.tabHome;
+      case 'home':
+        return l10n.tabHome;
+      case 'my_posts':
+        return l10n.tabMyPosts;
+      case 'chats':
+        return l10n.tabChats;
       case 'profile':
         return l10n.tabProfile;
       default:
@@ -148,48 +141,32 @@ class _MenuTabItem extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(34),
-      splashColor: AppColors.limeAccent.withValues(alpha: 0.2),
+      splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // Icon with soft lime pastel backdrop glow when selected (matching reference image)
-            SizedBox(
-              width: 32,
-              height: 28,
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: <Widget>[
-                  if (isSelected)
-                    Positioned(
-                      top: 1,
-                      left: 1,
-                      child: Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: AppColors.limeAccent.withValues(alpha: 0.5),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  Icon(
-                    icon,
-                    size: 24,
-                    color: isSelected ? activeColor : inactiveColor,
-                  ),
-                ],
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 58,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.limeAccent : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                size: 22,
+                color: isSelected ? activeColor : inactiveColor,
               ),
             ),
             const SizedBox(height: 3),
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 150),
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 color: isSelected ? activeColor : inactiveColor,
               ),

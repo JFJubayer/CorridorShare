@@ -13,16 +13,19 @@ class AcceptOffer {
   Future<Result<Offer>> call(String offerId) async {
     final result = await _offerRepository.acceptOffer(offerId);
 
-    return result.fold(
-      (acceptedOffer) async {
-        // Transition the underlying parcel to matched state
-        await _parcelRepository.updateParcelStatus(
-          id: acceptedOffer.parcelId,
-          status: ParcelStatus.matched,
-        );
-        return Ok<Offer>(acceptedOffer);
-      },
-      (failure) => Err<Offer>(failure),
-    );
+    switch (result) {
+      case Ok<Offer>(:final value):
+        try {
+          await _parcelRepository.updateParcelStatus(
+            id: value.parcelId,
+            status: ParcelStatus.matched,
+          );
+        } catch (_) {
+          // Parcel status transition non-blocking for offer acceptance
+        }
+        return Ok<Offer>(value);
+      case Err<Offer>(:final failure):
+        return Err<Offer>(failure);
+    }
   }
 }

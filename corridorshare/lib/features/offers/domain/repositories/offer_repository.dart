@@ -17,4 +17,6 @@ abstract class OfferRepository {
   Future<Result<Offer>> getOfferById(String offerId);
 
   Future<Result<List<Offer>>> getOffersForUser(String userId);
+
+  Future<Result<List<Offer>>> getOffersForParcel(String parcelId);
 }

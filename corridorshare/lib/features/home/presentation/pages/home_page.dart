@@ -1,11 +1,14 @@
 import 'package:corridorshare/core/router/app_router.dart';
 import 'package:corridorshare/core/theme/app_colors.dart';
+import 'package:corridorshare/features/auth/presentation/providers/auth_providers.dart';
 import 'package:corridorshare/features/parcels/domain/entities/parcel.dart';
 import 'package:corridorshare/features/parcels/presentation/providers/parcel_providers.dart';
 import 'package:corridorshare/features/parcels/presentation/widgets/parcel_card.dart';
+import 'package:corridorshare/features/parcels/presentation/widgets/parcel_details_sheet.dart';
 import 'package:corridorshare/features/trips/domain/entities/trip.dart';
 import 'package:corridorshare/features/trips/presentation/providers/trip_providers.dart';
 import 'package:corridorshare/features/trips/presentation/widgets/trip_card.dart';
+import 'package:corridorshare/features/trips/presentation/widgets/trip_details_sheet.dart';
 import 'package:corridorshare/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -792,6 +795,44 @@ class _HomePageState extends ConsumerState<HomePage>
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 10),
+                            // Auto-match parcels on this route button
+                            InkWell(
+                              key: const Key('autoMatchRouteButton'),
+                              onTap: () {
+                                context.push(
+                                  '${AppRoutes.match}?fromDistrict=$_selectedFromDistrict&toDistrict=$_selectedToDistrict',
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 10, horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFBDDC37),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: <Widget>[
+                                    Icon(
+                                      Icons.auto_awesome,
+                                      size: 16,
+                                      color: AppColors.darkCharcoal,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Auto-match parcels on this route',
+                                      style: TextStyle(
+                                        color: AppColors.darkCharcoal,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1249,13 +1290,30 @@ class _TripsFeedSliver extends ConsumerWidget {
           );
         }
 
+        final currentUser = ref.watch(currentUserProvider);
         return SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => TripCard(
-              trip: trips[index],
-              onTap: () =>
-                  context.push('${AppRoutes.match}?tripId=${trips[index].id}'),
-            ),
+            (context, index) {
+              final trip = trips[index];
+              return TripCard(
+                trip: trip,
+                onTap: () {
+                  final isOwner = currentUser != null &&
+                      (trip.travellerId == currentUser.id ||
+                          trip.travellerId == 'fake-uid-test');
+                  if (isOwner) {
+                    context.push('${AppRoutes.match}?tripId=${trip.id}');
+                  } else {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => TripDetailsSheet(trip: trip),
+                    );
+                  }
+                },
+              );
+            },
             childCount: trips.length,
           ),
         );
@@ -1387,13 +1445,31 @@ class _ParcelsFeedSliver extends ConsumerWidget {
           );
         }
 
+        final currentUser = ref.watch(currentUserProvider);
         return SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => ParcelCard(
-              parcel: parcels[index],
-              onTap: () => context
-                  .push('${AppRoutes.match}?parcelId=${parcels[index].id}'),
-            ),
+            (context, index) {
+              final parcel = parcels[index];
+              return ParcelCard(
+                parcel: parcel,
+                onTap: () {
+                  final isOwner = currentUser != null &&
+                      (parcel.senderId == currentUser.id ||
+                          parcel.senderId == 'fake-uid-test');
+                  if (isOwner) {
+                    context.push('${AppRoutes.offers}?parcelId=${parcel.id}',
+                        extra: parcel);
+                  } else {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => ParcelDetailsSheet(parcel: parcel),
+                    );
+                  }
+                },
+              );
+            },
             childCount: parcels.length,
           ),
         );

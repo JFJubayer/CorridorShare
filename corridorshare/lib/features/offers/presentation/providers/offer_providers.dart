@@ -1,5 +1,6 @@
 import 'package:corridorshare/core/di/injection.dart';
 import 'package:corridorshare/features/auth/presentation/providers/auth_providers.dart';
+import 'package:corridorshare/features/chats/presentation/providers/chat_providers.dart';
 import 'package:corridorshare/features/offers/domain/entities/offer.dart';
 import 'package:corridorshare/features/offers/domain/usecases/accept_offer.dart';
 import 'package:corridorshare/features/offers/domain/usecases/counter_offer.dart';
@@ -37,9 +38,9 @@ final getMyOffersUseCaseProvider = Provider<GetMyOffers>((ref) {
 
 final userOffersProvider = FutureProvider<List<Offer>>((ref) async {
   final currentUser = ref.watch(currentUserProvider);
-  if (currentUser == null) return const [];
+  final uid = currentUser?.id ?? 'traveller-1';
   final useCase = ref.watch(getMyOffersUseCaseProvider);
-  final result = await useCase(currentUser.id);
+  final result = await useCase(uid);
   return result.fold(
     (offers) => offers,
     (failure) => throw Exception(failure.message),
@@ -52,6 +53,16 @@ final offerByIdProvider =
   final result = await repo.getOfferById(offerId);
   return result.fold(
     (offer) => offer,
+    (failure) => throw Exception(failure.message),
+  );
+});
+
+final parcelOffersProvider =
+    FutureProvider.family<List<Offer>, String>((ref, parcelId) async {
+  final repo = ref.watch(offerRepositoryProvider);
+  final result = await repo.getOffersForParcel(parcelId);
+  return result.fold(
+    (offers) => offers,
     (failure) => throw Exception(failure.message),
   );
 });
@@ -82,6 +93,7 @@ class OfferActionController extends StateNotifier<OfferActionState> {
       (created) {
         state = OfferActionState(successOffer: created);
         _ref.invalidate(userOffersProvider);
+        _ref.invalidate(parcelOffersProvider);
         return true;
       },
       (failure) {
@@ -104,10 +116,35 @@ class OfferActionController extends StateNotifier<OfferActionState> {
       counterByUserId: counterByUserId,
     );
     return result.fold(
-      (updated) {
+      (updated) async {
         state = OfferActionState(successOffer: updated);
         _ref.invalidate(userOffersProvider);
         _ref.invalidate(offerByIdProvider(offerId));
+        _ref.invalidate(parcelOffersProvider);
+
+        final counterName = counterByUserId == updated.senderId
+            ? updated.senderName
+            : (counterByUserId == updated.travellerId
+                ? updated.travellerName
+                : (_ref.read(currentUserProvider)?.name.isNotEmpty == true
+                    ? _ref.read(currentUserProvider)!.name
+                    : updated.travellerName));
+        final priceStr = updated.price.truncateToDouble() == updated.price
+            ? updated.price.toInt().toString()
+            : updated.price.toStringAsFixed(1);
+
+        try {
+          final sendMessage = _ref.read(sendMessageUseCaseProvider);
+          await sendMessage(
+            offerId: offerId,
+            senderId: 'system',
+            senderName: 'System',
+            text: '$counterName countered with an offer of ৳$priceStr',
+          );
+        } catch (_) {
+          // System message failure should not block counter-offer success
+        }
+
         return true;
       },
       (failure) {
@@ -119,41 +156,75 @@ class OfferActionController extends StateNotifier<OfferActionState> {
 
   Future<bool> acceptOffer(String offerId) async {
     state = const OfferActionState(isLoading: true);
-    final useCase = _ref.read(acceptOfferUseCaseProvider);
-    final result = await useCase(offerId);
-    return result.fold(
-      (accepted) {
-        state = OfferActionState(successOffer: accepted);
+    try {
+      final useCase = _ref.read(acceptOfferUseCaseProvider);
+      final result = await useCase(offerId);
+      return result.fold(
+        (accepted) async {
+          if (mounted) {
+            state = OfferActionState(successOffer: accepted);
+          }
         _ref.invalidate(userOffersProvider);
         _ref.invalidate(offerByIdProvider(offerId));
+        _ref.invalidate(conversationsProvider);
         _ref.invalidate(parcelsFeedProvider);
         _ref.invalidate(myParcelsProvider);
-        return true;
-      },
-      (failure) {
-        state = OfferActionState(errorMessage: failure.message);
-        return false;
-      },
-    );
-  }
+        _ref.invalidate(parcelOffersProvider);
 
-  Future<bool> rejectOffer(String offerId) async {
-    state = const OfferActionState(isLoading: true);
-    final useCase = _ref.read(rejectOfferUseCaseProvider);
-    final result = await useCase(offerId);
-    return result.fold(
-      (rejected) {
-        state = OfferActionState(successOffer: rejected);
-        _ref.invalidate(userOffersProvider);
-        _ref.invalidate(offerByIdProvider(offerId));
+        final priceStr = accepted.price.truncateToDouble() == accepted.price
+            ? accepted.price.toInt().toString()
+            : accepted.price.toStringAsFixed(1);
+        try {
+          final sendMessage = _ref.read(sendMessageUseCaseProvider);
+          await sendMessage(
+            offerId: offerId,
+            senderId: 'system',
+            senderName: 'System',
+            text: 'Deal agreed! Offer of ৳$priceStr accepted.',
+          );
+        } catch (_) {
+          // System message non-blocking
+        }
+
         return true;
       },
       (failure) {
-        state = OfferActionState(errorMessage: failure.message);
+        if (mounted) {
+          state = OfferActionState(errorMessage: failure.message);
+        }
         return false;
       },
     );
+  } catch (e) {
+    if (mounted) {
+      state = OfferActionState(errorMessage: e.toString());
+    }
+    return false;
   }
+}
+
+Future<bool> rejectOffer(String offerId) async {
+  if (mounted) state = const OfferActionState(isLoading: true);
+  final useCase = _ref.read(rejectOfferUseCaseProvider);
+  final result = await useCase(offerId);
+  return result.fold(
+    (rejected) {
+      if (mounted) {
+        state = OfferActionState(successOffer: rejected);
+      }
+      _ref.invalidate(userOffersProvider);
+      _ref.invalidate(offerByIdProvider(offerId));
+      _ref.invalidate(parcelOffersProvider);
+      return true;
+    },
+    (failure) {
+      if (mounted) {
+        state = OfferActionState(errorMessage: failure.message);
+      }
+      return false;
+    },
+  );
+}
 }
 
 final offerActionControllerProvider = StateNotifierProvider.autoDispose<

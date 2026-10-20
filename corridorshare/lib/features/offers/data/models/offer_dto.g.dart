@@ -20,6 +20,14 @@ _OfferDto _$OfferDtoFromJson(Map<String, dynamic> json) => _OfferDto(
   price: (json['price'] as num).toDouble(),
   status: json['status'] as String,
   lastCounterBy: json['lastCounterBy'] as String,
+  travellerRating: (json['travellerRating'] as num?)?.toDouble() ?? 5.0,
+  travellerTripsCount: (json['travellerTripsCount'] as num?)?.toInt() ?? 0,
+  isTravellerVerified: json['isTravellerVerified'] as bool? ?? false,
+  noCarryTags:
+      (json['noCarryTags'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
   createdAt: json['createdAt'] as String,
   updatedAt: json['updatedAt'] as String,
 );
@@ -38,6 +46,10 @@ Map<String, dynamic> _$OfferDtoToJson(_OfferDto instance) => <String, dynamic>{
   'price': instance.price,
   'status': instance.status,
   'lastCounterBy': instance.lastCounterBy,
+  'travellerRating': instance.travellerRating,
+  'travellerTripsCount': instance.travellerTripsCount,
+  'isTravellerVerified': instance.isTravellerVerified,
+  'noCarryTags': instance.noCarryTags,
   'createdAt': instance.createdAt,
   'updatedAt': instance.updatedAt,
 };

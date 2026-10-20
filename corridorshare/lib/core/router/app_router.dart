@@ -5,13 +5,19 @@ import 'package:corridorshare/features/auth/presentation/pages/phone_entry_page.
 import 'package:corridorshare/features/auth/presentation/providers/auth_providers.dart';
 import 'package:corridorshare/features/chats/presentation/pages/chat_conversation_page.dart';
 import 'package:corridorshare/features/chats/presentation/pages/chats_page.dart';
+import 'package:corridorshare/features/deals/presentation/pages/deals_page.dart';
 import 'package:corridorshare/features/delivery/presentation/pages/delivery_tracking_page.dart';
 import 'package:corridorshare/features/home/presentation/pages/home_page.dart';
 import 'package:corridorshare/features/matching/presentation/pages/match_screen.dart';
 import 'package:corridorshare/features/my_posts/presentation/pages/my_posts_page.dart';
+import 'package:corridorshare/features/offers/presentation/pages/offers_page.dart';
+import 'package:corridorshare/features/parcels/domain/entities/parcel.dart';
+import 'package:corridorshare/features/parcels/presentation/pages/my_parcels_page.dart';
 import 'package:corridorshare/features/parcels/presentation/pages/post_parcel_page.dart';
 import 'package:corridorshare/features/profile/presentation/pages/profile_page.dart';
+import 'package:corridorshare/features/trips/domain/entities/trip.dart';
 import 'package:corridorshare/features/trips/presentation/pages/post_trip_page.dart';
+import 'package:corridorshare/features/wallet/presentation/pages/wallet_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,9 +31,14 @@ class AppRoutes {
   static const String myPosts = '/posts';
   static const String chats = '/chats';
   static const String profile = '/profile';
+  static const String myParcels = '/my-parcels';
+  static const String wallet = '/wallet';
   static const String newTrip = '/trips/new';
   static const String newParcel = '/parcels/new';
   static const String match = '/match';
+  static const String offers = '/offers';
+  static const String deals = '/deals';
+  static const String dealDetail = '/deals/:id';
   static const String chatDetail = '/chats/:id';
   static const String deliveryDetail = '/deliveries/:id';
   static const String admin = '/admin';
@@ -94,7 +105,10 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.newTrip,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) =>
-            const PostTripPage(),
+            PostTripPage(
+              initialTrip: state.extra as Trip?,
+              tripId: state.uri.queryParameters['tripId'],
+            ),
       ),
       GoRoute(
         path: AppRoutes.newParcel,
@@ -108,6 +122,31 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) => MatchScreen(
           tripId: state.uri.queryParameters['tripId'],
           parcelId: state.uri.queryParameters['parcelId'],
+          fromDistrict: state.uri.queryParameters['fromDistrict'],
+          toDistrict: state.uri.queryParameters['toDistrict'],
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.offers,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) => OffersPage(
+          parcelId: state.uri.queryParameters['parcelId'],
+          parcel: state.extra as Parcel?,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.deals,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) => DealsPage(
+          initialRole: state.uri.queryParameters['role'],
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.dealDetail,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) => DealsPage(
+          dealId: state.pathParameters['id'],
+          initialRole: state.uri.queryParameters['role'],
         ),
       ),
       GoRoute(
@@ -172,6 +211,28 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                 path: AppRoutes.profile,
                 builder: (BuildContext context, GoRouterState state) =>
                     const ProfilePage(),
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: 'wallet',
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const WalletPage(),
+                  ),
+                  GoRoute(
+                    path: 'parcels',
+                    builder: (BuildContext context, GoRouterState state) =>
+                        const MyParcelsPage(),
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: AppRoutes.myParcels,
+                builder: (BuildContext context, GoRouterState state) =>
+                    const MyParcelsPage(),
+              ),
+              GoRoute(
+                path: AppRoutes.wallet,
+                builder: (BuildContext context, GoRouterState state) =>
+                    const WalletPage(),
               ),
             ],
           ),

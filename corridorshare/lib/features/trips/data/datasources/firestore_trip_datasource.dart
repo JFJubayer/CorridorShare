@@ -177,6 +177,21 @@ class FirestoreTripDataSource implements TripDataSource {
   }
 
   @override
+  Future<TripDto> updateTrip(TripDto trip) async {
+    try {
+      if (_useNativeFirestore) {
+        await _collection.doc(trip.id).set(trip.toJson(), SetOptions(merge: true));
+      } else {
+        await _restService.setDocument('trips', trip.id, trip.toJson());
+      }
+      return trip;
+    } catch (e) {
+      if (e is Failure) rethrow;
+      throw ServerFailure('Failed to update trip: $e');
+    }
+  }
+
+  @override
   Future<TripDto> updateTripStatus({
     required String id,
     required String status,

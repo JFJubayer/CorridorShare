@@ -92,4 +92,18 @@ class OfferRepositoryImpl implements OfferRepository {
       return Err<List<Offer>>(UnknownFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Result<List<Offer>>> getOffersForParcel(String parcelId) async {
+    try {
+      final dtos = await _dataSource.getOffersForParcel(parcelId);
+      return Ok<List<Offer>>(
+        dtos.map((dto) => dto.toDomain()).toList(),
+      );
+    } on Failure catch (f) {
+      return Err<List<Offer>>(f);
+    } catch (e) {
+      return Err<List<Offer>>(UnknownFailure(e.toString()));
+    }
+  }
 }

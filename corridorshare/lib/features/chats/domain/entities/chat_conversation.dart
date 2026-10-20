@@ -17,5 +17,9 @@ abstract class ChatConversation with _$ChatConversation {
     required OfferStatus offerStatus,
     required String lastMessageText,
     required DateTime lastMessageTime,
+    @Default(0) int unreadCount,
+    @Default(true) bool isVerified,
+    @Default(null) String? customTag,
+    @Default(null) String? customTagType,
   }) = _ChatConversation;
 }

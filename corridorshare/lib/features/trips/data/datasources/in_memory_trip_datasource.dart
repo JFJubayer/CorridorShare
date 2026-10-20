@@ -14,6 +14,40 @@ class InMemoryTripDataSource implements TripDataSource {
     final now = DateTime.now();
     return <TripDto>[
       TripDto(
+        id: 'trip-mymensingh',
+        travellerId: 'fake-uid-test',
+        travellerName: 'Tanvir Ahmed',
+        fromDistrict: 'Dhaka',
+        fromArea: 'Uttara',
+        toDistrict: 'Mymensingh',
+        toArea: 'Mymensingh Sadar',
+        departureDate: DateTime(2026, 10, 24, 9, 0).toIso8601String(),
+        capacityKg: 5.0,
+        bookedKg: 2.2,
+        matchingParcelsCount: 4,
+        noCarryTags: const <String>['liquids', 'fragile'],
+        note: 'Travelling by car. Can carry documents and books.',
+        status: 'open',
+        createdAt: now.subtract(const Duration(hours: 4)).toIso8601String(),
+      ),
+      TripDto(
+        id: 'trip-sylhet',
+        travellerId: 'fake-uid-test',
+        travellerName: 'Tanvir Ahmed',
+        fromDistrict: 'Dhaka',
+        fromArea: 'Mohakhali',
+        toDistrict: 'Sylhet',
+        toArea: 'Zindabazar',
+        departureDate: DateTime(2026, 10, 25, 7, 30).toIso8601String(),
+        capacityKg: 4.0,
+        bookedKg: 0.0,
+        matchingParcelsCount: 0,
+        noCarryTags: const <String>['electronics'],
+        note: 'Travelling by Parabat Express.',
+        status: 'open',
+        createdAt: now.subtract(const Duration(hours: 6)).toIso8601String(),
+      ),
+      TripDto(
         id: 'trip-1',
         travellerId: 'traveller-1',
         travellerName: 'Rafiqul Islam',
@@ -23,6 +57,8 @@ class InMemoryTripDataSource implements TripDataSource {
         toArea: 'GEC Circle',
         departureDate: now.add(const Duration(days: 2)).toIso8601String(),
         capacityKg: 8.5,
+        bookedKg: 0.0,
+        matchingParcelsCount: 2,
         noCarryTags: const <String>['liquid', 'perishable_food'],
         note: 'Travelling by Sonar Bangla Express train. Can carry documents or gadgets.',
         status: 'open',
@@ -79,6 +115,17 @@ class InMemoryTripDataSource implements TripDataSource {
       throw const NotFoundFailure('Trip not found');
     }
     return _trips[index];
+  }
+
+  @override
+  Future<TripDto> updateTrip(TripDto trip) async {
+    final index = _trips.indexWhere((t) => t.id == trip.id);
+    if (index == -1) {
+      _trips.insert(0, trip);
+    } else {
+      _trips[index] = trip;
+    }
+    return trip;
   }
 
   @override

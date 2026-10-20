@@ -4,6 +4,7 @@ import 'package:corridorshare/features/trips/domain/entities/trip.dart';
 import 'package:corridorshare/features/trips/domain/usecases/create_trip.dart';
 import 'package:corridorshare/features/trips/domain/usecases/get_my_trips.dart';
 import 'package:corridorshare/features/trips/domain/usecases/get_trips.dart';
+import 'package:corridorshare/features/trips/domain/usecases/update_trip.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 export 'package:corridorshare/core/di/injection.dart'
@@ -11,6 +12,10 @@ export 'package:corridorshare/core/di/injection.dart'
 
 final createTripUseCaseProvider = Provider<CreateTrip>((ref) {
   return CreateTrip(ref.watch(tripRepositoryProvider));
+});
+
+final updateTripUseCaseProvider = Provider<UpdateTrip>((ref) {
+  return UpdateTrip(ref.watch(tripRepositoryProvider));
 });
 
 final getTripsUseCaseProvider = Provider<GetTrips>((ref) {
@@ -90,10 +95,11 @@ class PostTripState {
 }
 
 class PostTripController extends StateNotifier<PostTripState> {
-  PostTripController(this._createTrip, this._ref)
+  PostTripController(this._createTrip, this._updateTrip, this._ref)
       : super(const PostTripState());
 
   final CreateTrip _createTrip;
+  final UpdateTrip _updateTrip;
   final Ref _ref;
 
   Future<bool> submitTrip(Trip trip) async {
@@ -112,9 +118,30 @@ class PostTripController extends StateNotifier<PostTripState> {
       },
     );
   }
+
+  Future<bool> editTrip(Trip trip) async {
+    state = const PostTripState(isLoading: true);
+    final result = await _updateTrip(trip);
+    return result.fold(
+      (updated) {
+        state = PostTripState(createdTrip: updated);
+        _ref.read(tripsFeedProvider.notifier).refresh();
+        _ref.invalidate(myTripsProvider);
+        return true;
+      },
+      (failure) {
+        state = PostTripState(errorMessage: failure.message);
+        return false;
+      },
+    );
+  }
 }
 
 final postTripControllerProvider =
     StateNotifierProvider.autoDispose<PostTripController, PostTripState>((ref) {
-  return PostTripController(ref.watch(createTripUseCaseProvider), ref);
+  return PostTripController(
+    ref.watch(createTripUseCaseProvider),
+    ref.watch(updateTripUseCaseProvider),
+    ref,
+  );
 });

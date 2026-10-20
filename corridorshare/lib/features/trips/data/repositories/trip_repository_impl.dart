@@ -73,6 +73,19 @@ class TripRepositoryImpl implements TripRepository {
   }
 
   @override
+  Future<Result<Trip>> updateTrip(Trip trip) async {
+    try {
+      final dto = TripDto.fromDomain(trip);
+      final updated = await _dataSource.updateTrip(dto);
+      return Ok<Trip>(updated.toDomain());
+    } on Failure catch (f) {
+      return Err<Trip>(f);
+    } catch (e) {
+      return Err<Trip>(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Result<Trip>> updateTripStatus({
     required String id,
     required TripStatus status,

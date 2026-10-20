@@ -16,6 +16,8 @@ _TripDto _$TripDtoFromJson(Map<String, dynamic> json) => _TripDto(
   toArea: json['toArea'] as String,
   departureDate: json['departureDate'] as String,
   capacityKg: (json['capacityKg'] as num).toDouble(),
+  bookedKg: (json['bookedKg'] as num?)?.toDouble() ?? 0.0,
+  matchingParcelsCount: (json['matchingParcelsCount'] as num?)?.toInt() ?? 0,
   noCarryTags:
       (json['noCarryTags'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -36,6 +38,8 @@ Map<String, dynamic> _$TripDtoToJson(_TripDto instance) => <String, dynamic>{
   'toArea': instance.toArea,
   'departureDate': instance.departureDate,
   'capacityKg': instance.capacityKg,
+  'bookedKg': instance.bookedKg,
+  'matchingParcelsCount': instance.matchingParcelsCount,
   'noCarryTags': instance.noCarryTags,
   'note': instance.note,
   'status': instance.status,

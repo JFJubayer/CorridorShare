@@ -16,6 +16,8 @@ abstract class Trip with _$Trip {
     required String toArea,
     required DateTime departureDate,
     required double capacityKg,
+    @Default(0.0) double bookedKg,
+    @Default(0) int matchingParcelsCount,
     @Default(<String>[]) List<String> noCarryTags,
     String? note,
     @Default(TripStatus.open) TripStatus status,

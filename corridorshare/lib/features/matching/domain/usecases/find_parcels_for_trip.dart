@@ -1,7 +1,6 @@
 import 'package:corridorshare/core/utils/result.dart';
-import 'package:corridorshare/features/matching/domain/entities/match_check.dart';
+import 'package:corridorshare/features/matching/domain/services/route_match_engine.dart';
 import 'package:corridorshare/features/parcels/domain/entities/parcel.dart';
-import 'package:corridorshare/features/parcels/domain/entities/parcel_status.dart';
 import 'package:corridorshare/features/parcels/domain/repositories/parcel_repository.dart';
 import 'package:corridorshare/features/trips/domain/entities/trip.dart';
 
@@ -11,33 +10,40 @@ class FindParcelsForTrip {
   final ParcelRepository _parcelRepository;
 
   Future<Result<List<Parcel>>> call(Trip trip) async {
-    final result = await _parcelRepository.getParcels(
-      fromDistrict: trip.fromDistrict,
-      toDistrict: trip.toDistrict,
+    // 1. Fetch available parcels (corridor wide or fallback to districts)
+    var result = await _parcelRepository.getParcels();
+
+    var parcels = result.fold(
+      (p) => p,
+      (_) => <Parcel>[],
     );
 
-    return result.fold(
-      (parcels) {
-        final matches = parcels.where((parcel) {
-          if (parcel.status != ParcelStatus.open) return false;
-          if (!MatchCheck.isRouteCompatible(trip: trip, parcel: parcel)) {
-            return false;
-          }
-          if (!MatchCheck.isDateCompatible(trip: trip, parcel: parcel)) {
-            return false;
-          }
-          if (!MatchCheck.isCapacityCompatible(trip: trip, parcel: parcel)) {
-            return false;
-          }
-          if (MatchCheck.isBlockedByNoCarry(trip: trip, parcel: parcel)) {
-            return false;
-          }
-          return true;
-        }).toList();
+    if (parcels.isEmpty) {
+      final districtResult = await _parcelRepository.getParcels(
+        fromDistrict: trip.fromDistrict,
+        toDistrict: trip.toDistrict,
+      );
+      parcels = districtResult.fold(
+        (p) => p,
+        (_) => <Parcel>[],
+      );
+    }
 
-        return Ok<List<Parcel>>(matches);
-      },
-      (failure) => Err<List<Parcel>>(failure),
+    if (parcels.isEmpty) {
+      return const Ok<List<Parcel>>(<Parcel>[]);
+    }
+
+    // 2. Run RouteMatchEngine across the travel corridor
+    final matchResults = RouteMatchEngine.autoMatchParcelsForTrip(
+      trip: trip,
+      allParcels: parcels,
     );
+
+    final matchingParcels = matchResults
+        .where((r) => r.isMatch)
+        .map((r) => r.parcel)
+        .toList();
+
+    return Ok<List<Parcel>>(matchingParcels);
   }
 }

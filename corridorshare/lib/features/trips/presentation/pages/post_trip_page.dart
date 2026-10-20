@@ -10,7 +10,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 class PostTripPage extends ConsumerStatefulWidget {
-  const PostTripPage({super.key});
+  const PostTripPage({
+    this.initialTrip,
+    this.tripId,
+    super.key,
+  });
+
+  final Trip? initialTrip;
+  final String? tripId;
 
   @override
   ConsumerState<PostTripPage> createState() => _PostTripPageState();
@@ -18,6 +25,9 @@ class PostTripPage extends ConsumerStatefulWidget {
 
 class _PostTripPageState extends ConsumerState<PostTripPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  Trip? _activeTrip;
+  bool _isLoadingTrip = false;
 
   String? _fromDistrict = 'Dhaka';
   String? _toDistrict = 'Chattogram';
@@ -29,6 +39,47 @@ class _PostTripPageState extends ConsumerState<PostTripPage> {
 
   DateTime _departureDate = DateTime.now().add(const Duration(days: 1));
   final Set<String> _noCarryTags = <String>{'liquids', 'perishable_food'};
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTrip != null) {
+      _applyTrip(widget.initialTrip!);
+    } else if (widget.tripId != null) {
+      _isLoadingTrip = true;
+      Future.microtask(() async {
+        final res =
+            await ref.read(tripRepositoryProvider).getTripById(widget.tripId!);
+        if (mounted) {
+          setState(() {
+            _isLoadingTrip = false;
+            res.fold(
+              (trip) => _applyTrip(trip),
+              (_) {},
+            );
+          });
+        }
+      });
+    }
+  }
+
+  void _applyTrip(Trip trip) {
+    _activeTrip = trip;
+    _fromDistrict = trip.fromDistrict;
+    _toDistrict = trip.toDistrict;
+    _fromAreaController.text = trip.fromArea;
+    _toAreaController.text = trip.toArea;
+    _capacityController.text =
+        trip.capacityKg.truncateToDouble() == trip.capacityKg
+            ? trip.capacityKg.toInt().toString()
+            : trip.capacityKg.toStringAsFixed(1);
+    _departureDate = trip.departureDate;
+    _noCarryTags.clear();
+    _noCarryTags.addAll(trip.noCarryTags);
+    if (trip.note != null) {
+      _noteController.text = trip.note!;
+    }
+  }
 
   static const List<String> _commonTags = <String>[
     'liquids',
@@ -125,38 +176,53 @@ class _PostTripPageState extends ConsumerState<PostTripPage> {
             ? currentUser.email.split('@').first
             : 'User');
 
-    final Trip trip = Trip(
-      id: 'trip_${now.millisecondsSinceEpoch}',
-      travellerId: travellerId,
-      travellerName: travellerName,
-      fromDistrict: _fromDistrict!,
-      fromArea: _fromAreaController.text.trim(),
-      toDistrict: _toDistrict!,
-      toArea: _toAreaController.text.trim(),
-      departureDate: _departureDate,
-      capacityKg: capacity,
-      noCarryTags: _noCarryTags.toList(),
-      note: _noteController.text.trim().isEmpty
-          ? null
-          : _noteController.text.trim(),
-      status: TripStatus.open,
-      createdAt: now,
-    );
+    final bool isEditing = _activeTrip != null;
 
-    final bool success = await ref
-        .read(postTripControllerProvider.notifier)
-        .submitTrip(trip);
+    final Trip trip = isEditing
+        ? _activeTrip!.copyWith(
+            fromDistrict: _fromDistrict!,
+            fromArea: _fromAreaController.text.trim(),
+            toDistrict: _toDistrict!,
+            toArea: _toAreaController.text.trim(),
+            departureDate: _departureDate,
+            capacityKg: capacity,
+            noCarryTags: _noCarryTags.toList(),
+            note: _noteController.text.trim().isEmpty
+                ? null
+                : _noteController.text.trim(),
+          )
+        : Trip(
+            id: 'trip_${now.millisecondsSinceEpoch}',
+            travellerId: travellerId,
+            travellerName: travellerName,
+            fromDistrict: _fromDistrict!,
+            fromArea: _fromAreaController.text.trim(),
+            toDistrict: _toDistrict!,
+            toArea: _toAreaController.text.trim(),
+            departureDate: _departureDate,
+            capacityKg: capacity,
+            noCarryTags: _noCarryTags.toList(),
+            note: _noteController.text.trim().isEmpty
+                ? null
+                : _noteController.text.trim(),
+            status: TripStatus.open,
+            createdAt: now,
+          );
+
+    final bool success = isEditing
+        ? await ref.read(postTripControllerProvider.notifier).editTrip(trip)
+        : await ref.read(postTripControllerProvider.notifier).submitTrip(trip);
 
     if (mounted && success) {
       final AppLocalizations l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.tripCreatedSuccess),
+          content: Text(isEditing ? 'Trip updated successfully' : l10n.tripCreatedSuccess),
           backgroundColor: Colors.green,
         ),
       );
       if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(trip);
       }
     }
   }
@@ -165,7 +231,17 @@ class _PostTripPageState extends ConsumerState<PostTripPage> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final state = ref.watch(postTripControllerProvider);
+    final bool isEditing = _activeTrip != null;
     final DateFormat departureDateFormat = DateFormat('EEE, d MMM');
+
+    if (_isLoadingTrip) {
+      return const Scaffold(
+        backgroundColor: AppColors.warmIvory,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.darkCharcoal),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.warmIvory,
@@ -184,7 +260,7 @@ class _PostTripPageState extends ConsumerState<PostTripPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          l10n.postTripTitle,
+                          isEditing ? 'Edit trip' : l10n.postTripTitle,
                           style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
@@ -194,7 +270,9 @@ class _PostTripPageState extends ConsumerState<PostTripPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          l10n.postTripSubtitle,
+                          isEditing
+                              ? 'Update your itinerary and carrying capacity'
+                              : l10n.postTripSubtitle,
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.ticketMutedText,
@@ -596,9 +674,9 @@ class _PostTripPageState extends ConsumerState<PostTripPage> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Post trip',
-                        style: TextStyle(
+                    : Text(
+                        isEditing ? 'Save changes' : 'Post trip',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),

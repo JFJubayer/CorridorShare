@@ -13,6 +13,7 @@ import 'package:corridorshare/features/auth/data/datasources/rest_auth_datasourc
 import 'package:corridorshare/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:corridorshare/features/auth/domain/repositories/auth_repository.dart';
 import 'package:corridorshare/features/chats/data/datasources/chat_datasource.dart';
+import 'package:corridorshare/features/chats/data/datasources/firestore_chat_datasource.dart';
 import 'package:corridorshare/features/chats/data/datasources/in_memory_chat_datasource.dart';
 import 'package:corridorshare/features/chats/data/repositories/chat_repository_impl.dart';
 import 'package:corridorshare/features/chats/domain/repositories/chat_repository.dart';
@@ -20,6 +21,7 @@ import 'package:corridorshare/features/delivery/data/datasources/delivery_dataso
 import 'package:corridorshare/features/delivery/data/datasources/in_memory_delivery_datasource.dart';
 import 'package:corridorshare/features/delivery/data/repositories/delivery_repository_impl.dart';
 import 'package:corridorshare/features/delivery/domain/repositories/delivery_repository.dart';
+import 'package:corridorshare/features/offers/data/datasources/firestore_offer_datasource.dart';
 import 'package:corridorshare/features/offers/data/datasources/in_memory_offer_datasource.dart';
 import 'package:corridorshare/features/offers/data/datasources/offer_datasource.dart';
 import 'package:corridorshare/features/offers/data/repositories/offer_repository_impl.dart';
@@ -88,7 +90,10 @@ final parcelRepositoryProvider = Provider<ParcelRepository>((ref) {
 
 // --- Offers ---
 final offerDataSourceProvider = Provider<OfferDataSource>((ref) {
-  return InMemoryOfferDataSource();
+  if (FirebaseBootstrap.isEnabled || Firebase.apps.isNotEmpty) {
+    return FirestoreOfferDataSource();
+  }
+  return InMemoryOfferDataSource(seed: true);
 });
 
 final offerRepositoryProvider = Provider<OfferRepository>((ref) {
@@ -99,7 +104,10 @@ final offerRepositoryProvider = Provider<OfferRepository>((ref) {
 // --- Chats ---
 final chatDataSourceProvider = Provider<ChatDataSource>((ref) {
   final offerDataSource = ref.watch(offerDataSourceProvider);
-  return InMemoryChatDataSource(offerDataSource: offerDataSource);
+  if (FirebaseBootstrap.isEnabled || Firebase.apps.isNotEmpty) {
+    return FirestoreChatDataSource(offerDataSource: offerDataSource);
+  }
+  return InMemoryChatDataSource(offerDataSource: offerDataSource, seed: true);
 });
 
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {

@@ -20,6 +20,10 @@ abstract class Offer with _$Offer {
     required double price,
     required OfferStatus status,
     required String lastCounterBy,
+    @Default(5.0) double travellerRating,
+    @Default(0) int travellerTripsCount,
+    @Default(false) bool isTravellerVerified,
+    @Default(<String>[]) List<String> noCarryTags,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _Offer;

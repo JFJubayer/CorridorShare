@@ -13,7 +13,7 @@ class InMemoryChatDataSource implements ChatDataSource {
     bool seed = false,
   })  : _messages = initialMessages != null
             ? List<ChatMessageDto>.from(initialMessages)
-            : (seed ? _seedMessages() : <ChatMessageDto>[]) {
+            : (seed ? seedMessages() : <ChatMessageDto>[]) {
     _broadcastController = StreamController<List<ChatMessageDto>>.broadcast();
   }
 
@@ -21,9 +21,10 @@ class InMemoryChatDataSource implements ChatDataSource {
   final List<ChatMessageDto> _messages;
   late final StreamController<List<ChatMessageDto>> _broadcastController;
 
-  static List<ChatMessageDto> _seedMessages() {
+  static List<ChatMessageDto> seedMessages() {
     final now = DateTime.now();
     return <ChatMessageDto>[
+      // Offer 1 (preserved for tests)
       ChatMessageDto(
         id: 'msg-1',
         offerId: 'offer-1',
@@ -47,6 +48,88 @@ class InMemoryChatDataSource implements ChatDataSource {
         senderName: 'Tanvir Ahmed',
         text: 'Great, can you carry a small document envelope?',
         createdAt: now.subtract(const Duration(hours: 1, minutes: 30)).toIso8601String(),
+      ),
+
+      // Rafi Mahmud conversation (exact match to screenshot)
+      ChatMessageDto(
+        id: 'msg-rafi-1',
+        offerId: 'offer-rafi',
+        senderId: 'traveller-rafi',
+        senderName: 'Rafi Mahmud',
+        text: "Hi Tania! I'm leaving Dhaka on Saturday morning.",
+        createdAt: now.subtract(const Duration(minutes: 50)).toIso8601String(),
+      ),
+      ChatMessageDto(
+        id: 'msg-rafi-2',
+        offerId: 'offer-rafi',
+        senderId: 'sender-1',
+        senderName: 'Tania',
+        text: 'Great. Can we meet at Kamalapur station?',
+        createdAt: now.subtract(const Duration(minutes: 45)).toIso8601String(),
+      ),
+      ChatMessageDto(
+        id: 'msg-rafi-3',
+        offerId: 'offer-rafi',
+        senderId: 'traveller-rafi',
+        senderName: 'Rafi Mahmud',
+        text: 'Yes. What does the parcel look like?',
+        createdAt: now.subtract(const Duration(minutes: 30)).toIso8601String(),
+      ),
+      ChatMessageDto(
+        id: 'msg-rafi-4',
+        offerId: 'offer-rafi',
+        senderId: 'sender-1',
+        senderName: 'Tania',
+        text: 'A small brown envelope, 1.2 kg.',
+        createdAt: now.subtract(const Duration(minutes: 20)).toIso8601String(),
+      ),
+      ChatMessageDto(
+        id: 'msg-rafi-5',
+        offerId: 'offer-rafi',
+        senderId: 'traveller-rafi',
+        senderName: 'Rafi Mahmud',
+        text: "Okay, I'll be at Kamalapur at 8:30.",
+        createdAt: now.subtract(const Duration(minutes: 5)).toIso8601String(),
+      ),
+
+      // Nila Akter
+      ChatMessageDto(
+        id: 'msg-nila-1',
+        offerId: 'offer-nila',
+        senderId: 'traveller-nila',
+        senderName: 'Nila Akter',
+        text: 'Could you do ৳550 instead?',
+        createdAt: now.subtract(const Duration(minutes: 40)).toIso8601String(),
+      ),
+
+      // Sabbir Hasan
+      ChatMessageDto(
+        id: 'msg-sabbir-1',
+        offerId: 'offer-sabbir',
+        senderId: 'sender-1',
+        senderName: 'Tania',
+        text: "You: I've reported the problem.",
+        createdAt: now.subtract(const Duration(days: 1)).toIso8601String(),
+      ),
+
+      // Imran Khan
+      ChatMessageDto(
+        id: 'msg-imran-1',
+        offerId: 'offer-imran',
+        senderId: 'traveller-imran',
+        senderName: 'Imran Khan',
+        text: 'Delivered. Thank you!',
+        createdAt: now.subtract(const Duration(days: 3)).toIso8601String(),
+      ),
+
+      // CorridorShare Support
+      ChatMessageDto(
+        id: 'msg-support-1',
+        offerId: 'offer-support',
+        senderId: 'corridorshare-support',
+        senderName: 'CorridorShare',
+        text: 'Your Demo wallet is ready.',
+        createdAt: now.subtract(const Duration(days: 8)).toIso8601String(),
       ),
     ];
   }
@@ -91,6 +174,46 @@ class InMemoryChatDataSource implements ChatDataSource {
           ? DateTime.parse(offerMsgs.first.createdAt)
           : DateTime.parse(offer.updatedAt);
 
+      int unread = 0;
+      bool isVerified = true;
+      String? customTag;
+      String? customTagType;
+
+      if (offer.id == 'offer-rafi') {
+        unread = 2;
+        isVerified = true;
+        customTag = 'Agreed';
+        customTagType = 'agreed';
+      } else if (offer.id == 'offer-nila') {
+        unread = 1;
+        isVerified = true;
+        customTag = 'Counter-offer';
+        customTagType = 'counter';
+      } else if (offer.id == 'offer-sabbir') {
+        unread = 0;
+        isVerified = false;
+        customTag = 'Disputed';
+        customTagType = 'disputed';
+      } else if (offer.id == 'offer-imran') {
+        unread = 0;
+        isVerified = true;
+        customTag = 'Delivered';
+        customTagType = 'delivered';
+      } else if (offer.id == 'offer-support') {
+        unread = 0;
+        isVerified = false;
+        customTag = 'Help';
+        customTagType = 'help';
+      } else {
+        if (offer.status == 'accepted') {
+          customTag = 'Agreed';
+          customTagType = 'agreed';
+        } else {
+          customTag = 'Pending';
+          customTagType = 'pending';
+        }
+      }
+
       conversations.add(
         ChatConversation(
           offerId: offer.id,
@@ -106,6 +229,10 @@ class InMemoryChatDataSource implements ChatDataSource {
           ),
           lastMessageText: lastText,
           lastMessageTime: lastTime,
+          unreadCount: unread,
+          isVerified: isVerified,
+          customTag: customTag,
+          customTagType: customTagType,
         ),
       );
     }

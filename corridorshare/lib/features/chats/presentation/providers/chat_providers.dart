@@ -83,15 +83,19 @@ class ChatSendController extends StateNotifier<ChatSendState> {
 
     return result.fold(
       (sent) {
-        state = const ChatSendState(isSending: false);
+        if (mounted) {
+          state = const ChatSendState(isSending: false);
+        }
         _ref.invalidate(conversationsProvider);
         return true;
       },
       (failure) {
-        state = ChatSendState(
-          isSending: false,
-          errorMessage: failure.message,
-        );
+        if (mounted) {
+          state = ChatSendState(
+            isSending: false,
+            errorMessage: failure.message,
+          );
+        }
         return false;
       },
     );

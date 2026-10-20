@@ -109,6 +109,7 @@ class FirestoreRestService {
 
   String? get idToken => _idToken;
   String? get userId => _userId;
+  bool get isAuthenticated => _idToken != null && _idToken!.isNotEmpty;
 
   void setAuth({required String token, required String userId}) {
     _idToken = token;

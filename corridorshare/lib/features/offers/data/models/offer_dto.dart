@@ -21,6 +21,10 @@ abstract class OfferDto with _$OfferDto {
     required double price,
     required String status,
     required String lastCounterBy,
+    @Default(5.0) double travellerRating,
+    @Default(0) int travellerTripsCount,
+    @Default(false) bool isTravellerVerified,
+    @Default(<String>[]) List<String> noCarryTags,
     required String createdAt,
     required String updatedAt,
   }) = _OfferDto;
@@ -42,6 +46,10 @@ abstract class OfferDto with _$OfferDto {
         price: offer.price,
         status: offer.status.name,
         lastCounterBy: offer.lastCounterBy,
+        travellerRating: offer.travellerRating,
+        travellerTripsCount: offer.travellerTripsCount,
+        isTravellerVerified: offer.isTravellerVerified,
+        noCarryTags: offer.noCarryTags,
         createdAt: offer.createdAt.toIso8601String(),
         updatedAt: offer.updatedAt.toIso8601String(),
       );
@@ -66,6 +74,10 @@ extension OfferDtoX on OfferDto {
         orElse: () => OfferStatus.pendingTraveller,
       ),
       lastCounterBy: lastCounterBy,
+      travellerRating: travellerRating,
+      travellerTripsCount: travellerTripsCount,
+      isTravellerVerified: isTravellerVerified,
+      noCarryTags: noCarryTags,
       createdAt: DateTime.parse(createdAt),
       updatedAt: DateTime.parse(updatedAt),
     );

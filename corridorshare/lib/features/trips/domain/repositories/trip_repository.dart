@@ -19,6 +19,9 @@ abstract class TripRepository {
   /// Fetch a trip by id.
   Future<Result<Trip>> getTripById(String id);
 
+  /// Update an existing trip.
+  Future<Result<Trip>> updateTrip(Trip trip);
+
   /// Update the status of a trip.
   Future<Result<Trip>> updateTripStatus({
     required String id,

@@ -88,4 +88,80 @@ void main() {
     expect(trips.first.capacityKg, 7.5);
     expect(trips.first.fromArea, 'Dhanmondi');
   });
+
+  testWidgets('preloads trip data when initialTrip is provided and saves update to database',
+      (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final now = DateTime.now();
+    final initialTripDto = TripDto(
+      id: 'trip-existing-1',
+      travellerId: 'traveller-1',
+      travellerName: 'Rafiqul Islam',
+      fromDistrict: 'Dhaka',
+      fromArea: 'Gulshan',
+      toDistrict: 'Chattogram',
+      toArea: 'GEC Circle',
+      departureDate: now.add(const Duration(days: 2)).toIso8601String(),
+      capacityKg: 6.0,
+      bookedKg: 0.0,
+      matchingParcelsCount: 1,
+      noCarryTags: const <String>['liquids'],
+      note: 'AC bus travelling',
+      status: 'open',
+      createdAt: now.toIso8601String(),
+    );
+
+    final ds = InMemoryTripDataSource(initialTrips: <TripDto>[initialTripDto]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          tripDataSourceProvider.overrideWithValue(ds),
+          currentUserProvider.overrideWithValue(
+            const AuthUser(
+              id: 'traveller-1',
+              phone: '+8801700000000',
+              name: 'Rafiqul Islam',
+              verified: true,
+              ratingAvg: 4.8,
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: PostTripPage(initialTrip: initialTripDto.toDomain()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify preloaded values
+    expect(find.text('Edit trip'), findsOneWidget);
+    expect(find.text('Save changes'), findsOneWidget);
+    expect(find.text('Gulshan'), findsOneWidget);
+    expect(find.text('GEC Circle'), findsOneWidget);
+    expect(find.text('6'), findsOneWidget);
+
+    // Edit capacity and notes
+    await tester.enterText(find.byKey(const Key('capacityField')), '9.5');
+    await tester.enterText(find.byKey(const Key('fromAreaField')), 'Banani');
+
+    // Submit / Save
+    await tester.tap(find.byKey(const Key('submitTripButton')));
+    await tester.pumpAndSettle();
+
+    // Verify updated data synced to database
+    final updated = await ds.getTripById('trip-existing-1');
+    expect(updated.capacityKg, 9.5);
+    expect(updated.fromArea, 'Banani');
+  });
 }

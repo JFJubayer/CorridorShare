@@ -1,6 +1,7 @@
 import 'package:corridorshare/core/di/injection.dart';
 import 'package:corridorshare/features/auth/presentation/providers/auth_providers.dart';
 import 'package:corridorshare/features/parcels/domain/entities/parcel.dart';
+import 'package:corridorshare/features/parcels/domain/entities/parcel_status.dart';
 import 'package:corridorshare/features/parcels/domain/usecases/create_parcel.dart';
 import 'package:corridorshare/features/parcels/domain/usecases/get_my_parcels.dart';
 import 'package:corridorshare/features/parcels/domain/usecases/get_parcels.dart';
@@ -76,6 +77,16 @@ final myParcelsProvider = FutureProvider<List<Parcel>>((ref) async {
   );
 });
 
+/// All available open parcels across the platform for match computation.
+final allOpenParcelsProvider = FutureProvider<List<Parcel>>((ref) async {
+  final useCase = ref.watch(getParcelsUseCaseProvider);
+  final result = await useCase();
+  return result.fold(
+    (parcels) => parcels.where((p) => p.status == ParcelStatus.open).toList(),
+    (failure) => <Parcel>[],
+  );
+});
+
 /// Post Parcel form state notifier.
 class PostParcelState {
   const PostParcelState({
@@ -103,6 +114,7 @@ class PostParcelController extends StateNotifier<PostParcelState> {
       (created) {
         state = PostParcelState(createdParcel: created);
         _ref.read(parcelsFeedProvider.notifier).refresh();
+        _ref.invalidate(allOpenParcelsProvider);
         _ref.invalidate(myParcelsProvider);
         return true;
       },
