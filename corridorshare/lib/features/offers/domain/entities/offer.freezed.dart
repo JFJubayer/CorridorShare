@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Offer {
 
- String get id; String get parcelId; String get tripId; String get senderId; String get senderName; String get travellerId; String get travellerName; String get parcelTitle; String get fromDistrict; String get toDistrict; double get price; OfferStatus get status; String get lastCounterBy; double get travellerRating; int get travellerTripsCount; bool get isTravellerVerified; List<String> get noCarryTags; DateTime get createdAt; DateTime get updatedAt;
+ String get id; String get parcelId; String get tripId; String get senderId; String get senderName; String get travellerId; String get travellerName; String get parcelTitle; String get fromDistrict; String get toDistrict; double get price; OfferStatus get status; String get lastCounterBy; double get travellerRating; int get travellerTripsCount; bool get isTravellerVerified; List<String> get noCarryTags; bool get senderAccepted; bool get travellerAccepted; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of Offer
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $OfferCopyWith<Offer> get copyWith => _$OfferCopyWithImpl<Offer>(this as Offer, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Offer&&(identical(other.id, id) || other.id == id)&&(identical(other.parcelId, parcelId) || other.parcelId == parcelId)&&(identical(other.tripId, tripId) || other.tripId == tripId)&&(identical(other.senderId, senderId) || other.senderId == senderId)&&(identical(other.senderName, senderName) || other.senderName == senderName)&&(identical(other.travellerId, travellerId) || other.travellerId == travellerId)&&(identical(other.travellerName, travellerName) || other.travellerName == travellerName)&&(identical(other.parcelTitle, parcelTitle) || other.parcelTitle == parcelTitle)&&(identical(other.fromDistrict, fromDistrict) || other.fromDistrict == fromDistrict)&&(identical(other.toDistrict, toDistrict) || other.toDistrict == toDistrict)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastCounterBy, lastCounterBy) || other.lastCounterBy == lastCounterBy)&&(identical(other.travellerRating, travellerRating) || other.travellerRating == travellerRating)&&(identical(other.travellerTripsCount, travellerTripsCount) || other.travellerTripsCount == travellerTripsCount)&&(identical(other.isTravellerVerified, isTravellerVerified) || other.isTravellerVerified == isTravellerVerified)&&const DeepCollectionEquality().equals(other.noCarryTags, noCarryTags)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Offer&&(identical(other.id, id) || other.id == id)&&(identical(other.parcelId, parcelId) || other.parcelId == parcelId)&&(identical(other.tripId, tripId) || other.tripId == tripId)&&(identical(other.senderId, senderId) || other.senderId == senderId)&&(identical(other.senderName, senderName) || other.senderName == senderName)&&(identical(other.travellerId, travellerId) || other.travellerId == travellerId)&&(identical(other.travellerName, travellerName) || other.travellerName == travellerName)&&(identical(other.parcelTitle, parcelTitle) || other.parcelTitle == parcelTitle)&&(identical(other.fromDistrict, fromDistrict) || other.fromDistrict == fromDistrict)&&(identical(other.toDistrict, toDistrict) || other.toDistrict == toDistrict)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastCounterBy, lastCounterBy) || other.lastCounterBy == lastCounterBy)&&(identical(other.travellerRating, travellerRating) || other.travellerRating == travellerRating)&&(identical(other.travellerTripsCount, travellerTripsCount) || other.travellerTripsCount == travellerTripsCount)&&(identical(other.isTravellerVerified, isTravellerVerified) || other.isTravellerVerified == isTravellerVerified)&&const DeepCollectionEquality().equals(other.noCarryTags, noCarryTags)&&(identical(other.senderAccepted, senderAccepted) || other.senderAccepted == senderAccepted)&&(identical(other.travellerAccepted, travellerAccepted) || other.travellerAccepted == travellerAccepted)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,id,parcelId,tripId,senderId,senderName,travellerId,travellerName,parcelTitle,fromDistrict,toDistrict,price,status,lastCounterBy,travellerRating,travellerTripsCount,isTravellerVerified,const DeepCollectionEquality().hash(noCarryTags),createdAt,updatedAt]);
+int get hashCode => Object.hashAll([runtimeType,id,parcelId,tripId,senderId,senderName,travellerId,travellerName,parcelTitle,fromDistrict,toDistrict,price,status,lastCounterBy,travellerRating,travellerTripsCount,isTravellerVerified,const DeepCollectionEquality().hash(noCarryTags),senderAccepted,travellerAccepted,createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'Offer(id: $id, parcelId: $parcelId, tripId: $tripId, senderId: $senderId, senderName: $senderName, travellerId: $travellerId, travellerName: $travellerName, parcelTitle: $parcelTitle, fromDistrict: $fromDistrict, toDistrict: $toDistrict, price: $price, status: $status, lastCounterBy: $lastCounterBy, travellerRating: $travellerRating, travellerTripsCount: $travellerTripsCount, isTravellerVerified: $isTravellerVerified, noCarryTags: $noCarryTags, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'Offer(id: $id, parcelId: $parcelId, tripId: $tripId, senderId: $senderId, senderName: $senderName, travellerId: $travellerId, travellerName: $travellerName, parcelTitle: $parcelTitle, fromDistrict: $fromDistrict, toDistrict: $toDistrict, price: $price, status: $status, lastCounterBy: $lastCounterBy, travellerRating: $travellerRating, travellerTripsCount: $travellerTripsCount, isTravellerVerified: $isTravellerVerified, noCarryTags: $noCarryTags, senderAccepted: $senderAccepted, travellerAccepted: $travellerAccepted, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $OfferCopyWith<$Res>  {
   factory $OfferCopyWith(Offer value, $Res Function(Offer) _then) = _$OfferCopyWithImpl;
 @useResult
 $Res call({
- String id, String parcelId, String tripId, String senderId, String senderName, String travellerId, String travellerName, String parcelTitle, String fromDistrict, String toDistrict, double price, OfferStatus status, String lastCounterBy, double travellerRating, int travellerTripsCount, bool isTravellerVerified, List<String> noCarryTags, DateTime createdAt, DateTime updatedAt
+ String id, String parcelId, String tripId, String senderId, String senderName, String travellerId, String travellerName, String parcelTitle, String fromDistrict, String toDistrict, double price, OfferStatus status, String lastCounterBy, double travellerRating, int travellerTripsCount, bool isTravellerVerified, List<String> noCarryTags, bool senderAccepted, bool travellerAccepted, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -62,7 +62,7 @@ class _$OfferCopyWithImpl<$Res>
 
 /// Create a copy of Offer
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? parcelId = null,Object? tripId = null,Object? senderId = null,Object? senderName = null,Object? travellerId = null,Object? travellerName = null,Object? parcelTitle = null,Object? fromDistrict = null,Object? toDistrict = null,Object? price = null,Object? status = null,Object? lastCounterBy = null,Object? travellerRating = null,Object? travellerTripsCount = null,Object? isTravellerVerified = null,Object? noCarryTags = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? parcelId = null,Object? tripId = null,Object? senderId = null,Object? senderName = null,Object? travellerId = null,Object? travellerName = null,Object? parcelTitle = null,Object? fromDistrict = null,Object? toDistrict = null,Object? price = null,Object? status = null,Object? lastCounterBy = null,Object? travellerRating = null,Object? travellerTripsCount = null,Object? isTravellerVerified = null,Object? noCarryTags = null,Object? senderAccepted = null,Object? travellerAccepted = null,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,parcelId: null == parcelId ? _self.parcelId : parcelId // ignore: cast_nullable_to_non_nullable
@@ -81,7 +81,9 @@ as String,travellerRating: null == travellerRating ? _self.travellerRating : tra
 as double,travellerTripsCount: null == travellerTripsCount ? _self.travellerTripsCount : travellerTripsCount // ignore: cast_nullable_to_non_nullable
 as int,isTravellerVerified: null == isTravellerVerified ? _self.isTravellerVerified : isTravellerVerified // ignore: cast_nullable_to_non_nullable
 as bool,noCarryTags: null == noCarryTags ? _self.noCarryTags : noCarryTags // ignore: cast_nullable_to_non_nullable
-as List<String>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as List<String>,senderAccepted: null == senderAccepted ? _self.senderAccepted : senderAccepted // ignore: cast_nullable_to_non_nullable
+as bool,travellerAccepted: null == travellerAccepted ? _self.travellerAccepted : travellerAccepted // ignore: cast_nullable_to_non_nullable
+as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
@@ -168,10 +170,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String parcelId,  String tripId,  String senderId,  String senderName,  String travellerId,  String travellerName,  String parcelTitle,  String fromDistrict,  String toDistrict,  double price,  OfferStatus status,  String lastCounterBy,  double travellerRating,  int travellerTripsCount,  bool isTravellerVerified,  List<String> noCarryTags,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String parcelId,  String tripId,  String senderId,  String senderName,  String travellerId,  String travellerName,  String parcelTitle,  String fromDistrict,  String toDistrict,  double price,  OfferStatus status,  String lastCounterBy,  double travellerRating,  int travellerTripsCount,  bool isTravellerVerified,  List<String> noCarryTags,  bool senderAccepted,  bool travellerAccepted,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Offer() when $default != null:
-return $default(_that.id,_that.parcelId,_that.tripId,_that.senderId,_that.senderName,_that.travellerId,_that.travellerName,_that.parcelTitle,_that.fromDistrict,_that.toDistrict,_that.price,_that.status,_that.lastCounterBy,_that.travellerRating,_that.travellerTripsCount,_that.isTravellerVerified,_that.noCarryTags,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.parcelId,_that.tripId,_that.senderId,_that.senderName,_that.travellerId,_that.travellerName,_that.parcelTitle,_that.fromDistrict,_that.toDistrict,_that.price,_that.status,_that.lastCounterBy,_that.travellerRating,_that.travellerTripsCount,_that.isTravellerVerified,_that.noCarryTags,_that.senderAccepted,_that.travellerAccepted,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -189,10 +191,10 @@ return $default(_that.id,_that.parcelId,_that.tripId,_that.senderId,_that.sender
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String parcelId,  String tripId,  String senderId,  String senderName,  String travellerId,  String travellerName,  String parcelTitle,  String fromDistrict,  String toDistrict,  double price,  OfferStatus status,  String lastCounterBy,  double travellerRating,  int travellerTripsCount,  bool isTravellerVerified,  List<String> noCarryTags,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String parcelId,  String tripId,  String senderId,  String senderName,  String travellerId,  String travellerName,  String parcelTitle,  String fromDistrict,  String toDistrict,  double price,  OfferStatus status,  String lastCounterBy,  double travellerRating,  int travellerTripsCount,  bool isTravellerVerified,  List<String> noCarryTags,  bool senderAccepted,  bool travellerAccepted,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Offer():
-return $default(_that.id,_that.parcelId,_that.tripId,_that.senderId,_that.senderName,_that.travellerId,_that.travellerName,_that.parcelTitle,_that.fromDistrict,_that.toDistrict,_that.price,_that.status,_that.lastCounterBy,_that.travellerRating,_that.travellerTripsCount,_that.isTravellerVerified,_that.noCarryTags,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.parcelId,_that.tripId,_that.senderId,_that.senderName,_that.travellerId,_that.travellerName,_that.parcelTitle,_that.fromDistrict,_that.toDistrict,_that.price,_that.status,_that.lastCounterBy,_that.travellerRating,_that.travellerTripsCount,_that.isTravellerVerified,_that.noCarryTags,_that.senderAccepted,_that.travellerAccepted,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +211,10 @@ return $default(_that.id,_that.parcelId,_that.tripId,_that.senderId,_that.sender
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String parcelId,  String tripId,  String senderId,  String senderName,  String travellerId,  String travellerName,  String parcelTitle,  String fromDistrict,  String toDistrict,  double price,  OfferStatus status,  String lastCounterBy,  double travellerRating,  int travellerTripsCount,  bool isTravellerVerified,  List<String> noCarryTags,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String parcelId,  String tripId,  String senderId,  String senderName,  String travellerId,  String travellerName,  String parcelTitle,  String fromDistrict,  String toDistrict,  double price,  OfferStatus status,  String lastCounterBy,  double travellerRating,  int travellerTripsCount,  bool isTravellerVerified,  List<String> noCarryTags,  bool senderAccepted,  bool travellerAccepted,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Offer() when $default != null:
-return $default(_that.id,_that.parcelId,_that.tripId,_that.senderId,_that.senderName,_that.travellerId,_that.travellerName,_that.parcelTitle,_that.fromDistrict,_that.toDistrict,_that.price,_that.status,_that.lastCounterBy,_that.travellerRating,_that.travellerTripsCount,_that.isTravellerVerified,_that.noCarryTags,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.parcelId,_that.tripId,_that.senderId,_that.senderName,_that.travellerId,_that.travellerName,_that.parcelTitle,_that.fromDistrict,_that.toDistrict,_that.price,_that.status,_that.lastCounterBy,_that.travellerRating,_that.travellerTripsCount,_that.isTravellerVerified,_that.noCarryTags,_that.senderAccepted,_that.travellerAccepted,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -224,7 +226,7 @@ return $default(_that.id,_that.parcelId,_that.tripId,_that.senderId,_that.sender
 
 
 class _Offer implements Offer {
-  const _Offer({required this.id, required this.parcelId, required this.tripId, required this.senderId, required this.senderName, required this.travellerId, required this.travellerName, required this.parcelTitle, required this.fromDistrict, required this.toDistrict, required this.price, required this.status, required this.lastCounterBy, this.travellerRating = 5.0, this.travellerTripsCount = 0, this.isTravellerVerified = false, final  List<String> noCarryTags = const <String>[], required this.createdAt, required this.updatedAt}): _noCarryTags = noCarryTags;
+  const _Offer({required this.id, required this.parcelId, required this.tripId, required this.senderId, required this.senderName, required this.travellerId, required this.travellerName, required this.parcelTitle, required this.fromDistrict, required this.toDistrict, required this.price, required this.status, required this.lastCounterBy, this.travellerRating = 5.0, this.travellerTripsCount = 0, this.isTravellerVerified = false, final  List<String> noCarryTags = const <String>[], this.senderAccepted = false, this.travellerAccepted = false, required this.createdAt, required this.updatedAt}): _noCarryTags = noCarryTags;
   
 
 @override final  String id;
@@ -250,6 +252,8 @@ class _Offer implements Offer {
   return EqualUnmodifiableListView(_noCarryTags);
 }
 
+@override@JsonKey() final  bool senderAccepted;
+@override@JsonKey() final  bool travellerAccepted;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
 
@@ -263,16 +267,16 @@ _$OfferCopyWith<_Offer> get copyWith => __$OfferCopyWithImpl<_Offer>(this, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Offer&&(identical(other.id, id) || other.id == id)&&(identical(other.parcelId, parcelId) || other.parcelId == parcelId)&&(identical(other.tripId, tripId) || other.tripId == tripId)&&(identical(other.senderId, senderId) || other.senderId == senderId)&&(identical(other.senderName, senderName) || other.senderName == senderName)&&(identical(other.travellerId, travellerId) || other.travellerId == travellerId)&&(identical(other.travellerName, travellerName) || other.travellerName == travellerName)&&(identical(other.parcelTitle, parcelTitle) || other.parcelTitle == parcelTitle)&&(identical(other.fromDistrict, fromDistrict) || other.fromDistrict == fromDistrict)&&(identical(other.toDistrict, toDistrict) || other.toDistrict == toDistrict)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastCounterBy, lastCounterBy) || other.lastCounterBy == lastCounterBy)&&(identical(other.travellerRating, travellerRating) || other.travellerRating == travellerRating)&&(identical(other.travellerTripsCount, travellerTripsCount) || other.travellerTripsCount == travellerTripsCount)&&(identical(other.isTravellerVerified, isTravellerVerified) || other.isTravellerVerified == isTravellerVerified)&&const DeepCollectionEquality().equals(other._noCarryTags, _noCarryTags)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Offer&&(identical(other.id, id) || other.id == id)&&(identical(other.parcelId, parcelId) || other.parcelId == parcelId)&&(identical(other.tripId, tripId) || other.tripId == tripId)&&(identical(other.senderId, senderId) || other.senderId == senderId)&&(identical(other.senderName, senderName) || other.senderName == senderName)&&(identical(other.travellerId, travellerId) || other.travellerId == travellerId)&&(identical(other.travellerName, travellerName) || other.travellerName == travellerName)&&(identical(other.parcelTitle, parcelTitle) || other.parcelTitle == parcelTitle)&&(identical(other.fromDistrict, fromDistrict) || other.fromDistrict == fromDistrict)&&(identical(other.toDistrict, toDistrict) || other.toDistrict == toDistrict)&&(identical(other.price, price) || other.price == price)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastCounterBy, lastCounterBy) || other.lastCounterBy == lastCounterBy)&&(identical(other.travellerRating, travellerRating) || other.travellerRating == travellerRating)&&(identical(other.travellerTripsCount, travellerTripsCount) || other.travellerTripsCount == travellerTripsCount)&&(identical(other.isTravellerVerified, isTravellerVerified) || other.isTravellerVerified == isTravellerVerified)&&const DeepCollectionEquality().equals(other._noCarryTags, _noCarryTags)&&(identical(other.senderAccepted, senderAccepted) || other.senderAccepted == senderAccepted)&&(identical(other.travellerAccepted, travellerAccepted) || other.travellerAccepted == travellerAccepted)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,id,parcelId,tripId,senderId,senderName,travellerId,travellerName,parcelTitle,fromDistrict,toDistrict,price,status,lastCounterBy,travellerRating,travellerTripsCount,isTravellerVerified,const DeepCollectionEquality().hash(_noCarryTags),createdAt,updatedAt]);
+int get hashCode => Object.hashAll([runtimeType,id,parcelId,tripId,senderId,senderName,travellerId,travellerName,parcelTitle,fromDistrict,toDistrict,price,status,lastCounterBy,travellerRating,travellerTripsCount,isTravellerVerified,const DeepCollectionEquality().hash(_noCarryTags),senderAccepted,travellerAccepted,createdAt,updatedAt]);
 
 @override
 String toString() {
-  return 'Offer(id: $id, parcelId: $parcelId, tripId: $tripId, senderId: $senderId, senderName: $senderName, travellerId: $travellerId, travellerName: $travellerName, parcelTitle: $parcelTitle, fromDistrict: $fromDistrict, toDistrict: $toDistrict, price: $price, status: $status, lastCounterBy: $lastCounterBy, travellerRating: $travellerRating, travellerTripsCount: $travellerTripsCount, isTravellerVerified: $isTravellerVerified, noCarryTags: $noCarryTags, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'Offer(id: $id, parcelId: $parcelId, tripId: $tripId, senderId: $senderId, senderName: $senderName, travellerId: $travellerId, travellerName: $travellerName, parcelTitle: $parcelTitle, fromDistrict: $fromDistrict, toDistrict: $toDistrict, price: $price, status: $status, lastCounterBy: $lastCounterBy, travellerRating: $travellerRating, travellerTripsCount: $travellerTripsCount, isTravellerVerified: $isTravellerVerified, noCarryTags: $noCarryTags, senderAccepted: $senderAccepted, travellerAccepted: $travellerAccepted, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -283,7 +287,7 @@ abstract mixin class _$OfferCopyWith<$Res> implements $OfferCopyWith<$Res> {
   factory _$OfferCopyWith(_Offer value, $Res Function(_Offer) _then) = __$OfferCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String parcelId, String tripId, String senderId, String senderName, String travellerId, String travellerName, String parcelTitle, String fromDistrict, String toDistrict, double price, OfferStatus status, String lastCounterBy, double travellerRating, int travellerTripsCount, bool isTravellerVerified, List<String> noCarryTags, DateTime createdAt, DateTime updatedAt
+ String id, String parcelId, String tripId, String senderId, String senderName, String travellerId, String travellerName, String parcelTitle, String fromDistrict, String toDistrict, double price, OfferStatus status, String lastCounterBy, double travellerRating, int travellerTripsCount, bool isTravellerVerified, List<String> noCarryTags, bool senderAccepted, bool travellerAccepted, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -300,7 +304,7 @@ class __$OfferCopyWithImpl<$Res>
 
 /// Create a copy of Offer
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? parcelId = null,Object? tripId = null,Object? senderId = null,Object? senderName = null,Object? travellerId = null,Object? travellerName = null,Object? parcelTitle = null,Object? fromDistrict = null,Object? toDistrict = null,Object? price = null,Object? status = null,Object? lastCounterBy = null,Object? travellerRating = null,Object? travellerTripsCount = null,Object? isTravellerVerified = null,Object? noCarryTags = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? parcelId = null,Object? tripId = null,Object? senderId = null,Object? senderName = null,Object? travellerId = null,Object? travellerName = null,Object? parcelTitle = null,Object? fromDistrict = null,Object? toDistrict = null,Object? price = null,Object? status = null,Object? lastCounterBy = null,Object? travellerRating = null,Object? travellerTripsCount = null,Object? isTravellerVerified = null,Object? noCarryTags = null,Object? senderAccepted = null,Object? travellerAccepted = null,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_Offer(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,parcelId: null == parcelId ? _self.parcelId : parcelId // ignore: cast_nullable_to_non_nullable
@@ -319,7 +323,9 @@ as String,travellerRating: null == travellerRating ? _self.travellerRating : tra
 as double,travellerTripsCount: null == travellerTripsCount ? _self.travellerTripsCount : travellerTripsCount // ignore: cast_nullable_to_non_nullable
 as int,isTravellerVerified: null == isTravellerVerified ? _self.isTravellerVerified : isTravellerVerified // ignore: cast_nullable_to_non_nullable
 as bool,noCarryTags: null == noCarryTags ? _self._noCarryTags : noCarryTags // ignore: cast_nullable_to_non_nullable
-as List<String>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as List<String>,senderAccepted: null == senderAccepted ? _self.senderAccepted : senderAccepted // ignore: cast_nullable_to_non_nullable
+as bool,travellerAccepted: null == travellerAccepted ? _self.travellerAccepted : travellerAccepted // ignore: cast_nullable_to_non_nullable
+as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));

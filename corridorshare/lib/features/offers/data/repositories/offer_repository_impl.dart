@@ -44,9 +44,15 @@ class OfferRepositoryImpl implements OfferRepository {
   }
 
   @override
-  Future<Result<Offer>> acceptOffer(String offerId) async {
+  Future<Result<Offer>> acceptOffer(
+    String offerId, {
+    String? acceptedByUserId,
+  }) async {
     try {
-      final updated = await _dataSource.acceptOffer(offerId);
+      final updated = await _dataSource.acceptOffer(
+        offerId,
+        acceptedByUserId: acceptedByUserId,
+      );
       return Ok<Offer>(updated.toDomain());
     } on Failure catch (f) {
       return Err<Offer>(f);

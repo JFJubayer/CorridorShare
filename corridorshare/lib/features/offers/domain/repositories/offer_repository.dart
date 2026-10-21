@@ -10,7 +10,10 @@ abstract class OfferRepository {
     required String counterByUserId,
   });
 
-  Future<Result<Offer>> acceptOffer(String offerId);
+  Future<Result<Offer>> acceptOffer(
+    String offerId, {
+    String? acceptedByUserId,
+  });
 
   Future<Result<Offer>> rejectOffer(String offerId);
 

@@ -24,6 +24,8 @@ abstract class Offer with _$Offer {
     @Default(0) int travellerTripsCount,
     @Default(false) bool isTravellerVerified,
     @Default(<String>[]) List<String> noCarryTags,
+    @Default(false) bool senderAccepted,
+    @Default(false) bool travellerAccepted,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _Offer;

@@ -27,6 +27,8 @@ class InMemoryOfferDataSource implements OfferDataSource {
         price: 450.0,
         status: 'pendingTraveller',
         lastCounterBy: 'sender-1',
+        senderAccepted: true,
+        travellerAccepted: false,
         createdAt: now.subtract(const Duration(hours: 2)).toIso8601String(),
         updatedAt: now.subtract(const Duration(hours: 2)).toIso8601String(),
       ),
@@ -44,6 +46,8 @@ class InMemoryOfferDataSource implements OfferDataSource {
         price: 800.0,
         status: 'pendingSender',
         lastCounterBy: 'traveller-1',
+        senderAccepted: false,
+        travellerAccepted: true,
         createdAt: now.subtract(const Duration(hours: 1)).toIso8601String(),
         updatedAt: now.subtract(const Duration(hours: 1)).toIso8601String(),
       ),
@@ -61,6 +65,8 @@ class InMemoryOfferDataSource implements OfferDataSource {
         price: 300.0,
         status: 'pendingSender',
         lastCounterBy: 'traveller-rafi',
+        senderAccepted: false,
+        travellerAccepted: true,
         travellerRating: 4.9,
         travellerTripsCount: 48,
         isTravellerVerified: true,
@@ -82,6 +88,8 @@ class InMemoryOfferDataSource implements OfferDataSource {
         price: 320.0,
         status: 'pendingSender',
         lastCounterBy: 'traveller-nila',
+        senderAccepted: false,
+        travellerAccepted: true,
         travellerRating: 4.7,
         travellerTripsCount: 31,
         isTravellerVerified: true,
@@ -103,6 +111,8 @@ class InMemoryOfferDataSource implements OfferDataSource {
         price: 280.0,
         status: 'pendingSender',
         lastCounterBy: 'traveller-sabbir',
+        senderAccepted: false,
+        travellerAccepted: true,
         travellerRating: 4.2,
         travellerTripsCount: 6,
         isTravellerVerified: false,
@@ -124,6 +134,8 @@ class InMemoryOfferDataSource implements OfferDataSource {
         price: 250.0,
         status: 'accepted',
         lastCounterBy: 'traveller-imran',
+        senderAccepted: true,
+        travellerAccepted: true,
         travellerRating: 4.8,
         travellerTripsCount: 22,
         isTravellerVerified: true,
@@ -144,6 +156,8 @@ class InMemoryOfferDataSource implements OfferDataSource {
         price: 0.0,
         status: 'accepted',
         lastCounterBy: 'corridorshare-support',
+        senderAccepted: true,
+        travellerAccepted: true,
         travellerRating: 5.0,
         travellerTripsCount: 100,
         isTravellerVerified: true,
@@ -155,8 +169,13 @@ class InMemoryOfferDataSource implements OfferDataSource {
 
   @override
   Future<OfferDto> createOffer(OfferDto offer) async {
-    _offers.insert(0, offer);
-    return offer;
+    final isSender = offer.senderId == offer.lastCounterBy;
+    final item = offer.copyWith(
+      senderAccepted: isSender,
+      travellerAccepted: !isSender,
+    );
+    _offers.insert(0, item);
+    return item;
   }
 
   @override
@@ -177,6 +196,8 @@ class InMemoryOfferDataSource implements OfferDataSource {
       price: newPrice,
       status: nextStatus,
       lastCounterBy: counterByUserId,
+      senderAccepted: isSender,
+      travellerAccepted: !isSender,
       updatedAt: DateTime.now().toIso8601String(),
     );
     _offers[index] = updated;
@@ -184,13 +205,51 @@ class InMemoryOfferDataSource implements OfferDataSource {
   }
 
   @override
-  Future<OfferDto> acceptOffer(String offerId) async {
+  Future<OfferDto> acceptOffer(
+    String offerId, {
+    String? acceptedByUserId,
+  }) async {
     final index = _offers.indexWhere((o) => o.id == offerId);
     if (index == -1) {
       throw const NotFoundFailure('Offer not found');
     }
-    final updated = _offers[index].copyWith(
-      status: 'accepted',
+    final current = _offers[index];
+
+    bool senderAcc = current.senderAccepted;
+    bool travellerAcc = current.travellerAccepted;
+
+    if (acceptedByUserId != null && acceptedByUserId.isNotEmpty) {
+      if (acceptedByUserId == current.senderId) {
+        senderAcc = true;
+      } else if (acceptedByUserId == current.travellerId) {
+        travellerAcc = true;
+      } else {
+        if (!senderAcc) {
+          senderAcc = true;
+        } else {
+          travellerAcc = true;
+        }
+      }
+    } else {
+      if (current.status == 'pendingSender') {
+        senderAcc = true;
+      } else if (current.status == 'pendingTraveller') {
+        travellerAcc = true;
+      } else {
+        senderAcc = true;
+        travellerAcc = true;
+      }
+    }
+
+    final bothAccepted = senderAcc && travellerAcc;
+    final nextStatus = bothAccepted
+        ? 'accepted'
+        : (senderAcc ? 'pendingTraveller' : 'pendingSender');
+
+    final updated = current.copyWith(
+      senderAccepted: senderAcc,
+      travellerAccepted: travellerAcc,
+      status: nextStatus,
       updatedAt: DateTime.now().toIso8601String(),
     );
     _offers[index] = updated;

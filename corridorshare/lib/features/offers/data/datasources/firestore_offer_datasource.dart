@@ -110,7 +110,12 @@ class FirestoreOfferDataSource implements OfferDataSource {
     final docId = offer.id.isNotEmpty
         ? offer.id
         : 'offer_${DateTime.now().millisecondsSinceEpoch}';
-    final item = offer.copyWith(id: docId);
+    final isSender = offer.senderId == offer.lastCounterBy;
+    final item = offer.copyWith(
+      id: docId,
+      senderAccepted: isSender,
+      travellerAccepted: !isSender,
+    );
 
     _offers[item.id] = item;
     _saveToLocalStorage();
@@ -149,6 +154,8 @@ class FirestoreOfferDataSource implements OfferDataSource {
       price: newPrice,
       status: nextStatus,
       lastCounterBy: counterByUserId,
+      senderAccepted: isSender,
+      travellerAccepted: !isSender,
       updatedAt: DateTime.now().toIso8601String(),
     );
 
@@ -162,6 +169,8 @@ class FirestoreOfferDataSource implements OfferDataSource {
             'price': newPrice,
             'status': nextStatus,
             'lastCounterBy': counterByUserId,
+            'senderAccepted': isSender,
+            'travellerAccepted': !isSender,
             'updatedAt': updated.updatedAt,
           });
         } else {
@@ -169,6 +178,8 @@ class FirestoreOfferDataSource implements OfferDataSource {
             'price': newPrice,
             'status': nextStatus,
             'lastCounterBy': counterByUserId,
+            'senderAccepted': isSender,
+            'travellerAccepted': !isSender,
             'updatedAt': updated.updatedAt,
           });
         }
@@ -183,13 +194,50 @@ class FirestoreOfferDataSource implements OfferDataSource {
   }
 
   @override
-  Future<OfferDto> acceptOffer(String offerId) async {
+  Future<OfferDto> acceptOffer(
+    String offerId, {
+    String? acceptedByUserId,
+  }) async {
     final current = _offers[offerId];
     if (current == null) {
       throw const NotFoundFailure('Offer not found');
     }
+
+    bool senderAcc = current.senderAccepted;
+    bool travellerAcc = current.travellerAccepted;
+
+    if (acceptedByUserId != null && acceptedByUserId.isNotEmpty) {
+      if (acceptedByUserId == current.senderId) {
+        senderAcc = true;
+      } else if (acceptedByUserId == current.travellerId) {
+        travellerAcc = true;
+      } else {
+        if (!senderAcc) {
+          senderAcc = true;
+        } else {
+          travellerAcc = true;
+        }
+      }
+    } else {
+      if (current.status == 'pendingSender') {
+        senderAcc = true;
+      } else if (current.status == 'pendingTraveller') {
+        travellerAcc = true;
+      } else {
+        senderAcc = true;
+        travellerAcc = true;
+      }
+    }
+
+    final bothAccepted = senderAcc && travellerAcc;
+    final nextStatus = bothAccepted
+        ? 'accepted'
+        : (senderAcc ? 'pendingTraveller' : 'pendingSender');
+
     final updated = current.copyWith(
-      status: 'accepted',
+      senderAccepted: senderAcc,
+      travellerAccepted: travellerAcc,
+      status: nextStatus,
       updatedAt: DateTime.now().toIso8601String(),
     );
 
@@ -200,12 +248,16 @@ class FirestoreOfferDataSource implements OfferDataSource {
       try {
         if (_useNativeFirestore) {
           await _collection.doc(offerId).update({
-            'status': 'accepted',
+            'status': nextStatus,
+            'senderAccepted': senderAcc,
+            'travellerAccepted': travellerAcc,
             'updatedAt': updated.updatedAt,
           });
         } else {
           await _restService.updateDocument('offers', offerId, {
-            'status': 'accepted',
+            'status': nextStatus,
+            'senderAccepted': senderAcc,
+            'travellerAccepted': travellerAcc,
             'updatedAt': updated.updatedAt,
           });
         }

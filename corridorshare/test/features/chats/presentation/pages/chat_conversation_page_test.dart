@@ -112,7 +112,10 @@ void main() {
     // Action buttons should now disappear since offer is terminal
     expect(find.byKey(const Key('acceptOfferButton')), findsNothing);
     // Verify system message is in chat stream
-    expect(find.text('Deal agreed! Offer of ৳450 accepted.'), findsOneWidget);
+    expect(
+      find.textContaining('Both sender and traveller have accepted the offer of ৳450'),
+      findsOneWidget,
+    );
   });
 
   testWidgets(

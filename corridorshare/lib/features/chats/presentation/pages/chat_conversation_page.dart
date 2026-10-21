@@ -131,11 +131,29 @@ class _ChatConversationPageState extends ConsumerState<ChatConversationPage> {
     );
 
     if (newPrice != null) {
+      final offer = ref.read(offerByIdProvider(widget.offerId)).asData?.value;
+      String counterBy = _currentUserId;
+      if (offer != null) {
+        if (_currentUserId == offer.senderId) {
+          counterBy = offer.senderId;
+        } else if (_currentUserId == offer.travellerId) {
+          counterBy = offer.travellerId;
+        } else {
+          counterBy = (offer.lastCounterBy == offer.senderId)
+              ? offer.travellerId
+              : offer.senderId;
+        }
+      }
+
       await ref.read(offerActionControllerProvider.notifier).counterOffer(
             offerId: widget.offerId,
             newPrice: newPrice,
-            counterByUserId: _currentUserId,
+            counterByUserId: counterBy,
           );
+
+      if (mounted) {
+        ref.invalidate(offerByIdProvider(widget.offerId));
+      }
 
       if (_scrollController.hasClients) {
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -345,16 +363,39 @@ class _ChatConversationPageState extends ConsumerState<ChatConversationPage> {
                 currentUserId: _currentUserId,
                 onOpenDeal: () => _openDealDetails(offer),
                 onAccept: () async {
+                  String? acceptedBy;
+                  final currentUid = _currentUserId;
+                  if (currentUid == offer.senderId) {
+                    acceptedBy = offer.senderAccepted ? offer.travellerId : offer.senderId;
+                  } else if (currentUid == offer.travellerId) {
+                    acceptedBy = offer.travellerAccepted ? offer.senderId : offer.travellerId;
+                  } else {
+                    if (offer.senderAccepted && !offer.travellerAccepted) {
+                      acceptedBy = offer.travellerId;
+                    } else if (offer.travellerAccepted && !offer.senderAccepted) {
+                      acceptedBy = offer.senderId;
+                    } else if (offer.status == OfferStatus.pendingSender) {
+                      acceptedBy = offer.senderId;
+                    } else {
+                      acceptedBy = offer.travellerId;
+                    }
+                  }
+
                   await ref
                       .read(offerActionControllerProvider.notifier)
-                      .acceptOffer(offer.id);
+                      .acceptOffer(offer.id, acceptedByUserId: acceptedBy);
                   if (mounted) {
                     ref.invalidate(offerByIdProvider(offer.id));
                   }
                 },
-                onReject: () => ref
-                    .read(offerActionControllerProvider.notifier)
-                    .rejectOffer(offer.id),
+                onReject: () async {
+                  await ref
+                      .read(offerActionControllerProvider.notifier)
+                      .rejectOffer(offer.id);
+                  if (mounted) {
+                    ref.invalidate(offerByIdProvider(offer.id));
+                  }
+                },
                 onCounter: () => _showCounterDialog(offer.price),
                 l10n: l10n,
               ),
@@ -503,7 +544,27 @@ class _OfferHeaderBanner extends StatelessWidget {
         (status == OfferStatus.pendingSender &&
             offer.senderId == currentUserId);
 
-    final isAccepted = status == OfferStatus.accepted;
+    final isAccepted = status == OfferStatus.accepted ||
+        (offer.senderAccepted && offer.travellerAccepted);
+
+    String statusText;
+    Color statusColor;
+    if (isAccepted) {
+      statusText = 'Deal Agreed!';
+      statusColor = AppColors.darkCharcoal;
+    } else if (status.isTerminal) {
+      statusText = status == OfferStatus.rejected ? 'Rejected' : 'Cancelled';
+      statusColor = AppColors.danger;
+    } else if (offer.senderAccepted && !offer.travellerAccepted) {
+      statusText = 'Sender accepted · Awaiting traveller';
+      statusColor = AppColors.warning;
+    } else if (offer.travellerAccepted && !offer.senderAccepted) {
+      statusText = 'Traveller accepted · Awaiting sender';
+      statusColor = AppColors.warning;
+    } else {
+      statusText = isMyTurn ? l10n.offerStatusPendingYou : l10n.offerStatusPendingOther;
+      statusColor = isMyTurn ? AppColors.warning : AppColors.ticketMutedText;
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
@@ -588,19 +649,11 @@ class _OfferHeaderBanner extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            isAccepted
-                                ? 'Deal Agreed!'
-                                : (isMyTurn
-                                    ? l10n.offerStatusPendingYou
-                                    : l10n.offerStatusPendingOther),
+                            statusText,
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w800,
-                              color: isAccepted
-                                  ? AppColors.darkCharcoal
-                                  : (isMyTurn
-                                      ? AppColors.warning
-                                      : AppColors.ticketMutedText),
+                              color: statusColor,
                             ),
                           ),
                         ],
@@ -644,7 +697,7 @@ class _OfferHeaderBanner extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(
-                'Offer accepted · ৳${offer.price.toStringAsFixed(0)} held in Demo wallet',
+                'Deal agreed · ৳${offer.price.toStringAsFixed(0)} held in Demo wallet',
                 style: const TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
@@ -652,10 +705,46 @@ class _OfferHeaderBanner extends StatelessWidget {
                 ),
               ),
             ),
+          ] else if (offer.senderAccepted && !offer.travellerAccepted) ...<Widget>[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3CD),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFFFEEBA)),
+              ),
+              child: const Text(
+                'Sender accepted · Waiting for traveller confirmation',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF856404),
+                ),
+              ),
+            ),
+          ] else if (offer.travellerAccepted && !offer.senderAccepted) ...<Widget>[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3CD),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFFFEEBA)),
+              ),
+              child: const Text(
+                'Traveller accepted · Waiting for sender confirmation',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF856404),
+                ),
+              ),
+            ),
           ],
 
-          // Negotiation actions if pending & user turn
-          if (isMyTurn && !status.isTerminal) ...<Widget>[
+          // Negotiation actions if pending & not terminal
+          if (!status.isTerminal && !isAccepted) ...<Widget>[
             const SizedBox(height: 10),
             Row(
               children: <Widget>[
@@ -664,7 +753,11 @@ class _OfferHeaderBanner extends StatelessWidget {
                     key: const Key('acceptOfferButton'),
                     onPressed: onAccept,
                     icon: const Icon(Icons.check, size: 16),
-                    label: Text(l10n.acceptOffer),
+                    label: Text(
+                      offer.senderAccepted && !offer.travellerAccepted
+                          ? 'Confirm Deal'
+                          : l10n.acceptOffer,
+                    ),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.darkCharcoal,
                       foregroundColor: AppColors.limeAccent,

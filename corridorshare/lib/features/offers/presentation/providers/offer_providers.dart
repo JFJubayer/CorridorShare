@@ -2,6 +2,7 @@ import 'package:corridorshare/core/di/injection.dart';
 import 'package:corridorshare/features/auth/presentation/providers/auth_providers.dart';
 import 'package:corridorshare/features/chats/presentation/providers/chat_providers.dart';
 import 'package:corridorshare/features/offers/domain/entities/offer.dart';
+import 'package:corridorshare/features/offers/domain/entities/offer_status.dart';
 import 'package:corridorshare/features/offers/domain/usecases/accept_offer.dart';
 import 'package:corridorshare/features/offers/domain/usecases/counter_offer.dart';
 import 'package:corridorshare/features/offers/domain/usecases/create_offer.dart';
@@ -154,40 +155,57 @@ class OfferActionController extends StateNotifier<OfferActionState> {
     );
   }
 
-  Future<bool> acceptOffer(String offerId) async {
-    state = const OfferActionState(isLoading: true);
+  Future<bool> acceptOffer(
+    String offerId, {
+    String? acceptedByUserId,
+  }) async {
+    if (mounted) state = const OfferActionState(isLoading: true);
     try {
       final useCase = _ref.read(acceptOfferUseCaseProvider);
-      final result = await useCase(offerId);
+      final result = await useCase(
+        offerId,
+        acceptedByUserId: acceptedByUserId,
+      );
       return result.fold(
         (accepted) async {
           if (mounted) {
             state = OfferActionState(successOffer: accepted);
           }
-        _ref.invalidate(userOffersProvider);
-        _ref.invalidate(offerByIdProvider(offerId));
-        _ref.invalidate(conversationsProvider);
-        _ref.invalidate(parcelsFeedProvider);
-        _ref.invalidate(myParcelsProvider);
-        _ref.invalidate(parcelOffersProvider);
+          _ref.invalidate(userOffersProvider);
+          _ref.invalidate(offerByIdProvider(offerId));
+          _ref.invalidate(conversationsProvider);
+          _ref.invalidate(parcelsFeedProvider);
+          _ref.invalidate(myParcelsProvider);
+          _ref.invalidate(parcelOffersProvider);
 
-        final priceStr = accepted.price.truncateToDouble() == accepted.price
-            ? accepted.price.toInt().toString()
-            : accepted.price.toStringAsFixed(1);
-        try {
-          final sendMessage = _ref.read(sendMessageUseCaseProvider);
-          await sendMessage(
-            offerId: offerId,
-            senderId: 'system',
-            senderName: 'System',
-            text: 'Deal agreed! Offer of ৳$priceStr accepted.',
-          );
-        } catch (_) {
-          // System message non-blocking
-        }
+          final priceStr = accepted.price.truncateToDouble() == accepted.price
+              ? accepted.price.toInt().toString()
+              : accepted.price.toStringAsFixed(1);
+          try {
+            final sendMessage = _ref.read(sendMessageUseCaseProvider);
+            if (accepted.status == OfferStatus.accepted) {
+              await sendMessage(
+                offerId: offerId,
+                senderId: 'system',
+                senderName: 'System',
+                text: 'Deal agreed! Both sender and traveller have accepted the offer of ৳$priceStr.',
+              );
+            } else {
+              final who = accepted.senderAccepted ? accepted.senderName : accepted.travellerName;
+              final waitingFor = accepted.senderAccepted ? accepted.travellerName : accepted.senderName;
+              await sendMessage(
+                offerId: offerId,
+                senderId: 'system',
+                senderName: 'System',
+                text: '$who accepted the offer of ৳$priceStr. Awaiting confirmation from $waitingFor.',
+              );
+            }
+          } catch (_) {
+            // System message non-blocking
+          }
 
-        return true;
-      },
+          return true;
+        },
       (failure) {
         if (mounted) {
           state = OfferActionState(errorMessage: failure.message);

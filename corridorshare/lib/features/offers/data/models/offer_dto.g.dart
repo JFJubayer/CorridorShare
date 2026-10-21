@@ -28,6 +28,8 @@ _OfferDto _$OfferDtoFromJson(Map<String, dynamic> json) => _OfferDto(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
+  senderAccepted: json['senderAccepted'] as bool? ?? false,
+  travellerAccepted: json['travellerAccepted'] as bool? ?? false,
   createdAt: json['createdAt'] as String,
   updatedAt: json['updatedAt'] as String,
 );
@@ -50,6 +52,8 @@ Map<String, dynamic> _$OfferDtoToJson(_OfferDto instance) => <String, dynamic>{
   'travellerTripsCount': instance.travellerTripsCount,
   'isTravellerVerified': instance.isTravellerVerified,
   'noCarryTags': instance.noCarryTags,
+  'senderAccepted': instance.senderAccepted,
+  'travellerAccepted': instance.travellerAccepted,
   'createdAt': instance.createdAt,
   'updatedAt': instance.updatedAt,
 };

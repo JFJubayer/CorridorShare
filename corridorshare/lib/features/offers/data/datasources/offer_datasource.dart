@@ -9,7 +9,10 @@ abstract class OfferDataSource {
     required String counterByUserId,
   });
 
-  Future<OfferDto> acceptOffer(String offerId);
+  Future<OfferDto> acceptOffer(
+    String offerId, {
+    String? acceptedByUserId,
+  });
 
   Future<OfferDto> rejectOffer(String offerId);
 

@@ -2,6 +2,7 @@ import 'package:corridorshare/core/router/app_router.dart';
 import 'package:corridorshare/core/theme/app_colors.dart';
 import 'package:corridorshare/core/utils/result.dart';
 import 'package:corridorshare/features/offers/domain/entities/offer.dart';
+import 'package:corridorshare/features/offers/domain/entities/offer_status.dart';
 import 'package:corridorshare/features/offers/presentation/providers/offer_providers.dart';
 import 'package:corridorshare/features/offers/presentation/widgets/counter_offer_sheet.dart';
 import 'package:corridorshare/features/offers/presentation/widgets/raise_budget_sheet.dart';
@@ -130,12 +131,18 @@ class _OffersPageState extends ConsumerState<OffersPage> {
 
     final success = await ref
         .read(offerActionControllerProvider.notifier)
-        .acceptOffer(offer.id);
+        .acceptOffer(offer.id, acceptedByUserId: offer.senderId);
 
     if (mounted && success) {
+      final updatedOffer = ref.read(offerByIdProvider(offer.id)).asData?.value;
+      final isFullyAccepted = updatedOffer?.status == OfferStatus.accepted;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Offer from ${offer.travellerName} accepted!'),
+          content: Text(
+            isFullyAccepted
+                ? 'Offer from ${offer.travellerName} accepted! Item matched.'
+                : 'Offer accepted! Awaiting traveller confirmation.',
+          ),
           backgroundColor: AppColors.success,
         ),
       );

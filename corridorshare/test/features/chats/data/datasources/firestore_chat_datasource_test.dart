@@ -94,14 +94,15 @@ void main() {
       storageFileName: testStorageFileName,
     );
 
+    final latestTime = DateTime.now().add(const Duration(minutes: 10)).toIso8601String();
     await chatDs1.sendMessage(
-      const ChatMessageDto(
+      ChatMessageDto(
         id: 'msg-persist-1',
         offerId: 'offer-rafi',
         senderId: 'sender-1',
         senderName: 'Tania',
         text: 'Important parcel note across restart.',
-        createdAt: '2026-10-20T19:10:00.000Z',
+        createdAt: latestTime,
       ),
     );
 

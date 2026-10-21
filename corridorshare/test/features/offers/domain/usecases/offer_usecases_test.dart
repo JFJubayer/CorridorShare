@@ -120,19 +120,66 @@ void main() {
   });
 
   group('AcceptOffer', () {
-    test('transitions offer to accepted and parcel to matched status', () async {
+    test('transitions offer to accepted and parcel to matched status when counterpart accepts', () async {
       // Initial state of parcel-1 is open
       final initialParcelRes = await parcelRepository.getParcelById('parcel-1');
       expect(initialParcelRes.getOrThrow().status, ParcelStatus.open);
 
-      final acceptRes = await acceptOffer('offer-1');
+      final acceptRes = await acceptOffer('offer-1', acceptedByUserId: 'traveller-1');
       expect(acceptRes, isA<Ok>());
       final acceptedOffer = acceptRes.getOrThrow();
       expect(acceptedOffer.status, OfferStatus.accepted);
+      expect(acceptedOffer.senderAccepted, isTrue);
+      expect(acceptedOffer.travellerAccepted, isTrue);
 
       // Verify parcel-1 transitioned to matched
       final updatedParcelRes = await parcelRepository.getParcelById('parcel-1');
       expect(updatedParcelRes.getOrThrow().status, ParcelStatus.matched);
+    });
+
+    test('requires two-way confirmation: item is NOT matched until BOTH sender and traveller accept', () async {
+      // Create a fresh offer where neither or only creator has accepted
+      final freshOffer = buildSampleOffer(
+        price: 700,
+        senderId: 'sender-1',
+        travellerId: 'traveller-1',
+        status: OfferStatus.pendingTraveller,
+      );
+      final createdRes = await createOffer(freshOffer);
+      final created = createdRes.getOrThrow();
+      expect(created.senderAccepted, isTrue);
+      expect(created.travellerAccepted, isFalse);
+
+      // Initially parcel is open
+      final p1 = (await parcelRepository.getParcelById('parcel-1')).getOrThrow();
+      expect(p1.status, ParcelStatus.open);
+
+      // If only traveller has not accepted, parcel MUST NOT be matched yet
+      // Counter-offer from traveller: now travellerAccepted = true, senderAccepted = false
+      final counterRes = await counterOffer(
+        offerId: created.id,
+        newPrice: 750,
+        counterByUserId: 'traveller-1',
+      );
+      final countered = counterRes.getOrThrow();
+      expect(countered.travellerAccepted, isTrue);
+      expect(countered.senderAccepted, isFalse);
+      expect(countered.status, OfferStatus.pendingSender);
+
+      // Parcel still NOT matched
+      final p2 = (await parcelRepository.getParcelById('parcel-1')).getOrThrow();
+      expect(p2.status, ParcelStatus.open);
+
+      // Finally sender accepts -> both confirmed!
+      final finalAccept = await acceptOffer(created.id, acceptedByUserId: 'sender-1');
+      final completed = finalAccept.getOrThrow();
+      expect(completed.status, OfferStatus.accepted);
+      expect(completed.senderAccepted, isTrue);
+      expect(completed.travellerAccepted, isTrue);
+
+      // Now and only now is the parcel matched
+      final p3 = (await parcelRepository.getParcelById('parcel-1')).getOrThrow();
+      expect(p3.status, ParcelStatus.matched);
     });
   });
 
